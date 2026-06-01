@@ -1,5 +1,7 @@
-//import { Navigate } from "react-router"
-import { ArrowRight, BadgeCheck, Lock, ShieldCheck } from "lucide-react"
+import { useState } from "react"
+import { Navigate, useNavigate } from "react-router"
+import { useMutation } from "@tanstack/react-query"
+import { ArrowRight, BadgeCheck, Loader2, Lock, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -7,10 +9,43 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { authService } from "@/features/auth/auth.service"
+import { useAuthStore } from "@/features/auth/auth.store"
 
 export function LoginPage() {
-  const demoLogin = () => {
-    toast.success("Login visual validado. A integração com a API vem na próxima fase.")
+  const navigate = useNavigate()
+  const { isAuthenticated, setAuth } = useAuthStore()
+  const [email, setEmail] = useState("admin@sagep.com")
+  const [password, setPassword] = useState("123456")
+
+  const loginMutation = useMutation({
+    mutationFn: authService.login,
+    onSuccess: (data) => {
+      setAuth({
+        user: data.user,
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+      })
+
+      toast.success("Login realizado com sucesso.")
+      navigate("/dashboard", { replace: true })
+    },
+    onError: (error) => {
+      toast.error(error.message || "Não foi possível realizar o login.")
+    },
+  })
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    loginMutation.mutate({
+      email,
+      password,
+    })
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />
   }
 
   return (
@@ -81,14 +116,17 @@ export function LoginPage() {
               Entre com suas credenciais institucionais para acessar o painel.
             </p>
 
-            <div className="mt-8 space-y-5">
+            <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input
                   id="email"
                   type="email"
                   placeholder="admin@sagep.com"
-                  defaultValue="admin@sagep.com"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  disabled={loginMutation.isPending}
+                  required
                 />
               </div>
 
@@ -98,21 +136,37 @@ export function LoginPage() {
                   id="password"
                   type="password"
                   placeholder="••••••••"
-                  defaultValue="123456"
+                  value={password}
+                  onChange={(event) => setPassword(event.target.value)}
+                  disabled={loginMutation.isPending}
+                  required
                 />
               </div>
 
-              <Button className="h-11 w-full gap-2" onClick={demoLogin}>
-                Entrar no sistema
-                <ArrowRight className="size-4" />
+              <Button
+                className="h-11 w-full gap-2"
+                type="submit"
+                disabled={loginMutation.isPending}
+              >
+                {loginMutation.isPending ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Entrando...
+                  </>
+                ) : (
+                  <>
+                    Entrar no sistema
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
               </Button>
-            </div>
+            </form>
 
             <div className="mt-6 flex items-start gap-3 rounded-2xl bg-slate-100 p-4 text-sm text-slate-600">
               <Lock className="mt-0.5 size-4 text-slate-500" />
               <p>
-                A próxima etapa vai conectar esta tela ao endpoint real{" "}
-                <strong>POST /auth/login</strong>.
+                O acesso usa autenticação JWT com refresh token e permissões
+                efetivas carregadas pelo backend.
               </p>
             </div>
           </CardContent>

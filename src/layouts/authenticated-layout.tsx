@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router"
+import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Bell,
   ClipboardList,
@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { useAuthStore } from "@/features/auth/auth.store"
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -30,7 +31,41 @@ const navigation = [
   { label: "Configurações", href: "/settings", icon: Settings },
 ]
 
+function getInitials(nameOrEmail?: string) {
+  if (!nameOrEmail) return "US"
+
+  const cleanValue = nameOrEmail.trim()
+
+  if (!cleanValue) return "US"
+
+  const namePart = cleanValue.includes("@")
+    ? cleanValue.split("@")[0]
+    : cleanValue
+
+  const parts = namePart
+    .split(/[.\s_-]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+
+  return parts
+    .map((part) => part[0])
+    .join("")
+    .toUpperCase()
+}
+
 export function AuthenticatedLayout() {
+  const navigate = useNavigate()
+  const { user, logout } = useAuthStore()
+
+  const userDisplayName = user?.name ?? user?.email ?? "Usuário"
+  const userRole = user?.role ?? "USUÁRIO"
+  const initials = getInitials(userDisplayName)
+
+  const handleLogout = () => {
+    logout()
+    navigate("/login", { replace: true })
+  }
+
   return (
     <div className="min-h-screen bg-[#f5f7f4] text-slate-950">
       <aside className="fixed inset-y-0 left-0 hidden w-72 border-r border-white/10 bg-slate-950 text-white lg:flex lg:flex-col">
@@ -93,14 +128,22 @@ export function AuthenticatedLayout() {
           <div className="flex items-center gap-3 rounded-2xl bg-white/4 p-3">
             <Avatar>
               <AvatarFallback className="bg-emerald-500 text-slate-950">
-                LL
+                {initials}
               </AvatarFallback>
             </Avatar>
+
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">Luiz Lima</p>
-              <p className="truncate text-xs text-slate-400">ADMIN</p>
+              <p className="truncate text-sm font-medium">{userDisplayName}</p>
+              <p className="truncate text-xs text-slate-400">{userRole}</p>
             </div>
-            <Button size="icon" variant="ghost" className="text-slate-300">
+
+            <Button
+              size="icon"
+              variant="ghost"
+              className="text-slate-300 hover:bg-white/10 hover:text-white"
+              onClick={handleLogout}
+              title="Sair"
+            >
               <LogOut className="size-4" />
             </Button>
           </div>
@@ -127,11 +170,13 @@ export function AuthenticatedLayout() {
             <Badge variant="outline" className="hidden md:inline-flex">
               UASG 160016
             </Badge>
-            <Button variant="outline" size="icon">
+
+            <Button variant="outline" size="icon" title="Notificações">
               <Bell className="size-4" />
             </Button>
+
             <Avatar>
-              <AvatarFallback>LL</AvatarFallback>
+              <AvatarFallback>{initials}</AvatarFallback>
             </Avatar>
           </div>
         </header>
