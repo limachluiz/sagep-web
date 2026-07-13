@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  MonitorSmartphone,
   Search,
   Settings,
   ShieldCheck,
@@ -61,6 +62,12 @@ const navigation: NavigationItem[] = [
     href: "/users",
     icon: Users,
     anyOf: ["users.manage"],
+  },
+  {
+    label: "Sessões",
+    href: "/sessions",
+    icon: MonitorSmartphone,
+    anyOf: ["sessions.manage_own"],
   },
   {
     label: "Configurações",
