@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from "react-router"
 
 import { ProtectedRoute } from "@/features/auth/components/protected-route"
+import { PermissionRoute } from "@/features/auth/components/permission-route"
+import { AccessDeniedPage } from "@/features/auth/pages/access-denied-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
 import { OperationalDashboardPage } from "@/features/dashboard/pages/operational-dashboard-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
@@ -13,7 +15,15 @@ export default function App() {
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedLayout />}>
-          <Route path="/dashboard" element={<OperationalDashboardPage />} />
+          <Route
+            path="/dashboard"
+            element={
+              <PermissionRoute anyOf={["dashboard.view_operational"]}>
+                <OperationalDashboardPage />
+              </PermissionRoute>
+            }
+          />
+          <Route path="/acesso-negado" element={<AccessDeniedPage />} />
         </Route>
       </Route>
 
