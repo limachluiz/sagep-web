@@ -20,15 +20,54 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { authService } from "@/features/auth/auth.service"
+import type { Permission } from "@/features/auth/auth.types"
 
-const navigation = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Projetos", href: "/projects", icon: ClipboardList },
-  { label: "Estimativas", href: "/estimates", icon: FileText },
-  { label: "DIEx", href: "/diex", icon: Landmark },
-  { label: "Ordens de Serviço", href: "/service-orders", icon: ShieldCheck },
-  { label: "Usuários", href: "/users", icon: Users },
-  { label: "Configurações", href: "/settings", icon: Settings },
+type NavigationItem = {
+  label: string
+  href: string
+  icon: typeof LayoutDashboard
+  anyOf: Permission[]
+}
+
+const navigation: NavigationItem[] = [
+  {
+    label: "Dashboard",
+    href: "/dashboard",
+    icon: LayoutDashboard,
+    anyOf: ["dashboard.view_operational"],
+  },
+  {
+    label: "Projetos",
+    href: "/projects",
+    icon: ClipboardList,
+    anyOf: ["projects.view_all", "projects.edit_own"],
+  },
+  {
+    label: "Estimativas",
+    href: "/estimates",
+    icon: FileText,
+    anyOf: ["estimates.view_all", "estimates.create", "estimates.edit"],
+  },
+  { label: "DIEx", href: "/diex", icon: Landmark, anyOf: ["diex.issue"] },
+  {
+    label: "Ordens de Serviço",
+    href: "/service-orders",
+    icon: ShieldCheck,
+    anyOf: ["service_orders.issue"],
+  },
+  {
+    label: "Usuários",
+    href: "/users",
+    icon: Users,
+    anyOf: ["users.manage"],
+  },
+  {
+    label: "Configurações",
+    href: "/settings",
+    icon: Settings,
+    anyOf: ["permissions.view"],
+  },
 ]
 
 function getInitials(nameOrEmail?: string) {
@@ -55,15 +94,24 @@ function getInitials(nameOrEmail?: string) {
 
 export function AuthenticatedLayout() {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, refreshToken, logout, hasAnyPermission } = useAuthStore()
 
   const userDisplayName = user?.name ?? user?.email ?? "Usuário"
   const userRole = user?.role ?? "USUÁRIO"
   const initials = getInitials(userDisplayName)
 
-  const handleLogout = () => {
+  const visibleNavigation = navigation.filter((item) =>
+    hasAnyPermission(item.anyOf),
+  )
+
+  const handleLogout = async () => {
+    const tokenToRevoke = refreshToken
     logout()
     navigate("/login", { replace: true })
+
+    if (tokenToRevoke) {
+      await authService.logout(tokenToRevoke).catch(() => undefined)
+    }
   }
 
   return (
@@ -100,7 +148,7 @@ export function AuthenticatedLayout() {
         </div>
 
         <nav className="mt-6 flex-1 space-y-1 px-4">
-          {navigation.map((item) => {
+          {visibleNavigation.map((item) => {
             const Icon = item.icon
 
             return (
