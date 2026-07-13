@@ -1,73 +1,95 @@
-# React + TypeScript + Vite
+# SAGEP Web
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend do **Sistema de Apoio à Gestão de Projetos (SAGEP)**, desenvolvido para apoiar o planejamento, a execução e o acompanhamento dos projetos do 4º Centro de Telemática de Área.
 
-Currently, two official plugins are available:
+## Estado atual
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Esta branch estabelece a fundação oficial do frontend:
 
-## React Compiler
+- aplicação React 19 com TypeScript e Vite;
+- design system com Tailwind CSS 4 e componentes shadcn/ui;
+- identidade institucional em verde-oliva;
+- autenticação JWT integrada ao backend;
+- renovação automática de access token por refresh token;
+- controle de sessão com Zustand;
+- rotas públicas e protegidas;
+- layout responsivo autenticado;
+- dashboard operacional inicial com dados simulados;
+- React Query preparado para o consumo da API.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Tecnologias
 
-## Expanding the ESLint configuration
+- React 19
+- TypeScript 6
+- Vite 8
+- Tailwind CSS 4
+- shadcn/ui e Radix UI
+- React Router 7
+- TanStack Query e TanStack Table
+- Zustand
+- React Hook Form e Zod
+- Recharts
+- Lucide React
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Execução local
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Requisitos: Node.js 22 ou superior e npm.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Caso o arquivo `.env.example` ainda não exista, crie `.env` com:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```env
+VITE_API_URL=http://localhost:3000
 ```
+
+O endereço deve apontar para a API do SAGEP.
+
+## Scripts
+
+```bash
+npm run dev      # servidor de desenvolvimento
+npm run lint     # análise estática
+npm run build    # verificação TypeScript e build de produção
+npm run preview  # visualização local do build
+```
+
+## Estrutura principal
+
+```text
+src/
+├── app/              # composição e rotas da aplicação
+├── components/ui/    # componentes reutilizáveis do design system
+├── config/           # variáveis e configuração do ambiente
+├── features/         # módulos funcionais por domínio
+│   ├── auth/         # autenticação, sessão e proteção de rotas
+│   └── dashboard/    # dashboards operacional e executivo
+├── layouts/          # estruturas de página compartilhadas
+├── lib/              # cliente HTTP e utilitários
+└── index.css         # tokens visuais e estilos globais
+```
+
+## Fluxo funcional previsto
+
+`Estimativa → NC → DIEx → NE → OS → Execução → As-Built → Atesto da NF → Conclusão`
+
+Kanban e Gantt serão módulos próprios, separados do dashboard.
+
+## Roadmap
+
+1. Fundação do projeto e design system
+2. Login, autenticação, refresh token e perfis
+3. Dashboard operacional e executivo
+4. Projetos, detalhes, timeline e próxima ação
+5. Kanban e Gantt
+6. Estimativas, NC, DIEx, NE, OS e conclusão
+7. ATAs, saldos, OMs, usuários e administração
+8. Testes, responsividade, acessibilidade e entrega
+
+## Backend
+
+A API está mantida separadamente em [limachluiz/sagep-backend](https://github.com/limachluiz/sagep-backend).
