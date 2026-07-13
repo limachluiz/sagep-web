@@ -5,6 +5,51 @@ type RequestOptions = RequestInit & {
   skipAuth?: boolean
 }
 
+export class ApiError extends Error {
+  readonly status: number
+  readonly details?: unknown
+
+  constructor(
+    message: string,
+    status: number,
+    details?: unknown,
+  ) {
+    super(message)
+    this.name = "ApiError"
+    this.status = status
+    this.details = details
+  }
+}
+
+let refreshRequest: Promise<{ accessToken: string; refreshToken?: string }> | null = null
+
+async function refreshSession(refreshToken: string) {
+  if (!refreshRequest) {
+    refreshRequest = fetch(`${env.apiUrl}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refreshToken }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          const error = await response.json().catch(() => null)
+          throw new ApiError(
+            error?.message ?? "Sessão expirada. Faça login novamente.",
+            response.status,
+            error,
+          )
+        }
+
+        return response.json()
+      })
+      .finally(() => {
+        refreshRequest = null
+      })
+  }
+
+  return refreshRequest
+}
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { accessToken, refreshToken, setTokens, logout } = useAuthStore.getState()
 
@@ -21,20 +66,14 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   })
 
   if (response.status === 401 && !options.skipAuth && refreshToken) {
-    const refreshResponse = await fetch(`${env.apiUrl}/auth/refresh`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ refreshToken }),
-    })
+    let refreshed: { accessToken: string; refreshToken?: string }
 
-    if (!refreshResponse.ok) {
+    try {
+      refreshed = await refreshSession(refreshToken)
+    } catch (error) {
       logout()
-      throw new Error("Sessão expirada. Faça login novamente.")
+      throw error
     }
-
-    const refreshed = await refreshResponse.json()
 
     setTokens({
       accessToken: refreshed.accessToken,
@@ -52,10 +91,10 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   if (!response.ok) {
     const error = await response.json().catch(() => null)
 
-    throw new Error(
-      error?.message ??
-        error?.error ??
-        `Erro na requisição: ${response.status}`,
+    throw new ApiError(
+      error?.message ?? error?.error ?? `Erro na requisição: ${response.status}`,
+      response.status,
+      error,
     )
   }
 
