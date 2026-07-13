@@ -1,5 +1,11 @@
 import { api } from "@/lib/api"
-import type { AuthUser, LoginPayload, LoginResponse } from "./auth.types"
+import type {
+  AuthUser,
+  LoginPayload,
+  LoginResponse,
+  SessionMutationResponse,
+  SessionsResponse,
+} from "./auth.types"
 
 export const authService = {
   login(payload: LoginPayload) {
@@ -20,5 +26,19 @@ export const authService = {
         skipAuth: true,
       },
     )
+  },
+
+  listSessions() {
+    return api.get<SessionsResponse>("/auth/sessions?status=ALL&limit=100")
+  },
+
+  revokeSession(sessionId: string) {
+    return api.post<SessionMutationResponse>(
+      `/auth/sessions/${sessionId}/revoke`,
+    )
+  },
+
+  revokeAllSessions() {
+    return api.post<SessionMutationResponse>("/auth/sessions/revoke-all")
   },
 }
