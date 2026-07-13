@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Navigate, useNavigate } from "react-router"
+import { Navigate, useLocation, useNavigate } from "react-router"
 import { useMutation } from "@tanstack/react-query"
 import { ArrowRight, BadgeCheck, Loader2, Lock, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
@@ -14,9 +14,10 @@ import { useAuthStore } from "@/features/auth/auth.store"
 
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, setAuth } = useAuthStore()
   const [email, setEmail] = useState("admin@sagep.com")
-  const [password, setPassword] = useState("123456")
+  const [password, setPassword] = useState("")
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -28,7 +29,8 @@ export function LoginPage() {
       })
 
       toast.success("Login realizado com sucesso.")
-      navigate("/dashboard", { replace: true })
+      const destination = location.state?.from?.pathname ?? "/dashboard"
+      navigate(destination, { replace: true })
     },
     onError: (error) => {
       toast.error(error.message || "Não foi possível realizar o login.")
