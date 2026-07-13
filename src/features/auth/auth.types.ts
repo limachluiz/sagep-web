@@ -51,3 +51,44 @@ export type RefreshResponse = {
   accessToken: string
   refreshToken?: string
 }
+
+export type SessionStatus = "ACTIVE" | "REVOKED" | "EXPIRED"
+
+export type AuthSession = {
+  id: string
+  status: SessionStatus
+  statusDetail: {
+    code: SessionStatus
+    label: string
+    reason: string | null
+    reasonLabel: string | null
+  }
+  currentSession: boolean
+  createdAt: string
+  expiresAt: string | null
+  revokedAt: string | null
+  lastActivityAt: string | null
+  securityContext: {
+    ipAddress: string | null
+    userAgent: string | null
+  }
+}
+
+export type SessionsResponse = {
+  scope: "OWN" | "ADMIN"
+  permissionUsed: string
+  summary: {
+    total: number
+    active: number
+    revoked: number
+    expired: number
+    currentSessionId: string | null
+    currentSessionDetected: boolean
+  }
+  sessions: AuthSession[]
+}
+
+export type SessionMutationResponse = {
+  message: string
+  revokedCount?: number
+}
