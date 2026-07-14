@@ -50,7 +50,16 @@ VITE_API_PROXY_TARGET=http://localhost:3000
 
 Durante o desenvolvimento, o navegador acessa `/api` pela mesma origem do
 frontend e o Vite encaminha as requisições para o backend. Isso evita bloqueios
-de CORS no ambiente local. Reinicie `npm run dev` após alterar essas variáveis.
+de CORS no ambiente local. O proxy remove o cabeçalho `Origin` antes de chamar
+a API, caracterizando corretamente a segunda etapa como comunicação
+servidor-a-servidor. Reinicie `npm run dev` após alterar essas variáveis.
+
+Se optar por acessar a API diretamente pelo navegador, inclua a origem do Vite
+na configuração do backend:
+
+```env
+CORS_ALLOWED_ORIGINS="http://localhost:4200,http://localhost:5173"
+```
 
 ## Scripts
 
