@@ -135,3 +135,108 @@ export type DashboardOperationalResponse = {
     at: string
   }>
 }
+
+export type AmountBreakdown = {
+  label: string
+  count: number
+  totalAmount: string
+  percentage: number
+}
+
+export type CountBreakdown = {
+  label: string
+  count: number
+  percentage: number
+}
+
+export type DashboardExecutiveFilters = {
+  periodType?: "month" | "quarter" | "semester" | "year"
+  referenceDate?: string
+  startDate?: string
+  endDate?: string
+  asOfDate?: string
+}
+
+export type DashboardExecutiveResponse = {
+  generatedAt: string
+  filter: {
+    mode: "all" | "interval" | "as_of"
+    label: string
+    periodType: DashboardExecutiveFilters["periodType"] | null
+    referenceDate: string | null
+    startDate: string | null
+    endDate: string | null
+    asOfDate: string | null
+  }
+  summary: {
+    projectsTotal: number
+    projectsOpen: number
+    projectsCompleted: number
+    projectsCanceled: number
+    estimatesTotal: number
+    estimatesFinalized: number
+    diexIssued: number
+    serviceOrdersIssued: number
+    totalEstimatedAmount: string
+    totalFinalizedEstimatedAmount: string
+    totalWithDiex: string
+    totalWithServiceOrder: string
+    ataItemsAtRisk: number
+    ataItemsInsufficient: number
+  }
+  projects: {
+    byStatus: CountBreakdown[]
+    byStage: CountBreakdown[]
+  }
+  financial: {
+    totalEstimatedAmount: string
+    totalWithDiex: string
+    totalWithServiceOrder: string
+    inventoryCurrentReservedAmount: string
+    inventoryCurrentConsumedAmount: string
+    inventoryCurrentAvailableAmount: string
+    inventoryReversedAmountInPeriod: string
+    byEstimateStatus: AmountBreakdown[]
+    byAtaType: AmountBreakdown[]
+    inventoryByAtaType: AmountBreakdown[]
+    inventoryByVendor: AmountBreakdown[]
+  }
+  distribution: {
+    byRegion: AmountBreakdown[]
+    byCity: AmountBreakdown[]
+    byOm: AmountBreakdown[]
+    byAtaType: AmountBreakdown[]
+  }
+  periodIndicators: {
+    projectsCreated: number
+    estimatesCreated: number
+    diexIssued: number
+    serviceOrdersIssued: number
+    averageEstimatedAmount: string
+  }
+  inventory: {
+    snapshot: {
+      itemsAtRisk: number
+      itemsInsufficient: number
+      itemsWithActiveReserve: number
+      itemsWithActiveConsumption: number
+      totalReservedAmount: string
+      totalConsumedAmount: string
+      totalAvailableAmount: string
+    }
+    periodActivity: {
+      totalReservedAmount: string
+      totalConsumedAmount: string
+      totalReversedAmount: string
+      totalReleasedAmount: string
+      reserveMovements: number
+      consumeMovements: number
+      reverseMovements: number
+    }
+    distribution: {
+      byAtaType: AmountBreakdown[]
+      byVendor: AmountBreakdown[]
+    }
+    criticalItems: CriticalInventoryItem[]
+  }
+}
