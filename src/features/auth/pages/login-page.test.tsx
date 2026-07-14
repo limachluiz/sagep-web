@@ -77,6 +77,56 @@ describe("LoginPage", () => {
         })
       }
 
+      if (url.includes("/dashboard/operational") && init?.method === "GET") {
+        return new Response(
+          JSON.stringify({
+            generatedAt: new Date().toISOString(),
+            filters: { staleDays: 15, limit: 100 },
+            alerts: {
+              summary: {
+                total: 0,
+                bySeverity: { CRITICAL: 0, WARNING: 0, INFO: 0 },
+                byCategory: {},
+              },
+              bySeverity: {},
+              byCategory: {},
+              items: [],
+            },
+            staleProjects: [],
+            pendingByStage: {
+              awaitingCreditNote: 0,
+              awaitingDiex: 0,
+              awaitingCommitmentNote: 0,
+              awaitingServiceOrder: 0,
+              awaitingExecutionStart: 0,
+              awaitingAsBuilt: 0,
+              awaitingInvoiceAttestation: 0,
+            },
+            inventory: {
+              summary: {
+                totalItems: 0,
+                lowStockItems: 0,
+                insufficientItems: 0,
+                itemsWithActiveReserve: 0,
+                itemsWithActiveConsumption: 0,
+                recentReversals: 0,
+                staleReservations: 0,
+                totalReservedAmount: "0.00",
+                totalConsumedAmount: "0.00",
+                totalAvailableAmount: "0.00",
+              },
+              criticalItems: [],
+              staleReservations: [],
+              recentReversals: [],
+            },
+            operationalQueue: [],
+            frequentNextActions: [],
+            latestMovements: [],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        )
+      }
+
       throw new Error(`Requisição inesperada: ${init?.method} ${url}`)
     })
 
@@ -88,7 +138,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
     expect(await screen.findByText("Visão geral da operação")).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,
       accessToken: "access-token",
