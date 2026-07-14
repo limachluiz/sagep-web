@@ -1,5 +1,9 @@
 import { api } from "@/lib/api"
-import type { ProjectsListFilters, ProjectsListResponse } from "./projects.types"
+import type {
+  ProjectDetailsResponse,
+  ProjectsListFilters,
+  ProjectsListResponse,
+} from "./projects.types"
 
 export const projectsService = {
   list(filters: ProjectsListFilters) {
@@ -14,5 +18,10 @@ export const projectsService = {
     if (filters.onlyArchived) query.set("onlyArchived", "true")
 
     return api.get<ProjectsListResponse>(`/projects?${query.toString()}`)
+  },
+
+  details(projectId: string, includeArchived = false) {
+    const query = includeArchived ? "?includeArchived=true" : ""
+    return api.get<ProjectDetailsResponse>(`/projects/${projectId}/details${query}`)
   },
 }

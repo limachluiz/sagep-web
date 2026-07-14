@@ -7,6 +7,7 @@ import { SessionsPage } from "@/features/auth/pages/sessions-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
 import { OperationalDashboardPage } from "@/features/dashboard/pages/operational-dashboard-page"
 import { ExecutiveDashboardPage } from "@/features/dashboard/pages/executive-dashboard-page"
+import { ProjectDetailsPage } from "@/features/projects/pages/project-details-page"
 import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
@@ -40,6 +41,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
                 <ProjectsListPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId"
+            element={
+              <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
+                <ProjectDetailsPage />
               </PermissionRoute>
             }
           />

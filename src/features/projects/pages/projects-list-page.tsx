@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
   Archive,
+  ArrowUpRight,
   ChevronLeft,
   ChevronRight,
   ClipboardList,
@@ -13,6 +14,7 @@ import {
   Users,
   X,
 } from "lucide-react"
+import { Link } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -213,6 +215,7 @@ export function ProjectsListPage() {
                   <TableHead>Atividades</TableHead>
                   <TableHead>Prazo</TableHead>
                   <TableHead>Atualização</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -242,6 +245,14 @@ export function ProjectsListPage() {
                       <p className="mt-1 text-xs text-muted-foreground">até {formatDate(project.endDate)}</p>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(project.updatedAt)}</TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild variant="ghost" size="sm">
+                        <Link to={`/projects/${project.id}${visibility === "archived" ? "?includeArchived=true" : ""}`}>
+                          Abrir
+                          <ArrowUpRight className="size-4" />
+                        </Link>
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
