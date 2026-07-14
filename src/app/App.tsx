@@ -7,6 +7,7 @@ import { SessionsPage } from "@/features/auth/pages/sessions-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
 import { OperationalDashboardPage } from "@/features/dashboard/pages/operational-dashboard-page"
 import { ExecutiveDashboardPage } from "@/features/dashboard/pages/executive-dashboard-page"
+import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 export default function App() {
@@ -34,6 +35,14 @@ export default function App() {
             }
           />
           <Route path="/acesso-negado" element={<AccessDeniedPage />} />
+          <Route
+            path="/projects"
+            element={
+              <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
+                <ProjectsListPage />
+              </PermissionRoute>
+            }
+          />
           <Route
             path="/sessions"
             element={
