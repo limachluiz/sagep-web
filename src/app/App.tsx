@@ -6,6 +6,7 @@ import { AccessDeniedPage } from "@/features/auth/pages/access-denied-page"
 import { SessionsPage } from "@/features/auth/pages/sessions-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
 import { OperationalDashboardPage } from "@/features/dashboard/pages/operational-dashboard-page"
+import { ExecutiveDashboardPage } from "@/features/dashboard/pages/executive-dashboard-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 export default function App() {
@@ -21,6 +22,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["dashboard.view_operational"]}>
                 <OperationalDashboardPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/executive"
+            element={
+              <PermissionRoute anyOf={["dashboard.view_executive"]}>
+                <ExecutiveDashboardPage />
               </PermissionRoute>
             }
           />
