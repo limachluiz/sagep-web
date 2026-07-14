@@ -1,11 +1,19 @@
 import { api } from "@/lib/api"
 import type {
+  AddProjectMemberPayload,
   ProjectDetailsResponse,
+  ProjectMemberMutationResponse,
+  ProjectMutationPayload,
+  ProjectMutationResponse,
   ProjectsListFilters,
   ProjectsListResponse,
 } from "./projects.types"
 
 export const projectsService = {
+  create(payload: ProjectMutationPayload) {
+    return api.post<ProjectMutationResponse>("/projects", payload)
+  },
+
   list(filters: ProjectsListFilters) {
     const query = new URLSearchParams({
       page: String(filters.page),
@@ -23,5 +31,17 @@ export const projectsService = {
   details(projectId: string, includeArchived = false) {
     const query = includeArchived ? "?includeArchived=true" : ""
     return api.get<ProjectDetailsResponse>(`/projects/${projectId}/details${query}`)
+  },
+
+  update(projectId: string, payload: ProjectMutationPayload) {
+    return api.patch<ProjectMutationResponse>(`/projects/${projectId}`, payload)
+  },
+
+  addMember(projectId: string, payload: AddProjectMemberPayload) {
+    return api.post<ProjectMemberMutationResponse>(`/projects/${projectId}/members`, payload)
+  },
+
+  removeMember(projectId: string, memberId: string) {
+    return api.delete<{ message: string }>(`/projects/${projectId}/members/${memberId}`)
   },
 }

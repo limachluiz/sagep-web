@@ -65,6 +65,37 @@ export type ProjectsListResponse = {
   }
 }
 
+export type ProjectMutationPayload = {
+  title: string
+  description?: string
+  status?: ProjectStatus
+  startDate?: string
+  endDate?: string
+}
+
+export type ProjectMutationResponse = {
+  id: string
+  projectCode: number
+  title: string
+  description: string | null
+  status: ProjectStatus
+  stage: ProjectStage
+  startDate: string | null
+  endDate: string | null
+  updatedAt: string
+}
+
+export type AddProjectMemberPayload = {
+  userCode: number
+  role?: string
+}
+
+export type ProjectMemberMutationResponse = {
+  id: string
+  role: string | null
+  user: ProjectPerson
+}
+
 export type ProjectPerson = {
   id: string
   userCode: number
@@ -95,7 +126,7 @@ export type ProjectDetailsResponse = {
     owner: ProjectPerson
     members: Array<{
       id: string
-      role: string
+      role: string | null
       user: ProjectPerson
     }>
     startDate: string | null

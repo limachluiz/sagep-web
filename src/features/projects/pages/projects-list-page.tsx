@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
   Archive,
@@ -9,12 +9,14 @@ import {
   ClipboardList,
   FileSpreadsheet,
   ListChecks,
+  Plus,
   RefreshCw,
   Search,
   Users,
   X,
 } from "lucide-react"
-import { Link } from "react-router"
+import { Link, useNavigate } from "react-router"
+import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -33,8 +35,9 @@ import {
 } from "@/components/ui/table"
 import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
+import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { projectsService } from "@/features/projects/projects.service"
-import type { ProjectStatus } from "@/features/projects/projects.types"
+import type { ProjectMutationPayload, ProjectStatus } from "@/features/projects/projects.types"
 
 const statusLabels: Record<ProjectStatus, string> = {
   PLANEJAMENTO: "Planejamento",
@@ -71,7 +74,10 @@ function formatDate(value: string | null) {
 }
 
 export function ProjectsListPage() {
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const hasPermission = useAuthStore((state) => state.hasPermission)
+  const canCreate = hasPermission("projects.edit_all") || hasPermission("projects.edit_own")
   const canViewArchived = hasPermission("projects.restore")
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -80,6 +86,18 @@ export function ProjectsListPage() {
   const [visibility, setVisibility] = useState<"active" | "archived">("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [createOpen, setCreateOpen] = useState(false)
+
+  const createMutation = useMutation({
+    mutationFn: (payload: ProjectMutationPayload) => projectsService.create(payload),
+    onSuccess: (project) => {
+      toast.success(`Projeto PRJ-${project.projectCode} criado com sucesso.`)
+      setCreateOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      navigate(`/projects/${project.id}`)
+    },
+    onError: (error) => toast.error(error.message),
+  })
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -131,10 +149,13 @@ export function ProjectsListPage() {
             Consulte o andamento, responsável, etapa documental e volume de atividades de cada projeto.
           </p>
         </div>
-        <Button variant="outline" className="gap-2" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}>
-          <RefreshCw className={projectsQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" className="gap-2" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}>
+            <RefreshCw className={projectsQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
+            Atualizar
+          </Button>
+          {canCreate && <Button className="gap-2" onClick={() => setCreateOpen(true)}><Plus className="size-4" />Novo projeto</Button>}
+        </div>
       </div>
 
       <Card className="border-none shadow-sm">
@@ -292,6 +313,13 @@ export function ProjectsListPage() {
           )}
         </CardContent>
       </Card>
+
+      <ProjectFormSheet
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        pending={createMutation.isPending}
+        onSubmit={async (payload) => { await createMutation.mutateAsync(payload) }}
+      />
     </div>
   )
 }

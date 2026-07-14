@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
   ArrowLeft,
@@ -7,6 +7,7 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   Clock3,
+  Edit3,
   FileCheck2,
   FileSpreadsheet,
   ListChecks,
@@ -19,18 +20,23 @@ import {
 import { Link, useParams, useSearchParams } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
+import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
+import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
 import { projectsService } from "@/features/projects/projects.service"
 import type {
   ProjectDetailsResponse,
+  ProjectMutationPayload,
   ProjectStatus,
 } from "@/features/projects/projects.types"
+import { useState } from "react"
+import { toast } from "sonner"
 
 const statusLabels: Record<ProjectStatus, string> = {
   PLANEJAMENTO: "Planejamento",
@@ -81,11 +87,7 @@ function formatDate(value: string | null, withTime = false) {
   return new Intl.DateTimeFormat("pt-BR", withTime ? { dateStyle: "short", timeStyle: "short" } : { dateStyle: "short" }).format(new Date(value))
 }
 
-function initials(name: string) {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
-}
-
-function ProjectOverview({ details }: { details: ProjectDetailsResponse }) {
+function ProjectOverview({ details, canManage }: { details: ProjectDetailsResponse; canManage: boolean }) {
   const milestoneEntries = Object.entries(details.workflow.milestones).filter(
     ([key]) => key !== "asBuiltRejectionReason" || details.workflow.milestones[key],
   )
@@ -140,32 +142,7 @@ function ProjectOverview({ details }: { details: ProjectDetailsResponse }) {
       </div>
 
       <div className="space-y-6">
-        <Card className="border-none shadow-sm">
-          <CardHeader><CardTitle>Equipe</CardTitle></CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Responsável</p>
-              <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-                <Avatar><AvatarFallback>{initials(details.project.owner.name)}</AvatarFallback></Avatar>
-                <div><p className="font-medium">{details.project.owner.name}</p><p className="text-xs text-muted-foreground">{details.project.owner.email}</p></div>
-              </div>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Membros</p>
-              {details.project.members.length ? (
-                <div className="space-y-2">
-                  {details.project.members.map((member) => (
-                    <div key={member.id} className="flex items-center gap-3 rounded-xl border p-3">
-                      <Avatar className="size-8"><AvatarFallback className="text-xs">{initials(member.user.name)}</AvatarFallback></Avatar>
-                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{member.user.name}</p><p className="truncate text-xs text-muted-foreground">{member.user.email}</p></div>
-                      <Badge variant="outline">{member.role}</Badge>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">Nenhum membro adicional.</p>}
-            </div>
-          </CardContent>
-        </Card>
+        <ProjectTeamCard details={details} canManage={canManage} />
 
         <Card className="border-none shadow-sm">
           <CardHeader><CardTitle>Datas do projeto</CardTitle></CardHeader>
@@ -272,12 +249,26 @@ function Timeline({ details }: { details: ProjectDetailsResponse }) {
 
 export function ProjectDetailsPage() {
   const { projectId } = useParams<{ projectId: string }>()
+  const queryClient = useQueryClient()
+  const user = useAuthStore((state) => state.user)
+  const hasPermission = useAuthStore((state) => state.hasPermission)
+  const [editOpen, setEditOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
     queryKey: ["projects", "details", projectId, includeArchived],
     queryFn: () => projectsService.details(projectId!, includeArchived),
     enabled: Boolean(projectId),
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: ProjectMutationPayload) => projectsService.update(projectId!, payload),
+    onSuccess: () => {
+      toast.success("Projeto atualizado com sucesso.")
+      setEditOpen(false)
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+    },
+    onError: (error) => toast.error(error.message),
   })
 
   if (detailsQuery.isLoading) {
@@ -294,6 +285,7 @@ export function ProjectDetailsPage() {
   }
 
   const details = detailsQuery.data
+  const canManage = hasPermission("projects.edit_all") || (hasPermission("projects.edit_own") && details.project.owner.id === user?.id)
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },
     { label: "Estimativas", value: details.operationalSummary.estimatesCount, icon: FileSpreadsheet },
@@ -313,9 +305,12 @@ export function ProjectDetailsPage() {
               <h1 className="mt-4 text-3xl font-semibold tracking-tight">{details.project.title}</h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
-            <Button variant="secondary" className="gap-2" onClick={() => detailsQuery.refetch()} disabled={detailsQuery.isFetching}>
-              {detailsQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar
-            </Button>
+            <div className="flex gap-2">
+              {canManage && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
+              <Button variant="secondary" className="gap-2" onClick={() => detailsQuery.refetch()} disabled={detailsQuery.isFetching}>
+                {detailsQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar
+              </Button>
+            </div>
           </div>
           <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
@@ -336,10 +331,18 @@ export function ProjectDetailsPage() {
           <TabsTrigger value="documents"><FileCheck2 data-icon="inline-start" />Documentos</TabsTrigger>
           <TabsTrigger value="timeline"><CalendarDays data-icon="inline-start" />Timeline</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview"><ProjectOverview details={details} /></TabsContent>
+        <TabsContent value="overview"><ProjectOverview details={details} canManage={canManage} /></TabsContent>
         <TabsContent value="documents"><Documents details={details} /></TabsContent>
         <TabsContent value="timeline"><Timeline details={details} /></TabsContent>
       </Tabs>
+
+      <ProjectFormSheet
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        project={{ ...details.project, status: details.workflow.status }}
+        pending={updateMutation.isPending}
+        onSubmit={async (payload) => { await updateMutation.mutateAsync(payload) }}
+      />
     </div>
   )
 }
