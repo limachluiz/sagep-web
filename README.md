@@ -44,10 +44,13 @@ npm run dev
 Caso o arquivo `.env.example` ainda não exista, crie `.env` com:
 
 ```env
-VITE_API_URL=http://localhost:3000
+VITE_API_URL=/api
+VITE_API_PROXY_TARGET=http://localhost:3000
 ```
 
-O endereço deve apontar para a API do SAGEP.
+Durante o desenvolvimento, o navegador acessa `/api` pela mesma origem do
+frontend e o Vite encaminha as requisições para o backend. Isso evita bloqueios
+de CORS no ambiente local. Reinicie `npm run dev` após alterar essas variáveis.
 
 ## Scripts
 
