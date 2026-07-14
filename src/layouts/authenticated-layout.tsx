@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Bell,
+  ChartNoAxesCombined,
   ClipboardList,
   FileText,
   Gauge,
@@ -37,6 +38,12 @@ const navigation: NavigationItem[] = [
     href: "/dashboard",
     icon: LayoutDashboard,
     anyOf: ["dashboard.view_operational"],
+  },
+  {
+    label: "Dashboard Executivo",
+    href: "/dashboard/executive",
+    icon: ChartNoAxesCombined,
+    anyOf: ["dashboard.view_executive"],
   },
   {
     label: "Projetos",
@@ -162,6 +169,7 @@ export function AuthenticatedLayout() {
               <NavLink
                 key={item.href}
                 to={item.href}
+                end={item.href === "/dashboard"}
                 className={({ isActive }) =>
                   [
                     "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition",
