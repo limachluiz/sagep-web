@@ -13,6 +13,8 @@ import {
   Landmark,
   ListChecks,
   Loader2,
+  PackageCheck,
+  ReceiptText,
   RefreshCw,
   Play,
   Route,
@@ -33,6 +35,7 @@ import { ProjectFormSheet } from "@/features/projects/components/project-form-sh
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
 import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
 import { CommitmentNoteDialog } from "@/features/projects/components/commitment-note-dialog"
+import { DateFlowDialog, ReviewAsBuiltDialog } from "@/features/projects/components/project-closing-dialogs"
 import { CreateDiexDialog } from "@/features/diex/components/create-diex-dialog"
 import { CreateServiceOrderDialog } from "@/features/service-orders/components/create-service-order-dialog"
 import { StartExecutionDialog } from "@/features/service-orders/components/start-execution-dialog"
@@ -272,6 +275,10 @@ export function ProjectDetailsPage() {
   const [commitmentNoteOpen, setCommitmentNoteOpen] = useState(false)
   const [createServiceOrderOpen, setCreateServiceOrderOpen] = useState(false)
   const [startExecutionOpen, setStartExecutionOpen] = useState(false)
+  const [receiveAsBuiltOpen, setReceiveAsBuiltOpen] = useState(false)
+  const [reviewAsBuiltOpen, setReviewAsBuiltOpen] = useState(false)
+  const [invoiceAttestationOpen, setInvoiceAttestationOpen] = useState(false)
+  const [completeServiceOpen, setCompleteServiceOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -310,6 +317,10 @@ export function ProjectDetailsPage() {
   const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
   const canIssueServiceOrder = hasPermission("service_orders.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA"
   const canStartExecution = canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA" && details.documents.serviceOrders.some((order) => !order.archivedAt)
+  const canReceiveAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "SERVICO_EM_EXECUCAO"
+  const canReviewAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "ANALISANDO_AS_BUILT"
+  const canAttestInvoice = canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && !details.workflow.milestones.invoiceAttestedAt
+  const canCompleteService = hasPermission("projects.complete") && canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && Boolean(details.workflow.milestones.invoiceAttestedAt)
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },
     { label: "Estimativas", value: details.operationalSummary.estimatesCount, icon: FileSpreadsheet },
@@ -329,7 +340,11 @@ export function ProjectDetailsPage() {
               <h1 className="mt-4 text-3xl font-semibold tracking-tight">{details.project.title}</h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
+              {canCompleteService && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCompleteServiceOpen(true)}><CheckCircle2 className="size-4" />Concluir serviço</Button>}
+              {canAttestInvoice && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setInvoiceAttestationOpen(true)}><ReceiptText className="size-4" />Atestar NF</Button>}
+              {canReviewAsBuilt && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setReviewAsBuiltOpen(true)}><ClipboardCheck className="size-4" />Analisar As-Built</Button>}
+              {canReceiveAsBuilt && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setReceiveAsBuiltOpen(true)}><PackageCheck className="size-4" />Receber As-Built</Button>}
               {canStartExecution && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setStartExecutionOpen(true)}><Play className="size-4" />Iniciar execução</Button>}
               {canIssueServiceOrder && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreateServiceOrderOpen(true)}><FileCheck2 className="size-4" />Emitir OS</Button>}
               {canRegisterCommitmentNote && (
@@ -430,6 +445,14 @@ export function ProjectDetailsPage() {
       {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); navigate(`/service-orders/${order.id}`) }} />}
 
       {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["service-orders-gantt"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+
+      {receiveAsBuiltOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={receiveAsBuiltOpen} onOpenChange={setReceiveAsBuiltOpen} title="Receber As-Built" description="Registre a data de recebimento para encaminhar o documento à análise técnica." fieldLabel="Data de recebimento" successMessage="Recebimento do As-Built registrado" submitLabel="Registrar recebimento" payload={(date) => ({ stage: "ANALISANDO_AS_BUILT", asBuiltReceivedAt: date })} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+
+      {reviewAsBuiltOpen && <ReviewAsBuiltDialog projectId={details.project.id} projectCode={details.project.projectCode} open={reviewAsBuiltOpen} onOpenChange={setReviewAsBuiltOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+
+      {invoiceAttestationOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={invoiceAttestationOpen} onOpenChange={setInvoiceAttestationOpen} title="Atestar Nota Fiscal" description="Confirme a data do atesto da Nota Fiscal após a aprovação do As-Built." fieldLabel="Data do atesto" successMessage="Atesto da Nota Fiscal registrado" submitLabel="Registrar atesto" payload={(date) => ({ stage: "ATESTAR_NF", invoiceAttestedAt: date })} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+
+      {completeServiceOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={completeServiceOpen} onOpenChange={setCompleteServiceOpen} title="Concluir serviço" description="Registre a conclusão definitiva do serviço. Esta ação encerra o workflow do projeto." fieldLabel="Data de conclusão" successMessage="Serviço concluído" submitLabel="Concluir serviço" payload={(date) => ({ stage: "SERVICO_CONCLUIDO", serviceCompletedAt: date })} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["service-orders-gantt"] }) }} />}
     </div>
   )
 }

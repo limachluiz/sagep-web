@@ -144,7 +144,14 @@ export type ProjectFlowPayload = {
   commitmentNoteNumber?: string
   commitmentNoteReceivedAt?: string
   executionStartedAt?: string
+  asBuiltReceivedAt?: string
+  invoiceAttestedAt?: string
+  serviceCompletedAt?: string
 }
+
+export type AsBuiltReviewPayload =
+  | { approved: true; reviewedAt: string; asBuiltLink: string }
+  | { approved: false; reviewedAt: string; rejectionReason: string }
 
 export type AddProjectMemberPayload = {
   userCode: number
