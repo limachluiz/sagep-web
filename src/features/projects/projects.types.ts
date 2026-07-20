@@ -118,7 +118,6 @@ export type ProjectMutationPayload = {
   projectType: ProjectType
   omId: string
   description?: string
-  status?: ProjectStatus
   startDate?: string
 }
 

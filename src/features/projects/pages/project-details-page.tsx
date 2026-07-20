@@ -395,7 +395,7 @@ export function ProjectDetailsPage() {
       <ProjectFormSheet
         open={editOpen}
         onOpenChange={setEditOpen}
-        project={{ ...details.project, status: details.workflow.status }}
+        project={details.project}
         pending={updateMutation.isPending}
         onSubmit={async (payload) => { await updateMutation.mutateAsync(payload) }}
       />

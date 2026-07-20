@@ -23,7 +23,6 @@ import type {
   FederativeUnit,
   ProjectDetailsResponse,
   ProjectMutationPayload,
-  ProjectStatus,
   ProjectType,
 } from "@/features/projects/projects.types"
 
@@ -33,19 +32,10 @@ const schema = z.object({
   stateUf: z.enum(["AM", "RO", "RR", "AC"], { message: "Selecione o estado." }),
   omId: z.string().min(1, "Selecione a Organização Militar."),
   description: z.string(),
-  status: z.enum(["PLANEJAMENTO", "EM_ANDAMENTO", "PAUSADO", "CONCLUIDO", "CANCELADO"]),
   startDate: z.string(),
 })
 
 type FormValues = z.infer<typeof schema>
-
-const statusLabels: Record<ProjectStatus, string> = {
-  PLANEJAMENTO: "Planejamento",
-  EM_ANDAMENTO: "Em andamento",
-  PAUSADO: "Pausado",
-  CONCLUIDO: "Concluído",
-  CANCELADO: "Cancelado",
-}
 
 const projectTypeLabels: Record<ProjectType, string> = {
   CFTV: "CFTV",
@@ -62,7 +52,7 @@ const stateLabels: Record<FederativeUnit, string> = {
 type ProjectFormSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  project?: ProjectDetailsResponse["project"] & { status: ProjectStatus }
+  project?: ProjectDetailsResponse["project"]
   pending?: boolean
   onSubmit: (payload: ProjectMutationPayload) => Promise<void>
 }
@@ -81,11 +71,9 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
       stateUf: undefined,
       omId: "",
       description: "",
-      status: "PLANEJAMENTO",
       startDate: "",
     },
   })
-  const status = useWatch({ control: form.control, name: "status" })
   const projectType = useWatch({ control: form.control, name: "projectType" })
   const stateUf = useWatch({ control: form.control, name: "stateUf" })
   const omId = useWatch({ control: form.control, name: "omId" })
@@ -107,7 +95,6 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
       stateUf: project?.om?.stateUf ?? undefined,
       omId: project?.omId ?? "",
       description: project?.description ?? "",
-      status: project?.status ?? "PLANEJAMENTO",
       startDate: dateInputValue(project?.startDate),
     })
   }, [form, open, project])
@@ -117,7 +104,6 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
       title: values.title.trim(),
       projectType: values.projectType,
       omId: values.omId,
-      status: values.status,
     }
 
     if (values.description.trim()) payload.description = values.description.trim()
@@ -205,14 +191,11 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>Status</Label>
-            <Select value={status} onValueChange={(value) => form.setValue("status", value as ProjectStatus, { shouldValidate: true })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="rounded-xl border bg-muted/40 p-4 text-sm">
+            <p className="font-medium">Status gerenciado pelo workflow</p>
+            <p className="mt-1 leading-5 text-muted-foreground">
+              O projeto inicia em Planejamento, passa para Em andamento após a estimativa e é concluído ao final do fluxo.
+            </p>
           </div>
 
           <div className="space-y-2">
