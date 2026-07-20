@@ -29,6 +29,7 @@ import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
+import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
 import { projectsService } from "@/features/projects/projects.service"
 import type {
   ProjectDetailsResponse,
@@ -259,6 +260,7 @@ export function ProjectDetailsPage() {
   const user = useAuthStore((state) => state.user)
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const [editOpen, setEditOpen] = useState(false)
+  const [creditNoteOpen, setCreditNoteOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -292,6 +294,7 @@ export function ProjectDetailsPage() {
 
   const details = detailsQuery.data
   const canManage = hasPermission("projects.edit_all") || (hasPermission("projects.edit_own") && details.project.owner.id === user?.id)
+  const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },
     { label: "Estimativas", value: details.operationalSummary.estimatesCount, icon: FileSpreadsheet },
@@ -312,6 +315,11 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex gap-2">
+              {canRegisterCreditNote && (
+                <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreditNoteOpen(true)}>
+                  <CircleDollarSign className="size-4" />Registrar Nota de Crédito
+                </Button>
+              )}
               {canManage && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               <Button variant="secondary" className="gap-2" onClick={() => detailsQuery.refetch()} disabled={detailsQuery.isFetching}>
                 {detailsQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar
@@ -349,6 +357,19 @@ export function ProjectDetailsPage() {
         pending={updateMutation.isPending}
         onSubmit={async (payload) => { await updateMutation.mutateAsync(payload) }}
       />
+
+      {creditNoteOpen && (
+        <CreditNoteDialog
+          projectId={details.project.id}
+          projectCode={details.project.projectCode}
+          open={creditNoteOpen}
+          onOpenChange={setCreditNoteOpen}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["projects"] })
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+          }}
+        />
+      )}
     </div>
   )
 }

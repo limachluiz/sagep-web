@@ -2,6 +2,7 @@ import { api } from "@/lib/api"
 import type {
   AddProjectMemberPayload,
   ProjectDetailsResponse,
+  ProjectFlowPayload,
   ProjectMemberMutationResponse,
   ProjectKanbanResponse,
   ProjectMutationPayload,
@@ -44,6 +45,10 @@ export const projectsService = {
 
   update(projectId: string, payload: ProjectMutationPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}`, payload)
+  },
+
+  updateFlow(projectId: string, payload: ProjectFlowPayload) {
+    return api.patch<ProjectMutationResponse>(`/projects/${projectId}/flow`, payload)
   },
 
   moveKanban(projectId: string, stage: string) {

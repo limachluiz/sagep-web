@@ -137,6 +137,12 @@ export type ProjectMutationResponse = {
   updatedAt: string
 }
 
+export type ProjectFlowPayload = {
+  stage: ProjectStage
+  creditNoteNumber?: string
+  creditNoteReceivedAt?: string
+}
+
 export type AddProjectMemberPayload = {
   userCode: number
   role?: string
