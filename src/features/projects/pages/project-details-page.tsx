@@ -17,7 +17,6 @@ import {
   ReceiptText,
   RefreshCw,
   Play,
-  Route,
   UserRound,
   Users,
 } from "lucide-react"
@@ -33,6 +32,7 @@ import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
+import { ProjectWorkflowProgress } from "@/features/projects/components/project-workflow-progress"
 import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
 import { CommitmentNoteDialog } from "@/features/projects/components/commitment-note-dialog"
 import { DateFlowDialog, ReviewAsBuiltDialog } from "@/features/projects/components/project-closing-dialogs"
@@ -321,6 +321,25 @@ export function ProjectDetailsPage() {
   const canReviewAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "ANALISANDO_AS_BUILT"
   const canAttestInvoice = canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && !details.workflow.milestones.invoiceAttestedAt
   const canCompleteService = hasPermission("projects.complete") && canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && Boolean(details.workflow.milestones.invoiceAttestedAt)
+  const primaryAction = canCompleteService
+    ? { label: "Concluir serviço", icon: CheckCircle2, run: () => setCompleteServiceOpen(true) }
+    : canAttestInvoice
+      ? { label: "Atestar NF", icon: ReceiptText, run: () => setInvoiceAttestationOpen(true) }
+      : canReviewAsBuilt
+        ? { label: "Analisar As-Built", icon: ClipboardCheck, run: () => setReviewAsBuiltOpen(true) }
+        : canReceiveAsBuilt
+          ? { label: "Receber As-Built", icon: PackageCheck, run: () => setReceiveAsBuiltOpen(true) }
+          : canStartExecution
+            ? { label: "Iniciar execução", icon: Play, run: () => setStartExecutionOpen(true) }
+            : canIssueServiceOrder
+              ? { label: "Emitir OS", icon: FileCheck2, run: () => setCreateServiceOrderOpen(true) }
+              : canRegisterCommitmentNote
+                ? { label: "Registrar Nota de Empenho", icon: Landmark, run: () => setCommitmentNoteOpen(true) }
+                : canCreateDiex
+                  ? { label: "Emitir DIEx", icon: ClipboardCheck, run: () => setCreateDiexOpen(true) }
+                  : canRegisterCreditNote
+                    ? { label: "Registrar Nota de Crédito", icon: CircleDollarSign, run: () => setCreditNoteOpen(true) }
+                    : null
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },
     { label: "Estimativas", value: details.operationalSummary.estimatesCount, icon: FileSpreadsheet },
@@ -341,41 +360,23 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {canCompleteService && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCompleteServiceOpen(true)}><CheckCircle2 className="size-4" />Concluir serviço</Button>}
-              {canAttestInvoice && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setInvoiceAttestationOpen(true)}><ReceiptText className="size-4" />Atestar NF</Button>}
-              {canReviewAsBuilt && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setReviewAsBuiltOpen(true)}><ClipboardCheck className="size-4" />Analisar As-Built</Button>}
-              {canReceiveAsBuilt && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setReceiveAsBuiltOpen(true)}><PackageCheck className="size-4" />Receber As-Built</Button>}
-              {canStartExecution && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setStartExecutionOpen(true)}><Play className="size-4" />Iniciar execução</Button>}
-              {canIssueServiceOrder && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreateServiceOrderOpen(true)}><FileCheck2 className="size-4" />Emitir OS</Button>}
-              {canRegisterCommitmentNote && (
-                <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCommitmentNoteOpen(true)}>
-                  <Landmark className="size-4" />Registrar Nota de Empenho
-                </Button>
-              )}
-              {canCreateDiex && (
-                <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreateDiexOpen(true)}>
-                  <ClipboardCheck className="size-4" />Emitir DIEx
-                </Button>
-              )}
-              {canRegisterCreditNote && (
-                <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreditNoteOpen(true)}>
-                  <CircleDollarSign className="size-4" />Registrar Nota de Crédito
-                </Button>
-              )}
               {canManage && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               <Button variant="secondary" className="gap-2" onClick={() => detailsQuery.refetch()} disabled={detailsQuery.isFetching}>
                 {detailsQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar
               </Button>
             </div>
           </div>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
-              <div className="flex items-start gap-3"><Route className="mt-0.5 size-5 text-sidebar-primary" /><div><p className="text-xs text-sidebar-foreground/60">Etapa atual</p><p className="mt-1 font-semibold">{stageLabels[details.workflow.stage]}</p></div></div>
-              <div className="md:max-w-md md:text-right"><p className="text-xs text-sidebar-foreground/60">Próxima ação</p><p className="mt-1 font-semibold text-sidebar-primary">{details.workflow.nextAction.label}</p><p className="mt-1 text-xs text-sidebar-foreground/60">{details.workflow.nextAction.description}</p></div>
-            </div>
-          </div>
         </CardContent>
       </Card>
+
+      <ProjectWorkflowProgress
+        stage={details.workflow.stage}
+        status={details.workflow.status}
+        stageLabel={stageLabels[details.workflow.stage]}
+        nextAction={details.workflow.nextAction}
+        archived={Boolean(details.project.archivedAt)}
+        action={primaryAction ? (() => { const ActionIcon = primaryAction.icon; return <Button onClick={primaryAction.run} className="w-full sm:w-auto"><ActionIcon className="size-4" />{primaryAction.label}</Button> })() : undefined}
+      />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metricCards.map((metric) => { const Icon = metric.icon; return <Card key={metric.label} className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">{metric.label}</p><p className="mt-2 text-2xl font-semibold">{metric.value}</p></div><div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="size-5" /></div></CardContent></Card> })}
