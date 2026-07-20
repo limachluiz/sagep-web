@@ -7,6 +7,7 @@ import {
   Columns3,
   ClipboardList,
   FileText,
+  Files,
   Gauge,
   Landmark,
   LayoutDashboard,
@@ -78,6 +79,12 @@ const navigation: NavigationItem[] = [
     href: "/service-orders",
     icon: ShieldCheck,
     anyOf: ["service_orders.issue", "projects.view_all"],
+  },
+  {
+    label: "ATAs e Saldos",
+    href: "/atas",
+    icon: Files,
+    anyOf: ["atas.manage"],
   },
   {
     label: "Organizações Militares",

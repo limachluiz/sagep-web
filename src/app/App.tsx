@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from "react-router"
 
 import { ProtectedRoute } from "@/features/auth/components/protected-route"
 import { PermissionRoute } from "@/features/auth/components/permission-route"
+import { AtaDetailsPage } from "@/features/atas/pages/ata-details-page"
+import { AtasPage } from "@/features/atas/pages/atas-page"
 import { AccessDeniedPage } from "@/features/auth/pages/access-denied-page"
 import { SessionsPage } from "@/features/auth/pages/sessions-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
@@ -132,6 +134,22 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["diex.issue", "estimates.view_all"]}>
                 <DiexDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/atas"
+            element={
+              <PermissionRoute anyOf={["atas.manage"]}>
+                <AtasPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/atas/:ataId"
+            element={
+              <PermissionRoute anyOf={["atas.manage"]}>
+                <AtaDetailsPage />
               </PermissionRoute>
             }
           />
