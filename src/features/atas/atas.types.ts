@@ -85,7 +85,7 @@ export type AtaItem = {
   balance: AtaBalance
   createdAt: string
   updatedAt: string
-  ata: Pick<Ata, "id" | "ataCode" | "number" | "type" | "vendorName" | "isActive">
+  ata: Pick<Ata, "id" | "ataCode" | "number" | "type" | "vendorName" | "isActive" | "externalUasg">
   coverageGroup: AtaCoverageGroup
 }
 
@@ -97,6 +97,43 @@ export type AtaItemPayload = {
   unitPrice: number
   initialQuantity: number
   notes?: string
+}
+
+export type AtaItemMovement = {
+  id: string
+  movementType: "RESERVE" | "RELEASE" | "CONSUME" | "EXTERNAL_CONSUMPTION" | "REVERSE_CONSUME" | "ADJUSTMENT"
+  quantity: string
+  unitPrice: string
+  totalAmount: string
+  summary: string
+  actorName: string | null
+  projectId: string | null
+  projectCode: number | null
+  estimateId: string | null
+  estimateCode: number | null
+  diexRequestId: string | null
+  diexCode: number | null
+  serviceOrderId: string | null
+  serviceOrderCode: number | null
+  createdAt: string
+}
+
+export type ExternalConsumptionPayload = {
+  quantity: number
+  reason: string
+  source: string
+  externalStatus: string
+  externalReference: string
+  commitmentNumber?: string
+  unit?: string
+  notes?: string
+}
+
+export type ExternalConsumptionResponse = {
+  item: AtaItem
+  movement: AtaItemMovement
+  localBalance: AtaBalance
+  message: string
 }
 
 export type ListEnvelope<T> = {

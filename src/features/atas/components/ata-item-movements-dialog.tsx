@@ -1,0 +1,21 @@
+import { useQuery } from "@tanstack/react-query"
+import { AlertTriangle, History, Loader2 } from "lucide-react"
+import { Link } from "react-router"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { atasService } from "@/features/atas/atas.service"
+import type { AtaItem, AtaItemMovement } from "@/features/atas/atas.types"
+
+const movementLabels: Record<AtaItemMovement["movementType"], string> = { RESERVE: "Reserva", RELEASE: "Liberação", CONSUME: "Consumo", EXTERNAL_CONSUMPTION: "Consumo externo", REVERSE_CONSUME: "Estorno", ADJUSTMENT: "Ajuste" }
+function formatDate(value: string) { return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) }
+
+export function AtaItemMovementsDialog({ item, open, onOpenChange }: { item: AtaItem; open: boolean; onOpenChange: (open: boolean) => void }) {
+  const query = useQuery({ queryKey: ["ata-items", item.id, "movements"], queryFn: () => atasService.listItemMovements(item.id), enabled: open })
+  return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-4xl"><DialogHeader><DialogTitle className="flex items-center gap-2"><History className="size-5 text-primary" />Histórico de saldo · {item.referenceCode}</DialogTitle><DialogDescription>{item.description} — disponível: {Number(item.balance.availableQuantity).toLocaleString("pt-BR")} {item.unit}.</DialogDescription></DialogHeader>
+    {query.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar o histórico</AlertTitle><AlertDescription>{query.error.message}</AlertDescription></Alert>}
+    {query.isLoading ? <div className="flex justify-center py-12"><Loader2 className="size-6 animate-spin text-primary" /></div> : query.data?.length ? <div className="overflow-x-auto rounded-xl border"><Table><TableHeader><TableRow><TableHead>Data</TableHead><TableHead>Movimento</TableHead><TableHead>Resumo</TableHead><TableHead>Vínculo</TableHead><TableHead>Responsável</TableHead><TableHead className="text-right">Quantidade</TableHead><TableHead className="text-right">Valor</TableHead></TableRow></TableHeader><TableBody>{query.data.map((movement) => <TableRow key={movement.id}><TableCell className="whitespace-nowrap text-xs">{formatDate(movement.createdAt)}</TableCell><TableCell><Badge variant={movement.movementType === "CONSUME" || movement.movementType === "EXTERNAL_CONSUMPTION" ? "default" : movement.movementType === "REVERSE_CONSUME" || movement.movementType === "RELEASE" ? "secondary" : "outline"}>{movementLabels[movement.movementType]}</Badge></TableCell><TableCell className="max-w-xs text-xs">{movement.summary}</TableCell><TableCell className="text-xs">{movement.projectId && movement.projectCode ? <Link className="text-primary hover:underline" to={`/projects/${movement.projectId}`}>PRJ-{movement.projectCode}</Link> : "—"}{movement.estimateCode ? ` · EST-${movement.estimateCode}` : ""}{movement.diexCode ? ` · DIEx-${movement.diexCode}` : ""}{movement.serviceOrderCode ? ` · OS-${movement.serviceOrderCode}` : ""}</TableCell><TableCell className="text-xs">{movement.actorName || "Sistema"}</TableCell><TableCell className="text-right font-medium">{Number(movement.quantity).toLocaleString("pt-BR")}</TableCell><TableCell className="text-right">{Number(movement.totalAmount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</TableCell></TableRow>)}</TableBody></Table></div> : <div className="py-14 text-center"><History className="mx-auto size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhuma movimentação registrada</p><p className="mt-1 text-sm text-muted-foreground">O histórico será preenchido por reservas, consumos, liberações e ajustes.</p></div>}
+    <DialogFooter><Button variant="outline" onClick={() => onOpenChange(false)}>Fechar</Button></DialogFooter></DialogContent></Dialog>
+}

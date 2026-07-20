@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 import type { FederativeUnit } from "@/features/projects/projects.types"
-import type { Ata, AtaItem, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ListEnvelope } from "./atas.types"
+import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ExternalConsumptionPayload, ExternalConsumptionResponse, ListEnvelope } from "./atas.types"
 
 export const atasService = {
   list(filters: { page?: number; pageSize?: number; search?: string; type?: AtaType; stateUf?: FederativeUnit; active?: boolean } = {}) {
@@ -25,6 +25,8 @@ export const atasService = {
 
   createItem(ataId: string, payload: AtaItemPayload) { return api.post<AtaItem>(`/atas/${ataId}/items`, payload) },
   updateItem(itemId: string, payload: Partial<AtaItemPayload> & { isActive?: boolean }) { return api.patch<AtaItem>(`/ata-items/${itemId}`, payload) },
+  listItemMovements(itemId: string) { return api.get<AtaItemMovement[]>(`/ata-items/${itemId}/movements`) },
+  registerExternalConsumption(itemId: string, payload: ExternalConsumptionPayload) { return api.post<ExternalConsumptionResponse>(`/ata-items/${itemId}/register-external-consumption`, payload) },
 
   previewComprasGov(filters: { uasg: string; numeroPregao: string; anoPregao: string; numeroAta?: string }) {
     const query = new URLSearchParams({ uasg: filters.uasg, numeroPregao: filters.numeroPregao, anoPregao: filters.anoPregao })
