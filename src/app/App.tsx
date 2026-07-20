@@ -9,6 +9,7 @@ import { OperationalDashboardPage } from "@/features/dashboard/pages/operational
 import { ExecutiveDashboardPage } from "@/features/dashboard/pages/executive-dashboard-page"
 import { EstimateDetailsPage } from "@/features/estimates/pages/estimate-details-page"
 import { EstimatesListPage } from "@/features/estimates/pages/estimates-list-page"
+import { CreateEstimatePage } from "@/features/estimates/pages/create-estimate-page"
 import { ProjectDetailsPage } from "@/features/projects/pages/project-details-page"
 import { ProjectsKanbanPage } from "@/features/projects/pages/projects-kanban-page"
 import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
@@ -85,6 +86,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["estimates.view_all", "estimates.create", "estimates.edit"]}>
                 <EstimateDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/estimates/new"
+            element={
+              <PermissionRoute anyOf={["estimates.create"]}>
+                <CreateEstimatePage />
               </PermissionRoute>
             }
           />

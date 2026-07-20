@@ -110,3 +110,63 @@ export type EstimatesListResponse = {
   filters: Record<string, unknown>
   links: { self: string }
 }
+
+export type Ata = {
+  id: string
+  ataCode: number
+  number: string
+  type: "CFTV" | "FIBRA_OPTICA"
+  vendorName: string
+  managingAgency: string | null
+  validFrom: string | null
+  validUntil: string | null
+  isActive: boolean
+  coverageGroups: Array<{
+    id: string
+    code: string
+    name: string
+    description: string | null
+    localities: Array<{
+      id: string
+      cityName: string
+      stateUf: FederativeUnit
+    }>
+  }>
+}
+
+export type AtaItem = {
+  id: string
+  ataItemCode: number
+  referenceCode: string
+  description: string
+  unit: string
+  unitPrice: string
+  initialQuantity: string
+  isActive: boolean
+  coverageGroup: Ata["coverageGroups"][number]
+  balance: EstimateBalance
+}
+
+export type ListEnvelope<T> = {
+  items: T[]
+  meta: {
+    page: number
+    pageSize: number
+    totalItems: number
+    totalPages: number
+    hasNextPage: boolean
+    hasPreviousPage: boolean
+  }
+}
+
+export type CreateEstimatePayload = {
+  projectId: string
+  ataId: string
+  coverageGroupId: string
+  omId: string
+  notes?: string
+  items: Array<{
+    ataItemId: string
+    quantity: number
+  }>
+}

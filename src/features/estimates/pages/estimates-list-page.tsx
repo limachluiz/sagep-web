@@ -5,6 +5,7 @@ import {
   ChevronLeft,
   ChevronRight,
   FileSpreadsheet,
+  Plus,
   RefreshCw,
   Search,
   X,
@@ -21,6 +22,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { estimatesService } from "@/features/estimates/estimates.service"
 import type { EstimateStatus } from "@/features/estimates/estimates.types"
+import { useAuthStore } from "@/features/auth/auth.store"
 import type { FederativeUnit } from "@/features/projects/projects.types"
 
 const statusLabels: Record<EstimateStatus, string> = {
@@ -54,6 +56,7 @@ function formatDate(value: string) {
 }
 
 export function EstimatesListPage() {
+  const canCreate = useAuthStore((state) => state.hasPermission("estimates.create"))
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [status, setStatus] = useState<EstimateStatus | "all">("all")
@@ -108,15 +111,22 @@ export function EstimatesListPage() {
             Consulte valores, itens de ATA, destino e situação das estimativas vinculadas aos projetos.
           </p>
         </div>
-        <Button
-          variant="outline"
-          className="gap-2"
-          onClick={() => estimatesQuery.refetch()}
-          disabled={estimatesQuery.isFetching}
-        >
-          <RefreshCw className={estimatesQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => estimatesQuery.refetch()}
+            disabled={estimatesQuery.isFetching}
+          >
+            <RefreshCw className={estimatesQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
+            Atualizar
+          </Button>
+          {canCreate && (
+            <Button asChild className="gap-2">
+              <Link to="/estimates/new"><Plus className="size-4" />Nova estimativa</Link>
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card className="border-none shadow-sm">
