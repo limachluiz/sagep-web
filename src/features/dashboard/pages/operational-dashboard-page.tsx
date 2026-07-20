@@ -11,7 +11,9 @@ import {
   PackageSearch,
   RefreshCw,
   ShieldAlert,
+  Target,
 } from "lucide-react"
+import { Link } from "react-router"
 import {
   Bar,
   BarChart,
@@ -32,6 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { dashboardService } from "@/features/dashboard/dashboard.service"
+import { operationalIndicators } from "@/features/dashboard/dashboard-indicators"
 import type {
   DashboardOperationalResponse,
   OperationalAlert,
@@ -90,6 +93,7 @@ function AlertBadge({ alert }: { alert: OperationalAlert }) {
 }
 
 function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
+  const indicators = operationalIndicators(data)
   const pendingData = [
     { stage: "Nota de Crédito", total: data.pendingByStage.awaitingCreditNote },
     { stage: "DIEx", total: data.pendingByStage.awaitingDiex },
@@ -135,6 +139,20 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
 
   return (
     <>
+      <Card className="overflow-hidden border-none bg-slate-950 text-white shadow-lg">
+        <CardContent className="p-6 lg:p-7">
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
+            <div className="max-w-xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Situação operacional</Badge><h2 className="mt-3 text-2xl font-semibold">Prioridades que exigem atuação</h2><p className="mt-2 text-sm leading-6 text-slate-300">Visão consolidada dos gargalos documentais, projetos sem avanço e riscos de saldo que podem comprometer a execução.</p></div>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Pendências</dt><dd className="mt-1 text-2xl font-semibold">{indicators.totalPending}</dd></div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Alertas urgentes</dt><dd className="mt-1 text-2xl font-semibold text-amber-300">{indicators.urgentAlerts}</dd></div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Sem avanço</dt><dd className="mt-1 text-2xl font-semibold">{indicators.staleProjects}</dd></div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Itens em risco</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.inventoryAtRisk}</dd></div>
+            </dl>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => {
           const Icon = metric.icon
@@ -163,14 +181,14 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
           <CardHeader>
             <CardTitle>Pendências por etapa documental</CardTitle>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-80" aria-label="Gráfico de pendências por etapa">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={pendingData} margin={{ left: 8, right: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis dataKey="stage" tickLine={false} axisLine={false} fontSize={11} />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+              <BarChart data={pendingData} layout="vertical" margin={{ left: 12, right: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} />
+                <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
+                <YAxis type="category" dataKey="stage" width={105} tickLine={false} axisLine={false} fontSize={11} />
                 <Tooltip />
-                <Bar dataKey="total" name="Projetos" radius={[8, 8, 0, 0]} fill="#66733c" />
+                <Bar dataKey="total" name="Projetos" radius={[0, 8, 8, 0]} fill="#66733c" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -214,7 +232,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
           </CardHeader>
           <CardContent className="space-y-3">
             {data.alerts.items.length ? data.alerts.items.slice(0, 6).map((alert) => (
-              <div key={alert.id} className="rounded-2xl border p-4">
+              <Link key={alert.id} to={alert.detailsPath} className="block rounded-2xl border p-4 transition hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium">{alert.title}</p>
@@ -226,7 +244,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                   <span>Próxima ação: {alert.nextAction.label}</span>
                   {alert.daysSinceUpdate !== undefined && <span>{alert.daysSinceUpdate} dias</span>}
                 </div>
-              </div>
+              </Link>
             )) : (
               <div className="flex flex-col items-center py-12 text-center">
                 <CheckCircle2 className="size-10 text-primary" />
@@ -244,7 +262,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
           </CardHeader>
           <CardContent className="space-y-3">
             {data.operationalQueue.length ? data.operationalQueue.slice(0, 7).map((item) => (
-              <div key={item.id} className="flex flex-col gap-3 rounded-2xl border p-4 md:flex-row md:items-center md:justify-between">
+              <Link key={item.id} to={item.detailsPath} className="flex flex-col gap-3 rounded-2xl border p-4 transition hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:flex-row md:items-center md:justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <FileWarning className="size-4 text-primary" />
@@ -258,7 +276,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                   <Badge variant="secondary">{item.nextAction.label}</Badge>
                   <p className="mt-2 text-xs text-muted-foreground">Atualizado em {formatDate(item.updatedAt)}</p>
                 </div>
-              </div>
+              </Link>
             )) : (
               <div className="py-12 text-center text-sm text-muted-foreground">Nenhum projeto na fila operacional.</div>
             )}
@@ -314,6 +332,11 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><Target className="size-5 text-primary" />Ações mais demandadas</CardTitle><Badge variant="outline">Carga de trabalho</Badge></CardHeader>
+        <CardContent>{data.frequentNextActions.length ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{data.frequentNextActions.slice(0, 8).map((action, index) => <div key={action.label} className="rounded-xl border p-4"><div className="flex items-center justify-between gap-3"><span className="flex size-7 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">{index + 1}</span><Badge variant="secondary">{action.count}</Badge></div><p className="mt-3 text-sm font-medium">{action.label}</p></div>)}</div> : <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma ação pendente no momento.</p>}</CardContent>
+      </Card>
     </>
   )
 }
@@ -341,7 +364,7 @@ export function OperationalDashboardPage() {
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Select value={String(staleDays)} onValueChange={(value) => setStaleDays(Number(value))}>
-            <SelectTrigger className="w-full sm:w-52"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full sm:w-52" aria-label="Período sem avanço"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7">Sem avanço há 7 dias</SelectItem>
               <SelectItem value="15">Sem avanço há 15 dias</SelectItem>

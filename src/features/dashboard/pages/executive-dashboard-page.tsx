@@ -10,6 +10,9 @@ import {
   PackageSearch,
   RefreshCw,
   TrendingUp,
+  Activity,
+  Ban,
+  Target,
 } from "lucide-react"
 import {
   Bar,
@@ -34,6 +37,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dashboardService } from "@/features/dashboard/dashboard.service"
+import { executiveIndicators } from "@/features/dashboard/dashboard-indicators"
 import type {
   AmountBreakdown,
   DashboardExecutiveFilters,
@@ -104,9 +108,7 @@ function RankingList({ items }: { items: AmountBreakdown[] }) {
 }
 
 function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
-  const completionRate = data.summary.projectsTotal
-    ? (data.summary.projectsCompleted / data.summary.projectsTotal) * 100
-    : 0
+  const indicators = executiveIndicators(data)
 
   const metrics = [
     {
@@ -117,7 +119,7 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
     },
     {
       label: "Taxa de conclusão",
-      value: `${completionRate.toFixed(1)}%`,
+      value: `${indicators.completionRate.toFixed(1)}%`,
       helper: `${data.summary.projectsCompleted} concluídos`,
       icon: TrendingUp,
     },
@@ -154,7 +156,21 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <Card className="overflow-hidden border-none bg-slate-950 text-white shadow-lg">
+        <CardContent className="p-6 lg:p-8">
+          <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
+            <div className="max-w-2xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Síntese para decisão</Badge><h2 className="mt-3 text-2xl font-semibold lg:text-3xl">Portfólio, execução financeira e resultado</h2><p className="mt-2 text-sm leading-6 text-slate-300">Leitura executiva para acompanhamento da carteira, eficiência documental e riscos que demandam direcionamento da chefia.</p></div>
+            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[600px]">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Carteira estimada</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalEstimatedAmount)}</dd></div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Valor com OS</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalWithServiceOrder)}</dd></div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Conversão até OS</dt><dd className="mt-1 text-2xl font-semibold text-emerald-300">{indicators.serviceOrderConversionRate.toFixed(1)}%</dd></div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Projetos abertos</dt><dd className="mt-1 text-2xl font-semibold">{data.summary.projectsOpen}</dd></div>
+            </dl>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map((metric) => {
           const Icon = metric.icon
           return (
@@ -170,6 +186,13 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
             </Card>
           )
         })}
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><Activity className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Carteira em aberto</p><p className="mt-1 text-2xl font-semibold">{indicators.openRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsOpen} projetos ativos</p></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><Ban className="size-5 text-destructive" /><p className="mt-4 text-sm text-muted-foreground">Taxa de cancelamento</p><p className="mt-1 text-2xl font-semibold">{indicators.cancellationRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsCanceled} cancelados</p></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><Target className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Conversão até DIEx</p><p className="mt-1 text-2xl font-semibold">{indicators.diexConversionRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">Sobre o valor estimado</p></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><PackageSearch className="size-5 text-amber-600" /><p className="mt-4 text-sm text-muted-foreground">Risco de abastecimento</p><p className="mt-1 text-2xl font-semibold">{data.summary.ataItemsAtRisk + data.summary.ataItemsInsufficient}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.ataItemsInsufficient} itens insuficientes</p></CardContent></Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -188,6 +211,7 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
+          <div className="grid grid-cols-3 gap-2 border-t px-5 py-4 text-center text-xs"><div><p className="text-muted-foreground">Estimado → DIEx</p><p className="mt-1 font-semibold">{indicators.diexConversionRate.toFixed(1)}%</p></div><div><p className="text-muted-foreground">Estimado → OS</p><p className="mt-1 font-semibold">{indicators.serviceOrderConversionRate.toFixed(1)}%</p></div><div><p className="text-muted-foreground">Conclusão</p><p className="mt-1 font-semibold">{indicators.completionRate.toFixed(1)}%</p></div></div>
         </Card>
 
         <Card className="border-none shadow-sm">
@@ -208,8 +232,17 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Nenhum projeto no período.</div>
             )}
           </CardContent>
+          {stages.length > 0 && <div className="grid grid-cols-2 gap-x-4 gap-y-2 border-t px-5 py-4 text-xs">{stages.slice(0, 8).map((item, index) => <div key={item.label} className="flex items-center justify-between gap-2"><span className="flex min-w-0 items-center gap-2"><span className="size-2 shrink-0 rounded-full" style={{ backgroundColor: chartColors[index % chartColors.length] }} /><span className="truncate text-muted-foreground">{item.label}</span></span><strong>{item.count}</strong></div>)}</div>}
         </Card>
       </div>
+
+      <Card className="border-none shadow-sm"><CardHeader><CardTitle>Produção no período</CardTitle></CardHeader><CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">{[
+        ["Projetos criados", data.periodIndicators.projectsCreated],
+        ["Estimativas criadas", data.periodIndicators.estimatesCreated],
+        ["DIEx emitidos", data.periodIndicators.diexIssued],
+        ["OS emitidas", data.periodIndicators.serviceOrdersIssued],
+        ["Ticket médio", formatCurrency(data.periodIndicators.averageEstimatedAmount)],
+      ].map(([label, value]) => <div key={label} className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">{label}</p><p className="mt-2 text-xl font-semibold">{value}</p></div>)}</CardContent></Card>
 
       <Card className="border-none shadow-sm">
         <CardHeader>
@@ -217,7 +250,7 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="region">
-            <TabsList className="mb-5">
+            <TabsList className="mb-5 w-full overflow-x-auto sm:w-auto">
               <TabsTrigger value="region">Por UF</TabsTrigger>
               <TabsTrigger value="city">Por município</TabsTrigger>
               <TabsTrigger value="om">Por OM</TabsTrigger>
@@ -333,7 +366,7 @@ export function ExecutiveDashboardPage() {
           <div className="space-y-2">
             <Label>Período de análise</Label>
             <Select value={mode} onValueChange={(value) => setMode(value as FilterMode)}>
-              <SelectTrigger className="w-full xl:w-56"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full xl:w-56" aria-label="Período de análise"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Visão acumulada</SelectItem>
                 <SelectItem value="month">Mês</SelectItem>
