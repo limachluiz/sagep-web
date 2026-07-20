@@ -19,6 +19,7 @@ import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
 import { ServiceOrdersGanttPage } from "@/features/service-orders/pages/service-orders-gantt-page"
 import { ServiceOrderDetailsPage } from "@/features/service-orders/pages/service-order-details-page"
 import { ServiceOrdersListPage } from "@/features/service-orders/pages/service-orders-list-page"
+import { UsersPage } from "@/features/users/pages/users-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 export default function App() {
@@ -131,6 +132,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["diex.issue", "estimates.view_all"]}>
                 <DiexDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/users"
+            element={
+              <PermissionRoute anyOf={["users.manage"]}>
+                <UsersPage />
               </PermissionRoute>
             }
           />
