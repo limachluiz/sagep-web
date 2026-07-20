@@ -141,6 +141,8 @@ export type ProjectFlowPayload = {
   stage: ProjectStage
   creditNoteNumber?: string
   creditNoteReceivedAt?: string
+  commitmentNoteNumber?: string
+  commitmentNoteReceivedAt?: string
 }
 
 export type AddProjectMemberPayload = {

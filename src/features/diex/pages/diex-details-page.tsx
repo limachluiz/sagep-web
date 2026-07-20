@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangle, ArrowLeft, Building2, Download, ExternalLink, FileSignature, UserRound } from "lucide-react"
 import { Link, useParams } from "react-router"
 import { toast } from "sonner"
@@ -11,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { diexService } from "@/features/diex/diex.service"
+import { CompleteDiexDialog } from "@/features/diex/components/complete-diex-dialog"
+import { useAuthStore } from "@/features/auth/auth.store"
 
 function formatCurrency(value: string) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value)) }
 function formatQuantity(value: string) { return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(Number(value)) }
@@ -18,7 +20,10 @@ function formatDate(value: string | null) { return value ? new Intl.DateTimeForm
 
 export function DiexDetailsPage() {
   const { diexId = "" } = useParams()
+  const queryClient = useQueryClient()
+  const canIssue = useAuthStore((state) => state.hasPermission("diex.issue"))
   const [documentLoading, setDocumentLoading] = useState<"html" | "pdf" | null>(null)
+  const [completeOpen, setCompleteOpen] = useState(false)
   const query = useQuery({ queryKey: ["diex", "details", diexId], queryFn: () => diexService.details(diexId), enabled: Boolean(diexId) })
 
   const handleDocument = async (format: "html" | "pdf") => {
@@ -40,12 +45,13 @@ export function DiexDetailsPage() {
   const documentReady = Boolean(diex.diexNumber && diex.issuedAt)
 
   return <div className="space-y-6">
-    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge></div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex gap-2"><Button variant="outline" disabled={!documentReady || Boolean(documentLoading)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
+    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge></div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex gap-2">{canIssue && !documentReady && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
 
     {!documentReady && <Alert><AlertTriangle /><AlertTitle>Documento ainda indisponível</AlertTitle><AlertDescription>O número e a data de emissão precisam ser preenchidos pela SALC antes da geração oficial.</AlertDescription></Alert>}
 
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card className="border-none shadow-sm"><CardContent className="p-5"><FileSignature className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Valor requisitado</p><p className="mt-1 text-xl font-semibold">{formatCurrency(diex.totalAmount)}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><Building2 className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Fornecedor</p><p className="mt-1 font-semibold">{diex.supplierName}</p><p className="text-xs text-muted-foreground">{diex.supplierCnpj}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><UserRound className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Requisitante</p><p className="mt-1 font-semibold">{diex.requesterRank} {diex.requesterName}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><p className="text-xs text-muted-foreground">Vínculos</p><Button asChild variant="link" className="mt-1 h-auto p-0"><Link to={`/projects/${diex.project.id}`}>PRJ-{diex.project.projectCode}</Link></Button><p className="text-sm">EST-{diex.estimate.estimateCode} · {diex.estimate.om?.sigla ?? diex.estimate.omName}</p></CardContent></Card></div>
 
     <Card className="border-none shadow-sm"><CardHeader><CardTitle>Itens requisitados</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Descrição</TableHead><TableHead>Unidade</TableHead><TableHead>Quantidade</TableHead><TableHead>Valor unitário</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader><TableBody>{diex.items.map((item) => <TableRow key={item.id}><TableCell className="font-medium">{item.itemCode}</TableCell><TableCell>{item.description}</TableCell><TableCell>{item.supplyUnit}</TableCell><TableCell>{formatQuantity(item.quantityRequested)}</TableCell><TableCell>{formatCurrency(item.unitPrice)}</TableCell><TableCell className="text-right font-semibold">{formatCurrency(item.totalPrice)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
+    {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
   </div>
 }

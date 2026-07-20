@@ -19,6 +19,10 @@ export const diexService = {
     return api.post<DiexRequest>("/diex", payload)
   },
 
+  update(diexId: string, payload: { diexNumber: string; issuedAt: string }) {
+    return api.patch<DiexRequest>(`/diex/${diexId}`, payload)
+  },
+
   document(diexId: string, format: "html" | "pdf") {
     return api.getBlob(`/diex/${diexId}/document/${format}`)
   },

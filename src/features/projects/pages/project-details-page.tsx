@@ -10,6 +10,7 @@ import {
   Edit3,
   FileCheck2,
   FileSpreadsheet,
+  Landmark,
   ListChecks,
   Loader2,
   RefreshCw,
@@ -30,6 +31,7 @@ import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
 import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
+import { CommitmentNoteDialog } from "@/features/projects/components/commitment-note-dialog"
 import { CreateDiexDialog } from "@/features/diex/components/create-diex-dialog"
 import { projectsService } from "@/features/projects/projects.service"
 import type {
@@ -264,6 +266,7 @@ export function ProjectDetailsPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [creditNoteOpen, setCreditNoteOpen] = useState(false)
   const [createDiexOpen, setCreateDiexOpen] = useState(false)
+  const [commitmentNoteOpen, setCommitmentNoteOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -299,6 +302,7 @@ export function ProjectDetailsPage() {
   const canManage = hasPermission("projects.edit_all") || (hasPermission("projects.edit_own") && details.project.owner.id === user?.id)
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
+  const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },
     { label: "Estimativas", value: details.operationalSummary.estimatesCount, icon: FileSpreadsheet },
@@ -319,6 +323,11 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex gap-2">
+              {canRegisterCommitmentNote && (
+                <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCommitmentNoteOpen(true)}>
+                  <Landmark className="size-4" />Registrar Nota de Empenho
+                </Button>
+              )}
               {canCreateDiex && (
                 <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreateDiexOpen(true)}>
                   <ClipboardCheck className="size-4" />Emitir DIEx
@@ -390,6 +399,21 @@ export function ProjectDetailsPage() {
             queryClient.invalidateQueries({ queryKey: ["dashboard"] })
             queryClient.invalidateQueries({ queryKey: ["diex"] })
             navigate(`/diex/${diex.id}`)
+          }}
+        />
+      )}
+
+      {commitmentNoteOpen && (
+        <CommitmentNoteDialog
+          projectId={details.project.id}
+          projectCode={details.project.projectCode}
+          open={commitmentNoteOpen}
+          onOpenChange={setCommitmentNoteOpen}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ["projects"] })
+            queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+            queryClient.invalidateQueries({ queryKey: ["estimates"] })
+            queryClient.invalidateQueries({ queryKey: ["diex"] })
           }}
         />
       )}
