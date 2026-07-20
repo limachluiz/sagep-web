@@ -103,3 +103,62 @@ export type ListEnvelope<T> = {
   items: T[]
   meta: { page: number; pageSize: number; totalItems: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean }
 }
+
+export type ComprasGovPreviewItem = {
+  referenceCode: string
+  description: string
+  unit: string
+  unitPrice: number
+  initialQuantity: number
+  externalItemId: string
+  externalItemNumber: string
+}
+
+export type ComprasGovAtaFound = {
+  ataNumber: string
+  vendorName: string | null
+  itemCount: number
+  totalAmount: number | null
+  validFrom: string | null
+  validUntil: string | null
+  sampleItems: ComprasGovPreviewItem[]
+}
+
+export type ComprasGovPreview = {
+  source: "COMPRAS_GOV"
+  uasg: string
+  numeroPregao: string
+  anoPregao: string
+  ata: {
+    number: string
+    type: AtaType | null
+    vendorName: string | null
+    managingAgency: string | null
+    validFrom: string | null
+    validUntil: string | null
+  } | null
+  items: ComprasGovPreviewItem[]
+  atasFound: ComprasGovAtaFound[]
+  selectedAta?: ComprasGovAtaFound
+  warnings: string[]
+}
+
+export type ComprasGovImportPayload = {
+  uasg: string
+  numeroPregao: string
+  anoPregao: string
+  numeroAta?: string
+  ataType: AtaType
+  coverageGroupCode: string
+  coverageGroupName: string
+  coverageGroupLocalities: Array<{ cityName: string; stateUf: FederativeUnit }>
+}
+
+export type ComprasGovImportResult = {
+  dryRun: false
+  ata: Pick<Ata, "id" | "ataCode" | "number" | "type" | "vendorName" | "managingAgency" | "validFrom" | "validUntil">
+  itemsCreated: number
+  itemsUpdated: number
+  warnings: string[]
+  imported: { ataId: string; coverageGroupId: string; coverageGroupCode: string; createdItems: number; updatedItems: number }
+}

@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 import type { FederativeUnit } from "@/features/projects/projects.types"
-import type { Ata, AtaItem, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ListEnvelope } from "./atas.types"
+import type { Ata, AtaItem, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ListEnvelope } from "./atas.types"
 
 export const atasService = {
   list(filters: { page?: number; pageSize?: number; search?: string; type?: AtaType; stateUf?: FederativeUnit; active?: boolean } = {}) {
@@ -25,4 +25,14 @@ export const atasService = {
 
   createItem(ataId: string, payload: AtaItemPayload) { return api.post<AtaItem>(`/atas/${ataId}/items`, payload) },
   updateItem(itemId: string, payload: Partial<AtaItemPayload> & { isActive?: boolean }) { return api.patch<AtaItem>(`/ata-items/${itemId}`, payload) },
+
+  previewComprasGov(filters: { uasg: string; numeroPregao: string; anoPregao: string; numeroAta?: string }) {
+    const query = new URLSearchParams({ uasg: filters.uasg, numeroPregao: filters.numeroPregao, anoPregao: filters.anoPregao })
+    if (filters.numeroAta) query.set("numeroAta", filters.numeroAta)
+    return api.get<ComprasGovPreview>(`/integrations/compras-gov/atas/preview?${query.toString()}`)
+  },
+
+  importComprasGov(payload: ComprasGovImportPayload) {
+    return api.post<ComprasGovImportResult>("/integrations/compras-gov/atas/import", payload)
+  },
 }
