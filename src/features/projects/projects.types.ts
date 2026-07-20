@@ -7,11 +7,27 @@ export type ProjectStatus =
   | "CONCLUIDO"
   | "CANCELADO"
 
+export type ProjectType = "CFTV" | "FIBRA_OPTICA_PONTO_LOGICO"
+export type FederativeUnit = "AM" | "RO" | "RR" | "AC"
+
+export type MilitaryOrganization = {
+  id: string
+  omCode: number
+  sigla: string
+  name: string
+  cityName: string
+  stateUf: FederativeUnit
+  isActive: boolean
+}
+
 export type ProjectListItem = {
   id: string
   projectCode: number
   title: string
   description: string | null
+  projectType: ProjectType | null
+  omId: string | null
+  om: MilitaryOrganization | null
   status: ProjectStatus
   stage: ProjectStage
   ownerId: string | null
@@ -67,10 +83,11 @@ export type ProjectsListResponse = {
 
 export type ProjectMutationPayload = {
   title: string
+  projectType: ProjectType
+  omId: string
   description?: string
   status?: ProjectStatus
   startDate?: string
-  endDate?: string
 }
 
 export type ProjectMutationResponse = {
@@ -78,6 +95,9 @@ export type ProjectMutationResponse = {
   projectCode: number
   title: string
   description: string | null
+  projectType: ProjectType | null
+  omId: string | null
+  om: MilitaryOrganization | null
   status: ProjectStatus
   stage: ProjectStage
   startDate: string | null
@@ -123,6 +143,9 @@ export type ProjectDetailsResponse = {
     projectCode: number
     title: string
     description: string | null
+    projectType: ProjectType | null
+    omId: string | null
+    om: MilitaryOrganization | null
     owner: ProjectPerson
     members: Array<{
       id: string

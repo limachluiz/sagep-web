@@ -39,6 +39,11 @@ import { ProjectFormSheet } from "@/features/projects/components/project-form-sh
 import { projectsService } from "@/features/projects/projects.service"
 import type { ProjectMutationPayload, ProjectStatus } from "@/features/projects/projects.types"
 
+const projectTypeLabels = {
+  CFTV: "CFTV",
+  FIBRA_OPTICA_PONTO_LOGICO: "Fibra / Ponto Lógico",
+} as const
+
 const statusLabels: Record<ProjectStatus, string> = {
   PLANEJAMENTO: "Planejamento",
   EM_ANDAMENTO: "Em andamento",
@@ -245,6 +250,12 @@ export function ProjectsListPage() {
                     <TableCell>
                       <div className="max-w-72">
                         <p className="font-medium">PRJ-{project.projectCode} · {project.title}</p>
+                        {(project.projectType || project.om) && (
+                          <p className="mt-1 text-xs font-medium text-primary">
+                            {project.projectType ? projectTypeLabels[project.projectType] : "Tipo não classificado"}
+                            {project.om && ` · ${project.om.sigla} (${project.om.cityName}/${project.om.stateUf})`}
+                          </p>
+                        )}
                         <p className="mt-1 truncate text-xs text-muted-foreground">{project.description || "Sem descrição"}</p>
                       </div>
                     </TableCell>

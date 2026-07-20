@@ -46,6 +46,11 @@ const statusLabels: Record<ProjectStatus, string> = {
   CANCELADO: "Cancelado",
 }
 
+const projectTypeLabels = {
+  CFTV: "CFTV",
+  FIBRA_OPTICA_PONTO_LOGICO: "Fibra Óptica / Ponto Lógico",
+} as const
+
 const stageLabels: Record<ProjectStage, string> = {
   ESTIMATIVA_PRECO: "Estimativa de preço",
   AGUARDANDO_NOTA_CREDITO: "Aguardando Nota de Crédito",
@@ -148,7 +153,8 @@ function ProjectOverview({ details, canManage }: { details: ProjectDetailsRespon
           <CardHeader><CardTitle>Datas do projeto</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <div className="flex justify-between gap-4"><span className="text-muted-foreground">Início previsto</span><span className="font-medium">{formatDate(details.project.startDate)}</span></div>
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Término previsto</span><span className="font-medium">{formatDate(details.project.endDate)}</span></div>
+            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Tipo</span><span className="text-right font-medium">{details.project.projectType ? projectTypeLabels[details.project.projectType] : "Não classificado"}</span></div>
+            <div className="flex justify-between gap-4"><span className="text-muted-foreground">OM de destino</span><span className="text-right font-medium">{details.project.om ? `${details.project.om.sigla} · ${details.project.om.cityName}/${details.project.om.stateUf}` : "Não informada"}</span></div>
             <div className="flex justify-between gap-4"><span className="text-muted-foreground">Criado em</span><span className="font-medium">{formatDate(details.project.createdAt)}</span></div>
             <div className="flex justify-between gap-4"><span className="text-muted-foreground">Última atualização</span><span className="font-medium">{formatDate(details.project.updatedAt, true)}</span></div>
           </CardContent>
@@ -301,7 +307,7 @@ export function ProjectDetailsPage() {
         <CardContent className="p-6 lg:p-8">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-start">
             <div>
-              <div className="flex flex-wrap items-center gap-2"><Badge className="bg-sidebar-primary text-sidebar-primary-foreground">PRJ-{details.project.projectCode}</Badge><Badge variant="outline" className="border-white/20 text-white">{statusLabels[details.workflow.status]}</Badge>{details.project.archivedAt && <Badge variant="secondary">Arquivado</Badge>}</div>
+              <div className="flex flex-wrap items-center gap-2"><Badge className="bg-sidebar-primary text-sidebar-primary-foreground">PRJ-{details.project.projectCode}</Badge><Badge variant="outline" className="border-white/20 text-white">{statusLabels[details.workflow.status]}</Badge>{details.project.projectType && <Badge variant="outline" className="border-white/20 text-white">{projectTypeLabels[details.project.projectType]}</Badge>}{details.project.om && <Badge variant="outline" className="border-white/20 text-white">{details.project.om.sigla} · {details.project.om.cityName}/{details.project.om.stateUf}</Badge>}{details.project.archivedAt && <Badge variant="secondary">Arquivado</Badge>}</div>
               <h1 className="mt-4 text-3xl font-semibold tracking-tight">{details.project.title}</h1>
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
