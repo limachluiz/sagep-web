@@ -14,6 +14,7 @@ import {
   ListChecks,
   Loader2,
   RefreshCw,
+  Play,
   Route,
   UserRound,
   Users,
@@ -33,6 +34,8 @@ import { ProjectTeamCard } from "@/features/projects/components/project-team-car
 import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
 import { CommitmentNoteDialog } from "@/features/projects/components/commitment-note-dialog"
 import { CreateDiexDialog } from "@/features/diex/components/create-diex-dialog"
+import { CreateServiceOrderDialog } from "@/features/service-orders/components/create-service-order-dialog"
+import { StartExecutionDialog } from "@/features/service-orders/components/start-execution-dialog"
 import { projectsService } from "@/features/projects/projects.service"
 import type {
   ProjectDetailsResponse,
@@ -267,6 +270,8 @@ export function ProjectDetailsPage() {
   const [creditNoteOpen, setCreditNoteOpen] = useState(false)
   const [createDiexOpen, setCreateDiexOpen] = useState(false)
   const [commitmentNoteOpen, setCommitmentNoteOpen] = useState(false)
+  const [createServiceOrderOpen, setCreateServiceOrderOpen] = useState(false)
+  const [startExecutionOpen, setStartExecutionOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -303,6 +308,8 @@ export function ProjectDetailsPage() {
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
   const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
+  const canIssueServiceOrder = hasPermission("service_orders.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA"
+  const canStartExecution = canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA" && details.documents.serviceOrders.some((order) => !order.archivedAt)
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },
     { label: "Estimativas", value: details.operationalSummary.estimatesCount, icon: FileSpreadsheet },
@@ -323,6 +330,8 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex gap-2">
+              {canStartExecution && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setStartExecutionOpen(true)}><Play className="size-4" />Iniciar execução</Button>}
+              {canIssueServiceOrder && <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCreateServiceOrderOpen(true)}><FileCheck2 className="size-4" />Emitir OS</Button>}
               {canRegisterCommitmentNote && (
                 <Button className="gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => setCommitmentNoteOpen(true)}>
                   <Landmark className="size-4" />Registrar Nota de Empenho
@@ -417,6 +426,10 @@ export function ProjectDetailsPage() {
           }}
         />
       )}
+
+      {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); navigate(`/service-orders/${order.id}`) }} />}
+
+      {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["service-orders-gantt"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
     </div>
   )
 }

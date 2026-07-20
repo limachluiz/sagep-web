@@ -16,6 +16,8 @@ import { ProjectDetailsPage } from "@/features/projects/pages/project-details-pa
 import { ProjectsKanbanPage } from "@/features/projects/pages/projects-kanban-page"
 import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
 import { ServiceOrdersGanttPage } from "@/features/service-orders/pages/service-orders-gantt-page"
+import { ServiceOrderDetailsPage } from "@/features/service-orders/pages/service-order-details-page"
+import { ServiceOrdersListPage } from "@/features/service-orders/pages/service-orders-list-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 export default function App() {
@@ -72,6 +74,22 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
                 <ServiceOrdersGanttPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/service-orders"
+            element={
+              <PermissionRoute anyOf={["service_orders.issue", "projects.view_all"]}>
+                <ServiceOrdersListPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/service-orders/:serviceOrderId"
+            element={
+              <PermissionRoute anyOf={["service_orders.issue", "projects.view_all"]}>
+                <ServiceOrderDetailsPage />
               </PermissionRoute>
             }
           />

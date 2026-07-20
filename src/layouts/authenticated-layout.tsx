@@ -76,7 +76,7 @@ const navigation: NavigationItem[] = [
     label: "Ordens de Serviço",
     href: "/service-orders",
     icon: ShieldCheck,
-    anyOf: ["service_orders.issue"],
+    anyOf: ["service_orders.issue", "projects.view_all"],
   },
   {
     label: "Usuários",

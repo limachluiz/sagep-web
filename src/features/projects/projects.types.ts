@@ -143,6 +143,7 @@ export type ProjectFlowPayload = {
   creditNoteReceivedAt?: string
   commitmentNoteNumber?: string
   commitmentNoteReceivedAt?: string
+  executionStartedAt?: string
 }
 
 export type AddProjectMemberPayload = {
@@ -250,6 +251,8 @@ export type ProjectDetailsResponse = {
       contractorName: string | null
       archivedAt: string | null
       createdAt: string
+      estimate: { id: string; estimateCode: number }
+      diexRequest: { id: string; diexCode: number; diexNumber: string | null } | null
     }>
   }
   financialSummary: {
