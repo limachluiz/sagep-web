@@ -2,6 +2,7 @@ import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Bell,
   ChartNoAxesCombined,
+  Columns3,
   ClipboardList,
   FileText,
   Gauge,
@@ -49,6 +50,12 @@ const navigation: NavigationItem[] = [
     label: "Projetos",
     href: "/projects",
     icon: ClipboardList,
+    anyOf: ["projects.view_all", "projects.edit_own"],
+  },
+  {
+    label: "Kanban",
+    href: "/kanban",
+    icon: Columns3,
     anyOf: ["projects.view_all", "projects.edit_own"],
   },
   {

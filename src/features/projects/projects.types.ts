@@ -81,6 +81,38 @@ export type ProjectsListResponse = {
   }
 }
 
+export type ProjectKanbanCard = {
+  id: string
+  projectCode: number
+  title: string
+  status: ProjectStatus
+  stage: ProjectStage
+  projectType: ProjectType | null
+  om: Pick<MilitaryOrganization, "id" | "sigla" | "cityName" | "stateUf"> | null
+  owner: {
+    id: string
+    name: string
+    email: string
+  }
+  updatedAt: string
+  plannedEndDate: string | null
+  serviceOrder: {
+    id: string
+    serviceOrderNumber: string | null
+    plannedEndDate: string | null
+  } | null
+}
+
+export type ProjectKanbanResponse = {
+  generatedAt: string
+  columns: Array<{
+    stage: ProjectStage
+    label: string
+    count: number
+    cards: ProjectKanbanCard[]
+  }>
+}
+
 export type ProjectMutationPayload = {
   title: string
   projectType: ProjectType

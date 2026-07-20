@@ -3,6 +3,7 @@ import type {
   AddProjectMemberPayload,
   ProjectDetailsResponse,
   ProjectMemberMutationResponse,
+  ProjectKanbanResponse,
   ProjectMutationPayload,
   ProjectMutationResponse,
   ProjectsListFilters,
@@ -10,6 +11,14 @@ import type {
 } from "./projects.types"
 
 export const projectsService = {
+  kanban(filters: { search?: string; onlyMine?: boolean }) {
+    const query = new URLSearchParams()
+    if (filters.search) query.set("search", filters.search)
+    if (filters.onlyMine) query.set("onlyMine", "true")
+    const suffix = query.size ? `?${query.toString()}` : ""
+    return api.get<ProjectKanbanResponse>(`/projects/kanban${suffix}`)
+  },
+
   create(payload: ProjectMutationPayload) {
     return api.post<ProjectMutationResponse>("/projects", payload)
   },
@@ -35,6 +44,10 @@ export const projectsService = {
 
   update(projectId: string, payload: ProjectMutationPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}`, payload)
+  },
+
+  moveKanban(projectId: string, stage: string) {
+    return api.patch(`/projects/${projectId}/kanban/move`, { stage })
   },
 
   addMember(projectId: string, payload: AddProjectMemberPayload) {
