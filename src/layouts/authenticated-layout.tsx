@@ -229,11 +229,6 @@ export function AuthenticatedLayout() {
       </header>
 
       <aside className="fixed bottom-0 left-0 top-16 z-30 hidden w-[260px] border-r border-[#c8a84b]/15 bg-[#263012] text-white lg:flex lg:flex-col">
-        <div className="border-b border-white/8 px-5 py-4">
-          <div className="flex items-center justify-between"><span className="text-[10px] uppercase tracking-[0.16em] text-white/40">Ambiente</span><Badge className="bg-[#c8a84b]/15 text-[#dfc070] hover:bg-[#c8a84b]/15">Operacional</Badge></div>
-          <p className="mt-2 text-xs leading-5 text-white/55">Controle técnico e documental integrado.</p>
-        </div>
-
         <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="Navegação principal">
           {visibleNavigation.map((group) => (
             <div key={group.label}>
