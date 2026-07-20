@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
   ArrowLeft,
@@ -9,6 +9,10 @@ import {
   FileSpreadsheet,
   MapPin,
   PackageCheck,
+  Ban,
+  CircleCheck,
+  Loader2,
+  Pencil,
 } from "lucide-react"
 import { Link, useParams } from "react-router"
 import { toast } from "sonner"
@@ -17,10 +21,20 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { estimatesService } from "@/features/estimates/estimates.service"
 import type { EstimateStatus } from "@/features/estimates/estimates.types"
+import { EstimateEditDialog } from "@/features/estimates/components/estimate-edit-dialog"
+import { useAuthStore } from "@/features/auth/auth.store"
 
 const statusLabels: Record<EstimateStatus, string> = {
   RASCUNHO: "Rascunho",
@@ -51,12 +65,33 @@ function formatDate(value: string) {
 
 export function EstimateDetailsPage() {
   const { estimateId = "" } = useParams()
+  const queryClient = useQueryClient()
+  const hasPermission = useAuthStore((state) => state.hasPermission)
   const [documentLoading, setDocumentLoading] = useState<"html" | "pdf" | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
+  const [statusConfirmation, setStatusConfirmation] = useState<"FINALIZADA" | "CANCELADA" | null>(null)
 
   const estimateQuery = useQuery({
     queryKey: ["estimates", "details", estimateId],
     queryFn: () => estimatesService.details(estimateId),
     enabled: Boolean(estimateId),
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: (status: "FINALIZADA" | "CANCELADA") => estimatesService.updateStatus(estimateId, status),
+    onSuccess: (estimate) => {
+      toast.success(
+        estimate.status === "FINALIZADA"
+          ? `Estimativa EST-${estimate.estimateCode} finalizada e fluxo do projeto atualizado.`
+          : `Estimativa EST-${estimate.estimateCode} cancelada.`,
+      )
+      queryClient.setQueryData(["estimates", "details", estimateId], estimate)
+      queryClient.invalidateQueries({ queryKey: ["estimates", "list"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      setStatusConfirmation(null)
+    },
+    onError: (error) => toast.error(error.message),
   })
 
   const handleDocument = async (format: "html" | "pdf") => {
@@ -103,6 +138,9 @@ export function EstimateDetailsPage() {
   }
 
   const estimate = estimateQuery.data
+  const isDraft = estimate.status === "RASCUNHO"
+  const canEdit = isDraft && hasPermission("estimates.edit")
+  const canFinalize = isDraft && hasPermission("estimates.finalize")
 
   return (
     <div className="space-y-6">
@@ -122,6 +160,21 @@ export function EstimateDetailsPage() {
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
+            {canEdit && (
+              <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
+                <Pencil className="size-4" />Editar
+              </Button>
+            )}
+            {canEdit && (
+              <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => setStatusConfirmation("CANCELADA")}>
+                <Ban className="size-4" />Cancelar estimativa
+              </Button>
+            )}
+            {canFinalize && (
+              <Button className="gap-2" onClick={() => setStatusConfirmation("FINALIZADA")}>
+                <CircleCheck className="size-4" />Finalizar
+              </Button>
+            )}
             <Button variant="outline" className="gap-2" onClick={() => handleDocument("html")} disabled={Boolean(documentLoading)}>
               <ExternalLink className="size-4" />
               {documentLoading === "html" ? "Gerando..." : "Visualizar documento"}
@@ -240,6 +293,44 @@ export function EstimateDetailsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {editOpen && (
+        <EstimateEditDialog
+          estimate={estimate}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          onSaved={(updatedEstimate) => {
+            queryClient.setQueryData(["estimates", "details", estimateId], updatedEstimate)
+            queryClient.invalidateQueries({ queryKey: ["estimates", "list"] })
+          }}
+        />
+      )}
+
+      <Dialog open={Boolean(statusConfirmation)} onOpenChange={(open) => !open && setStatusConfirmation(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {statusConfirmation === "FINALIZADA" ? "Finalizar estimativa?" : "Cancelar estimativa?"}
+            </DialogTitle>
+            <DialogDescription>
+              {statusConfirmation === "FINALIZADA"
+                ? "O saldo dos itens será validado novamente e o projeto avançará para a próxima etapa do fluxo documental."
+                : "A estimativa será marcada como cancelada e deixará de permitir edição pela interface."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setStatusConfirmation(null)} disabled={statusMutation.isPending}>Voltar</Button>
+            <Button
+              variant={statusConfirmation === "CANCELADA" ? "destructive" : "default"}
+              disabled={!statusConfirmation || statusMutation.isPending}
+              onClick={() => statusConfirmation && statusMutation.mutate(statusConfirmation)}
+            >
+              {statusMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+              {statusConfirmation === "FINALIZADA" ? "Confirmar finalização" : "Confirmar cancelamento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

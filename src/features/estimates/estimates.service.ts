@@ -7,6 +7,7 @@ import type {
   EstimatesListFilters,
   EstimatesListResponse,
   ListEnvelope,
+  UpdateEstimatePayload,
 } from "./estimates.types"
 
 export const estimatesService = {
@@ -29,6 +30,14 @@ export const estimatesService = {
 
   create(payload: CreateEstimatePayload) {
     return api.post<Estimate>("/estimates", payload)
+  },
+
+  update(estimateId: string, payload: UpdateEstimatePayload) {
+    return api.patch<Estimate>(`/estimates/${estimateId}`, payload)
+  },
+
+  updateStatus(estimateId: string, status: "FINALIZADA" | "CANCELADA") {
+    return api.patch<Estimate>(`/estimates/${estimateId}/status`, { status })
   },
 
   listAtas(type: Ata["type"]) {

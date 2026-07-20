@@ -170,3 +170,11 @@ export type CreateEstimatePayload = {
     quantity: number
   }>
 }
+
+export type UpdateEstimatePayload = {
+  notes?: string
+  items: Array<{
+    ataItemId: string
+    quantity: number
+  }>
+}
