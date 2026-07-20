@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
-  Bell,
   Building2,
   CalendarRange,
   ChartNoAxesCombined,
@@ -15,7 +14,6 @@ import {
   Menu,
   MonitorSmartphone,
   FileChartColumn,
-  Search,
   Settings,
   ShieldCheck,
   Users,
@@ -24,12 +22,13 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { authService } from "@/features/auth/auth.service"
 import type { Permission } from "@/features/auth/auth.types"
+import { GlobalSearchDialog } from "@/features/header/components/global-search-dialog"
+import { NotificationsMenu } from "@/features/header/components/notifications-menu"
 
 type NavigationItem = {
   label: string
@@ -261,15 +260,10 @@ export function AuthenticatedLayout() {
             </SheetContent>
           </Sheet>
 
+          <div className="md:hidden"><GlobalSearchDialog compact /></div>
+
           <div className="hidden max-w-md flex-1 md:block">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-              <Input
-                className="pl-9"
-                placeholder="Buscar projetos, estimativas, DIEx, OS..."
-                aria-label="Busca global"
-              />
-            </div>
+            <GlobalSearchDialog />
           </div>
 
           <div className="ml-auto flex items-center gap-3">
@@ -277,9 +271,7 @@ export function AuthenticatedLayout() {
               UASG 160016
             </Badge>
 
-            <Button variant="outline" size="icon" title="Notificações" aria-label="Notificações">
-              <Bell className="size-4" />
-            </Button>
+            <NotificationsMenu />
 
             <Avatar>
               <AvatarFallback>{initials}</AvatarFallback>

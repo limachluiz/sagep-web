@@ -127,6 +127,18 @@ describe("LoginPage", () => {
         )
       }
 
+      if (url.includes("/operational-alerts") && init?.method === "GET") {
+        return new Response(
+          JSON.stringify({
+            generatedAt: new Date().toISOString(),
+            summary: { total: 0, bySeverity: { CRITICAL: 0, WARNING: 0, INFO: 0 }, byCategory: {} },
+            alerts: [],
+            inventoryAlerts: { lowStock: [], insufficient: [] },
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        )
+      }
+
       throw new Error(`Requisição inesperada: ${init?.method} ${url}`)
     })
 
@@ -138,7 +150,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
     expect(await screen.findByText("Visão geral da operação")).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(3)
+    expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,
       accessToken: "access-token",
