@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Bell,
+  CalendarRange,
   ChartNoAxesCombined,
   Columns3,
   ClipboardList,
@@ -56,6 +57,12 @@ const navigation: NavigationItem[] = [
     label: "Kanban",
     href: "/kanban",
     icon: Columns3,
+    anyOf: ["projects.view_all", "projects.edit_own"],
+  },
+  {
+    label: "Gantt",
+    href: "/gantt",
+    icon: CalendarRange,
     anyOf: ["projects.view_all", "projects.edit_own"],
   },
   {
