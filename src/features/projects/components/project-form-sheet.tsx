@@ -83,6 +83,7 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
     queryFn: () => militaryOrganizationsService.list({
       stateUf,
       cityName: projectType === "CFTV" ? "Manaus" : undefined,
+      active: true,
     }),
     enabled: open && Boolean(stateUf && projectType),
   })

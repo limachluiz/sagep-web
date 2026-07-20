@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Bell,
+  Building2,
   CalendarRange,
   ChartNoAxesCombined,
   Columns3,
@@ -77,6 +78,12 @@ const navigation: NavigationItem[] = [
     href: "/service-orders",
     icon: ShieldCheck,
     anyOf: ["service_orders.issue", "projects.view_all"],
+  },
+  {
+    label: "Organizações Militares",
+    href: "/military-organizations",
+    icon: Building2,
+    anyOf: ["military_organizations.manage"],
   },
   {
     label: "Usuários",

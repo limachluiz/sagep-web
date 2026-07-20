@@ -12,6 +12,7 @@ import { DiexListPage } from "@/features/diex/pages/diex-list-page"
 import { EstimateDetailsPage } from "@/features/estimates/pages/estimate-details-page"
 import { EstimatesListPage } from "@/features/estimates/pages/estimates-list-page"
 import { CreateEstimatePage } from "@/features/estimates/pages/create-estimate-page"
+import { MilitaryOrganizationsPage } from "@/features/military-organizations/pages/military-organizations-page"
 import { ProjectDetailsPage } from "@/features/projects/pages/project-details-page"
 import { ProjectsKanbanPage } from "@/features/projects/pages/projects-kanban-page"
 import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
@@ -130,6 +131,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["diex.issue", "estimates.view_all"]}>
                 <DiexDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/military-organizations"
+            element={
+              <PermissionRoute anyOf={["military_organizations.manage"]}>
+                <MilitaryOrganizationsPage />
               </PermissionRoute>
             }
           />
