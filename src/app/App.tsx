@@ -22,6 +22,7 @@ import { ServiceOrdersGanttPage } from "@/features/service-orders/pages/service-
 import { ServiceOrderDetailsPage } from "@/features/service-orders/pages/service-order-details-page"
 import { ServiceOrdersListPage } from "@/features/service-orders/pages/service-orders-list-page"
 import { UsersPage } from "@/features/users/pages/users-page"
+import { PermissionsSettingsPage } from "@/features/permissions/pages/permissions-settings-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 export default function App() {
@@ -174,6 +175,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["sessions.manage_own"]}>
                 <SessionsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <PermissionRoute anyOf={["permissions.view"]}>
+                <PermissionsSettingsPage />
               </PermissionRoute>
             }
           />
