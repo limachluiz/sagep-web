@@ -7,6 +7,8 @@ import { SessionsPage } from "@/features/auth/pages/sessions-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
 import { OperationalDashboardPage } from "@/features/dashboard/pages/operational-dashboard-page"
 import { ExecutiveDashboardPage } from "@/features/dashboard/pages/executive-dashboard-page"
+import { DiexDetailsPage } from "@/features/diex/pages/diex-details-page"
+import { DiexListPage } from "@/features/diex/pages/diex-list-page"
 import { EstimateDetailsPage } from "@/features/estimates/pages/estimate-details-page"
 import { EstimatesListPage } from "@/features/estimates/pages/estimates-list-page"
 import { CreateEstimatePage } from "@/features/estimates/pages/create-estimate-page"
@@ -94,6 +96,22 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["estimates.create"]}>
                 <CreateEstimatePage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/diex"
+            element={
+              <PermissionRoute anyOf={["diex.issue", "estimates.view_all"]}>
+                <DiexListPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/diex/:diexId"
+            element={
+              <PermissionRoute anyOf={["diex.issue", "estimates.view_all"]}>
+                <DiexDetailsPage />
               </PermissionRoute>
             }
           />

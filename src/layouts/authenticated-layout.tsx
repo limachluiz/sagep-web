@@ -71,7 +71,7 @@ const navigation: NavigationItem[] = [
     icon: FileText,
     anyOf: ["estimates.view_all", "estimates.create", "estimates.edit"],
   },
-  { label: "DIEx", href: "/diex", icon: Landmark, anyOf: ["diex.issue"] },
+  { label: "DIEx", href: "/diex", icon: Landmark, anyOf: ["diex.issue", "estimates.view_all"] },
   {
     label: "Ordens de Serviço",
     href: "/service-orders",

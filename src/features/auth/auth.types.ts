@@ -27,6 +27,8 @@ export type AuthUser = {
   id: string
   name?: string
   email: string
+  rank?: string | null
+  cpf?: string | null
   role: UserRole
   permissions: Permission[]
   access?: {
