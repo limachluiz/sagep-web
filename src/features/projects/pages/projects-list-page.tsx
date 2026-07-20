@@ -28,6 +28,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
+  TableCaption,
   TableCell,
   TableHead,
   TableHeader,
@@ -154,12 +155,12 @@ export function ProjectsListPage() {
             Consulte o andamento, responsável, etapa documental e volume de atividades de cada projeto.
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" className="gap-2" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}>
+        <div className="grid grid-cols-2 gap-2 sm:flex">
+          <Button variant="outline" className="w-full gap-2 sm:w-auto" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}>
             <RefreshCw className={projectsQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
             Atualizar
           </Button>
-          {canCreate && <Button className="gap-2" onClick={() => setCreateOpen(true)}><Plus className="size-4" />Novo projeto</Button>}
+          {canCreate && <Button className="w-full gap-2 sm:w-auto" onClick={() => setCreateOpen(true)}><Plus className="size-4" />Novo projeto</Button>}
         </div>
       </div>
 
@@ -169,6 +170,7 @@ export function ProjectsListPage() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="pl-9"
+              aria-label="Buscar projetos"
               placeholder="Buscar por título ou descrição..."
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -176,7 +178,7 @@ export function ProjectsListPage() {
           </div>
 
           <Select value={status} onValueChange={(value) => { setStatus(value as ProjectStatus | "all"); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Todos os status" /></SelectTrigger>
+            <SelectTrigger className="w-full" aria-label="Filtrar por status"><SelectValue placeholder="Todos os status" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todos os status</SelectItem>
               {Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
@@ -184,7 +186,7 @@ export function ProjectsListPage() {
           </Select>
 
           <Select value={stage} onValueChange={(value) => { setStage(value as ProjectStage | "all"); setPage(1) }}>
-            <SelectTrigger><SelectValue placeholder="Todas as etapas" /></SelectTrigger>
+            <SelectTrigger className="w-full" aria-label="Filtrar por etapa"><SelectValue placeholder="Todas as etapas" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Todas as etapas</SelectItem>
               {Object.entries(stageLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
@@ -193,7 +195,7 @@ export function ProjectsListPage() {
 
           {canViewArchived ? (
             <Select value={visibility} onValueChange={(value) => { setVisibility(value as "active" | "archived"); setPage(1) }}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-full" aria-label="Filtrar por situação"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Projetos ativos</SelectItem>
                 <SelectItem value="archived">Arquivados</SelectItem>
@@ -231,7 +233,27 @@ export function ProjectsListPage() {
               {Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-16" />)}
             </div>
           ) : projectsQuery.data?.items.length ? (
+            <>
+            <div className="space-y-3 md:hidden" aria-label="Projetos encontrados">
+              {projectsQuery.data.items.map((project) => (
+                <article key={project.id} className="rounded-xl border p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0"><p className="font-semibold">PRJ-{project.projectCode}</p><h2 className="mt-1 text-sm font-medium leading-5">{project.title}</h2></div>
+                    <Badge variant={statusVariants[project.status]}>{statusLabels[project.status]}</Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2"><Badge variant="outline">{stageLabels[project.stage]}</Badge>{project.projectType && <Badge variant="secondary">{projectTypeLabels[project.projectType]}</Badge>}</div>
+                  {project.om && <p className="mt-3 text-sm"><span className="text-muted-foreground">OM:</span> {project.om.sigla} · {project.om.cityName}/{project.om.stateUf}</p>}
+                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground"><span>Responsável: {project.owner?.name ?? project.ownerName ?? "Não informado"}</span><span className="text-right">Início: {formatDate(project.startDate)}</span></div>
+                  <div className="mt-4 flex items-center justify-between border-t pt-3">
+                    <div className="flex gap-3 text-xs text-muted-foreground" aria-label="Resumo de atividades"><span className="flex items-center gap-1" aria-label={`${project._count.members} membros`}><Users className="size-3.5" />{project._count.members}</span><span className="flex items-center gap-1" aria-label={`${project._count.tasks} tarefas`}><ListChecks className="size-3.5" />{project._count.tasks}</span><span className="flex items-center gap-1" aria-label={`${project._count.estimates} estimativas`}><FileSpreadsheet className="size-3.5" />{project._count.estimates}</span></div>
+                    <Button asChild variant="outline" size="sm"><Link to={`/projects/${project.id}${visibility === "archived" ? "?includeArchived=true" : ""}`} aria-label={`Abrir projeto PRJ-${project.projectCode}`}><span>Abrir</span><ArrowUpRight className="size-4" /></Link></Button>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <div className="hidden md:block">
             <Table>
+              <TableCaption className="sr-only">Lista de projetos com status, etapa, responsável e data de início</TableCaption>
               <TableHeader>
                 <TableRow>
                   <TableHead>Projeto</TableHead>
@@ -239,7 +261,7 @@ export function ProjectsListPage() {
                   <TableHead>Etapa atual</TableHead>
                   <TableHead>Responsável</TableHead>
                   <TableHead>Atividades</TableHead>
-                  <TableHead>Prazo</TableHead>
+                  <TableHead>Início</TableHead>
                   <TableHead>Atualização</TableHead>
                   <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
@@ -274,12 +296,11 @@ export function ProjectsListPage() {
                     </TableCell>
                     <TableCell>
                       <p className="text-xs">{formatDate(project.startDate)}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">até {formatDate(project.endDate)}</p>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDate(project.updatedAt)}</TableCell>
                     <TableCell className="text-right">
                       <Button asChild variant="ghost" size="sm">
-                        <Link to={`/projects/${project.id}${visibility === "archived" ? "?includeArchived=true" : ""}`}>
+                        <Link to={`/projects/${project.id}${visibility === "archived" ? "?includeArchived=true" : ""}`} aria-label={`Abrir projeto PRJ-${project.projectCode}`}>
                           Abrir
                           <ArrowUpRight className="size-4" />
                         </Link>
@@ -289,6 +310,8 @@ export function ProjectsListPage() {
                 ))}
               </TableBody>
             </Table>
+            </div>
+            </>
           ) : (
             <div className="flex flex-col items-center py-16 text-center">
               {visibility === "archived" ? <Archive className="size-10 text-muted-foreground" /> : <ClipboardList className="size-10 text-muted-foreground" />}
@@ -302,7 +325,7 @@ export function ProjectsListPage() {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <span>Exibir</span>
                 <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1) }}>
-                  <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="w-20" aria-label="Projetos por página"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="10">10</SelectItem>
                     <SelectItem value="25">25</SelectItem>
@@ -313,10 +336,10 @@ export function ProjectsListPage() {
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span>
-                <Button variant="outline" size="icon" disabled={!meta.hasPreviousPage} onClick={() => setPage((current) => current - 1)} title="Página anterior">
+                <Button variant="outline" size="icon" disabled={!meta.hasPreviousPage} onClick={() => setPage((current) => current - 1)} title="Página anterior" aria-label="Página anterior">
                   <ChevronLeft className="size-4" />
                 </Button>
-                <Button variant="outline" size="icon" disabled={!meta.hasNextPage} onClick={() => setPage((current) => current + 1)} title="Próxima página">
+                <Button variant="outline" size="icon" disabled={!meta.hasNextPage} onClick={() => setPage((current) => current + 1)} title="Próxima página" aria-label="Próxima página">
                   <ChevronRight className="size-4" />
                 </Button>
               </div>

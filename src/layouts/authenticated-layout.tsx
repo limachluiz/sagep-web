@@ -242,6 +242,7 @@ export function AuthenticatedLayout() {
               className="text-slate-300 hover:bg-white/10 hover:text-white"
               onClick={handleLogout}
               title="Sair"
+              aria-label="Sair do sistema"
             >
               <LogOut className="size-4" />
             </Button>
@@ -250,7 +251,7 @@ export function AuthenticatedLayout() {
       </aside>
 
       <div className="lg:pl-72">
-        <header className="sticky top-0 z-20 flex h-20 items-center gap-4 border-b bg-white/85 px-4 backdrop-blur-xl lg:px-8">
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b bg-white/85 px-3 backdrop-blur-xl sm:h-20 sm:gap-4 sm:px-4 lg:px-8">
           <Sheet>
             <SheetTrigger asChild><Button variant="outline" size="icon" className="lg:hidden" aria-label="Abrir menu principal"><Menu className="size-4" /></Button></SheetTrigger>
             <SheetContent side="left" className="w-[min(88vw,320px)] gap-0 bg-slate-950 p-0 text-white">
@@ -266,7 +267,7 @@ export function AuthenticatedLayout() {
             <GlobalSearchDialog />
           </div>
 
-          <div className="ml-auto flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <Badge variant="outline" className="hidden md:inline-flex">
               UASG 160016
             </Badge>
@@ -279,7 +280,7 @@ export function AuthenticatedLayout() {
           </div>
         </header>
 
-        <main id="main-content" tabIndex={-1} className="p-4 outline-none lg:p-8">
+        <main id="main-content" tabIndex={-1} className="p-3 outline-none sm:p-4 lg:p-8">
           <Outlet />
         </main>
       </div>
