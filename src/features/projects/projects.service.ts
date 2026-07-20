@@ -35,6 +35,7 @@ export const projectsService = {
     if (filters.status) query.set("status", filters.status)
     if (filters.stage) query.set("stage", filters.stage)
     if (filters.onlyArchived) query.set("onlyArchived", "true")
+    if (filters.includeArchived) query.set("includeArchived", "true")
 
     return api.get<ProjectsListResponse>(`/projects?${query.toString()}`)
   },

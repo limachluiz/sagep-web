@@ -63,6 +63,7 @@ export type ProjectsListFilters = {
   status?: ProjectStatus
   stage?: ProjectStage
   onlyArchived?: boolean
+  includeArchived?: boolean
 }
 
 export type ProjectsListResponse = {

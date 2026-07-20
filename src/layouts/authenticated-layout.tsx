@@ -14,6 +14,7 @@ import {
   LogOut,
   Menu,
   MonitorSmartphone,
+  FileChartColumn,
   Search,
   Settings,
   ShieldCheck,
@@ -103,6 +104,12 @@ const navigation: NavigationItem[] = [
     href: "/sessions",
     icon: MonitorSmartphone,
     anyOf: ["sessions.manage_own"],
+  },
+  {
+    label: "Relatórios",
+    href: "/reports",
+    icon: FileChartColumn,
+    anyOf: ["reports.export"],
   },
   {
     label: "Configurações",

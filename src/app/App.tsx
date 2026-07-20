@@ -23,6 +23,7 @@ import { ServiceOrderDetailsPage } from "@/features/service-orders/pages/service
 import { ServiceOrdersListPage } from "@/features/service-orders/pages/service-orders-list-page"
 import { UsersPage } from "@/features/users/pages/users-page"
 import { PermissionsSettingsPage } from "@/features/permissions/pages/permissions-settings-page"
+import { ReportsPage } from "@/features/reports/pages/reports-page"
 import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 export default function App() {
@@ -183,6 +184,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["permissions.view"]}>
                 <PermissionsSettingsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <PermissionRoute anyOf={["reports.export"]}>
+                <ReportsPage />
               </PermissionRoute>
             }
           />
