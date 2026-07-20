@@ -176,7 +176,7 @@ describe("LoginPage", () => {
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
     expect(await screen.findByText("E-mail ou senha inválidos")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Acesse sua conta" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Acesso ao sistema" })).toBeInTheDocument()
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(false)
