@@ -88,6 +88,12 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
     enabled: open && Boolean(stateUf && projectType),
   })
 
+  const availableOrganizations = (organizationsQuery.data?.items ?? []).filter((organization) =>
+    organization.isActive &&
+    organization.stateUf === stateUf &&
+    (projectType !== "CFTV" || organization.cityName.trim().toLocaleLowerCase("pt-BR") === "manaus"),
+  )
+
   useEffect(() => {
     if (!open) return
     form.reset({
@@ -149,7 +155,7 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
                 form.setValue("omId", "", { shouldValidate: false })
               }}
             >
-              <SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
+              <SelectTrigger className="w-full" aria-label="Tipo do projeto"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
               <SelectContent>
                 {Object.entries(projectTypeLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
               </SelectContent>
@@ -168,7 +174,7 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
                   form.setValue("omId", "", { shouldValidate: false })
                 }}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione o estado" /></SelectTrigger>
+                <SelectTrigger className="w-full" aria-label="Estado"><SelectValue placeholder="Selecione o estado" /></SelectTrigger>
                 <SelectContent>
                   {Object.entries(stateLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                 </SelectContent>
@@ -179,15 +185,18 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
 
             <div className="space-y-2">
               <Label>Organização Militar</Label>
-              <Select value={omId} disabled={!stateUf || organizationsQuery.isLoading} onValueChange={(value) => form.setValue("omId", value, { shouldValidate: true })}>
-                <SelectTrigger><SelectValue placeholder={organizationsQuery.isLoading ? "Carregando OMs..." : "Selecione a OM"} /></SelectTrigger>
+              <Select value={omId} disabled={!stateUf || organizationsQuery.isLoading || availableOrganizations.length === 0} onValueChange={(value) => form.setValue("omId", value, { shouldValidate: true })}>
+                <SelectTrigger className="w-full" aria-label="Organização Militar" aria-describedby="project-om-help"><SelectValue placeholder={organizationsQuery.isLoading ? "Carregando OMs..." : "Selecione a OM"} /></SelectTrigger>
                 <SelectContent>
-                  {organizationsQuery.data?.items.map((om) => (
+                  {availableOrganizations.map((om) => (
                     <SelectItem key={om.id} value={om.id}>{om.sigla} · {om.name} ({om.cityName})</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {organizationsQuery.isError && <p className="text-xs text-destructive">Não foi possível carregar as OMs deste estado.</p>}
+              <div id="project-om-help" aria-live="polite">
+                {organizationsQuery.isError && <p className="text-xs text-destructive">Não foi possível carregar as OMs deste estado.</p>}
+                {organizationsQuery.isSuccess && availableOrganizations.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma OM ativa disponível para esta seleção.</p>}
+              </div>
               {form.formState.errors.omId && <p className="text-xs text-destructive">{form.formState.errors.omId.message}</p>}
             </div>
           </div>
