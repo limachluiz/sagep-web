@@ -3,6 +3,7 @@ import { useAuthStore } from "@/features/auth/auth.store"
 
 type RequestOptions = RequestInit & {
   skipAuth?: boolean
+  responseType?: "json" | "blob"
 }
 
 export class ApiError extends Error {
@@ -102,12 +103,19 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     return undefined as T
   }
 
+  if (options.responseType === "blob") {
+    return response.blob() as Promise<T>
+  }
+
   return response.json() as Promise<T>
 }
 
 export const api = {
   get: <T>(path: string, options?: RequestOptions) =>
     request<T>(path, { ...options, method: "GET" }),
+
+  getBlob: (path: string, options?: RequestOptions) =>
+    request<Blob>(path, { ...options, method: "GET", responseType: "blob" }),
 
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
     request<T>(path, {

@@ -7,6 +7,8 @@ import { SessionsPage } from "@/features/auth/pages/sessions-page"
 import { LoginPage } from "@/features/auth/pages/login-page"
 import { OperationalDashboardPage } from "@/features/dashboard/pages/operational-dashboard-page"
 import { ExecutiveDashboardPage } from "@/features/dashboard/pages/executive-dashboard-page"
+import { EstimateDetailsPage } from "@/features/estimates/pages/estimate-details-page"
+import { EstimatesListPage } from "@/features/estimates/pages/estimates-list-page"
 import { ProjectDetailsPage } from "@/features/projects/pages/project-details-page"
 import { ProjectsKanbanPage } from "@/features/projects/pages/projects-kanban-page"
 import { ProjectsListPage } from "@/features/projects/pages/projects-list-page"
@@ -67,6 +69,22 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
                 <ServiceOrdersGanttPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/estimates"
+            element={
+              <PermissionRoute anyOf={["estimates.view_all", "estimates.create", "estimates.edit"]}>
+                <EstimatesListPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/estimates/:estimateId"
+            element={
+              <PermissionRoute anyOf={["estimates.view_all", "estimates.create", "estimates.edit"]}>
+                <EstimateDetailsPage />
               </PermissionRoute>
             }
           />
