@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Search,
   UserRound,
+  Target,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { Link } from "react-router"
@@ -25,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { projectsService } from "@/features/projects/projects.service"
+import { kanbanIndicators } from "@/features/dashboard/planning-indicators"
 import type { ProjectKanbanCard, ProjectType } from "@/features/projects/projects.types"
 
 const nextStage: Partial<Record<ProjectStage, ProjectStage>> = {
@@ -90,7 +92,7 @@ function KanbanCard({
 
         <div className="space-y-2 text-xs text-muted-foreground">
           <p className="flex items-center gap-2"><UserRound className="size-3.5" />{card.owner.name}</p>
-          <p className="flex items-center gap-2"><CalendarClock className="size-3.5" />{formatDate(card.plannedEndDate)}</p>
+          <p className="flex items-center gap-2"><CalendarClock className="size-3.5" />{card.plannedEndDate ? `Prazo: ${formatDate(card.plannedEndDate)}` : `Atualizado: ${formatDate(card.updatedAt)}`}</p>
         </div>
 
         {canMove && targetStage && (
@@ -145,6 +147,7 @@ export function ProjectsKanbanPage() {
     () => Object.fromEntries((kanbanQuery.data?.columns ?? []).map((column) => [column.stage, column.label])) as Partial<Record<ProjectStage, string>>,
     [kanbanQuery.data],
   )
+  const indicators = kanbanQuery.data ? kanbanIndicators(kanbanQuery.data) : null
 
   const canMoveCard = (card: ProjectKanbanCard) =>
     hasPermission("projects.edit_all") || (hasPermission("projects.edit_own") && card.owner.id === user?.id)
@@ -176,14 +179,14 @@ export function ProjectsKanbanPage() {
         <CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(260px,1fr)_190px_190px]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Buscar projeto..." />
+            <Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Buscar projeto..." aria-label="Buscar no Kanban" />
           </div>
           <Select value={scope} onValueChange={(value) => setScope(value as "accessible" | "mine")}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full" aria-label="Escopo do Kanban"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="accessible">Todos acessíveis</SelectItem><SelectItem value="mine">Sob minha responsabilidade</SelectItem></SelectContent>
           </Select>
           <Select value={emptyColumns} onValueChange={(value) => setEmptyColumns(value as "show" | "hide")}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectTrigger className="w-full" aria-label="Visibilidade das etapas vazias"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="show">Exibir etapas vazias</SelectItem><SelectItem value="hide">Ocultar etapas vazias</SelectItem></SelectContent>
           </Select>
         </CardContent>
@@ -191,14 +194,16 @@ export function ProjectsKanbanPage() {
 
       {kanbanQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar o Kanban</AlertTitle><AlertDescription>{kanbanQuery.error.message}</AlertDescription></Alert>}
 
+      {indicators && <Card className="overflow-hidden border-none bg-slate-950 text-white shadow-lg"><CardContent className="flex flex-col justify-between gap-6 p-6 lg:flex-row lg:items-center"><div className="max-w-xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Leitura do fluxo</Badge><h2 className="mt-3 text-2xl font-semibold">Distribuição e gargalo do portfólio</h2><p className="mt-2 text-sm text-slate-300">Identifique rapidamente onde os projetos estão concentrados e qual etapa exige maior capacidade de resposta.</p></div><dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]"><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Projetos</dt><dd className="mt-1 text-2xl font-semibold">{indicators.totalProjects}</dd></div><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Etapas ativas</dt><dd className="mt-1 text-2xl font-semibold">{indicators.activeColumns}</dd></div><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Concluídos</dt><dd className="mt-1 text-2xl font-semibold text-emerald-300">{indicators.completed}</dd></div><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="flex items-center gap-1 text-xs text-slate-400"><Target className="size-3" />Gargalo</dt><dd className="mt-1 truncate text-sm font-semibold" title={indicators.bottleneck?.label}>{indicators.bottleneck?.label ?? "Sem dados"}</dd><p className="mt-1 text-xs text-slate-400">{indicators.bottleneck?.count ?? 0} projeto(s)</p></div></dl></CardContent></Card>}
+
       {kanbanQuery.isLoading ? (
         <div className="flex gap-4 overflow-hidden">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-[480px] min-w-80" />)}</div>
       ) : (
-        <div className="flex items-start gap-4 overflow-x-auto pb-5">
+        <div className="flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-5" aria-label="Quadro Kanban por etapa" tabIndex={0}>
           {columns.map((column) => (
             <section
               key={column.stage}
-              className="min-h-64 w-[340px] shrink-0 rounded-2xl border bg-muted/35 p-3"
+              className="min-h-64 w-[min(86vw,340px)] shrink-0 snap-start rounded-2xl border bg-muted/35 p-3"
               onDragOver={(event) => event.preventDefault()}
               onDrop={() => {
                 if (draggedCard) moveCard(draggedCard, column.stage)

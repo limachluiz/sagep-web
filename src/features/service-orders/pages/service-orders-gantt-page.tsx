@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, CircleDashed, ClockAlert, RefreshCw, Search } from "lucide-react"
+import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, CircleDashed, ClockAlert, Gauge, RefreshCw, Search, Target } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router"
 
@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { serviceOrdersService } from "@/features/service-orders/service-orders.service"
+import { ganttIndicators } from "@/features/dashboard/planning-indicators"
 import type { GanttServiceOrder } from "@/features/service-orders/service-orders.types"
 
 const dayMs = 86_400_000
@@ -47,7 +48,7 @@ function GanttRow({ item, rangeStart, rangeEnd }: { item: GanttServiceOrder; ran
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="text-xs font-semibold text-primary">OS-{item.serviceOrderCode} · PRJ-{item.project.projectCode}</p>
-            <Link to={`/projects/${item.project.id}`} className="mt-1 block truncate font-medium hover:text-primary">{item.project.title}</Link>
+            <Link to={`/service-orders/${item.id}`} className="mt-1 block truncate font-medium hover:text-primary">{item.project.title}</Link>
           </div>
           {item.isDelayed ? <ClockAlert className="size-4 shrink-0 text-destructive" /> : <CheckCircle2 className="size-4 shrink-0 text-primary" />}
         </div>
@@ -76,10 +77,12 @@ export function ServiceOrdersGanttPage() {
   const [from, setFrom] = useState("")
   const [until, setUntil] = useState("")
   const filters = useMemo(() => ({ projectCode: projectCode ? Number(projectCode) : undefined, from: from || undefined, until: until || undefined }), [from, projectCode, until])
-  const ganttQuery = useQuery({ queryKey: ["service-orders", "gantt", filters], queryFn: () => serviceOrdersService.gantt(filters) })
+  const invalidRange = Boolean(from && until && until < from)
+  const ganttQuery = useQuery({ queryKey: ["service-orders", "gantt", filters], queryFn: () => serviceOrdersService.gantt(filters), enabled: !invalidRange })
   const scheduled = ganttQuery.data?.serviceOrders.filter((item) => item.plannedStartDate || item.plannedEndDate) ?? []
   const unscheduled = ganttQuery.data?.serviceOrders.filter((item) => !item.plannedStartDate && !item.plannedEndDate) ?? []
   const delayed = scheduled.filter((item) => item.isDelayed).length
+  const indicators = ganttQuery.data ? ganttIndicators(ganttQuery.data.serviceOrders) : null
   const range = useMemo(() => {
     if (ganttQuery.data?.range.start && ganttQuery.data.range.end) {
       const start = startOfDay(ganttQuery.data.range.start)
@@ -100,27 +103,33 @@ export function ServiceOrdersGanttPage() {
       </div>
 
       <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-4 md:grid-cols-[200px_1fr_1fr_auto]">
-        <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" type="number" min="1" placeholder="Código do projeto" value={projectCode} onChange={(event) => setProjectCode(event.target.value)} /></div>
+        <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" type="number" min="1" placeholder="Código do projeto" value={projectCode} onChange={(event) => setProjectCode(event.target.value)} aria-label="Código do projeto" /></div>
         <Input type="date" aria-label="Data inicial" value={from} onChange={(event) => setFrom(event.target.value)} />
         <Input type="date" aria-label="Data final" value={until} onChange={(event) => setUntil(event.target.value)} />
         <Button variant="ghost" onClick={clearFilters} disabled={!projectCode && !from && !until}>Limpar</Button>
       </CardContent></Card>
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      {invalidRange && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Período inválido</AlertTitle><AlertDescription>A data final deve ser igual ou posterior à data inicial.</AlertDescription></Alert>}
+
+      {indicators && <Card className="overflow-hidden border-none bg-slate-950 text-white shadow-lg"><CardContent className="flex flex-col justify-between gap-6 p-6 lg:flex-row lg:items-center"><div className="max-w-xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Controle de execução</Badge><h2 className="mt-3 text-2xl font-semibold">Prazos, avanço e risco do cronograma</h2><p className="mt-2 text-sm text-slate-300">Síntese das Ordens de Serviço planejadas para priorização de atrasos e correção de lacunas no cronograma.</p></div><dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[540px]"><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Cobertura</dt><dd className="mt-1 text-2xl font-semibold">{indicators.planningCoverage.toFixed(1)}%</dd></div><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Progresso médio</dt><dd className="mt-1 text-2xl font-semibold text-emerald-300">{indicators.averageProgress}%</dd></div><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Taxa de atraso</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.delayedRate.toFixed(1)}%</dd></div><div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="flex items-center gap-1 text-xs text-slate-400"><Target className="size-3" />No prazo</dt><dd className="mt-1 text-2xl font-semibold">{indicators.onTrack}</dd></div></dl></CardContent></Card>}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><CalendarDays className="size-6 text-primary" /><div><p className="text-sm text-muted-foreground">Planejadas</p><p className="text-2xl font-semibold">{scheduled.length}</p></div></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><ClockAlert className="size-6 text-destructive" /><div><p className="text-sm text-muted-foreground">Atrasadas</p><p className="text-2xl font-semibold">{delayed}</p></div></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><CircleDashed className="size-6 text-amber-600" /><div><p className="text-sm text-muted-foreground">Sem cronograma</p><p className="text-2xl font-semibold">{unscheduled.length}</p></div></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><Gauge className="size-6 text-primary" /><div><p className="text-sm text-muted-foreground">Progresso médio</p><p className="text-2xl font-semibold">{indicators?.averageProgress ?? 0}%</p></div></CardContent></Card>
       </div>
 
       {ganttQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar o Gantt</AlertTitle><AlertDescription>{ganttQuery.error.message}</AlertDescription></Alert>}
-      {ganttQuery.isLoading ? <Skeleton className="h-[460px]" /> : scheduled.length ? (
-        <Card className="overflow-hidden border-none shadow-sm"><div className="overflow-x-auto">
+      {ganttQuery.isLoading ? <Skeleton className="h-[460px]" /> : scheduled.length ? (<>
+        <div className="grid gap-3 lg:hidden" aria-label="Resumo móvel do cronograma">{scheduled.map((item) => <Link key={item.id} to={`/service-orders/${item.id}`} className="rounded-xl border bg-card p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-primary">OS-{item.serviceOrderCode} · PRJ-{item.project.projectCode}</p><p className="mt-1 font-medium">{item.project.title}</p></div><Badge variant={item.isDelayed ? "destructive" : "outline"}>{item.isDelayed ? "Atrasada" : `${item.progressPercent}%`}</Badge></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className={item.isDelayed ? "h-full bg-destructive" : "h-full bg-primary"} style={{ width: `${item.progressPercent}%` }} /></div><p className="mt-3 text-xs text-muted-foreground">{formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)} · {item.tasks.length} etapa(s)</p></Link>)}</div>
+        <Card className="hidden overflow-hidden border-none shadow-sm lg:block"><div className="overflow-x-auto" tabIndex={0} aria-label="Cronograma detalhado das Ordens de Serviço">
           <div className="grid min-w-[1180px] grid-cols-[320px_minmax(820px,1fr)] bg-sidebar text-sidebar-foreground"><div className="border-r border-white/10 p-4"><p className="text-sm font-semibold">Ordem de Serviço / Projeto</p><p className="mt-1 text-xs text-sidebar-foreground/60">{formatDate(range.start)} a {formatDate(range.end)}</p></div><div className="flex items-end justify-between px-4 py-4">{ticks.map((tick, index) => <span key={`${tick.toISOString()}-${index}`} className="text-xs text-sidebar-foreground/70">{formatDate(tick)}</span>)}</div></div>
           {scheduled.map((item) => <GanttRow key={item.id} item={item} rangeStart={range.start} rangeEnd={range.end} />)}
         </div></Card>
-      ) : <Card className="border-none shadow-sm"><CardContent className="flex flex-col items-center py-16 text-center"><CalendarRange className="size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhuma OS planejada no período</p><p className="mt-1 text-sm text-muted-foreground">Cadastre o início e o término planejados na Ordem de Serviço.</p></CardContent></Card>}
+      </>) : <Card className="border-none shadow-sm"><CardContent className="flex flex-col items-center py-16 text-center"><CalendarRange className="size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhuma OS planejada no período</p><p className="mt-1 text-sm text-muted-foreground">Cadastre o início e o término planejados na Ordem de Serviço.</p></CardContent></Card>}
 
-      {unscheduled.length > 0 && <Card className="border-none shadow-sm"><CardContent className="p-5"><h2 className="font-semibold">Ordens de Serviço sem cronograma</h2><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{unscheduled.map((item) => <Link key={item.id} to={`/projects/${item.project.id}`} className="rounded-xl border p-4 transition hover:border-primary/50 hover:bg-muted/50"><p className="text-xs font-semibold text-primary">OS-{item.serviceOrderCode} · PRJ-{item.project.projectCode}</p><p className="mt-1 font-medium">{item.project.title}</p></Link>)}</div></CardContent></Card>}
+      {unscheduled.length > 0 && <Card className="border-none shadow-sm"><CardContent className="p-5"><h2 className="font-semibold">Ordens de Serviço sem cronograma</h2><div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">{unscheduled.map((item) => <Link key={item.id} to={`/service-orders/${item.id}`} className="rounded-xl border p-4 transition hover:border-primary/50 hover:bg-muted/50"><p className="text-xs font-semibold text-primary">OS-{item.serviceOrderCode} · PRJ-{item.project.projectCode}</p><p className="mt-1 font-medium">{item.project.title}</p></Link>)}</div></CardContent></Card>}
     </div>
   )
 }
