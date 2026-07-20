@@ -15,6 +15,7 @@ export const atasService = {
   details(ataId: string) { return api.get<Ata>(`/atas/${ataId}`) },
   create(payload: AtaPayload) { return api.post<Ata>("/atas", payload) },
   update(ataId: string, payload: AtaUpdatePayload) { return api.patch<Ata>(`/atas/${ataId}`, payload) },
+  remove(ataId: string) { return api.delete<{ message: string }>(`/atas/${ataId}`) },
 
   listItems(ataId: string, filters: { page?: number; pageSize?: number; search?: string; active?: boolean } = {}) {
     const query = new URLSearchParams({ page: String(filters.page ?? 1), pageSize: String(filters.pageSize ?? 25) })

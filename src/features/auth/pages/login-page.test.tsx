@@ -134,7 +134,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup()
     renderApplication()
 
-    await user.type(screen.getByLabelText("Senha"), "123456")
+    await user.type(await screen.findByLabelText("Senha"), "123456")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
     expect(await screen.findByText("Visão geral da operação")).toBeInTheDocument()
@@ -160,7 +160,7 @@ describe("LoginPage", () => {
     const user = userEvent.setup()
     renderApplication()
 
-    await user.type(screen.getByLabelText("Senha"), "senha-errada")
+    await user.type(await screen.findByLabelText("Senha"), "senha-errada")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
     expect(await screen.findByText("E-mail ou senha inválidos")).toBeInTheDocument()
