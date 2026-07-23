@@ -1,17 +1,22 @@
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
+  Activity,
   AlertTriangle,
+  ArrowRight,
   Boxes,
   CheckCircle2,
   Clock3,
+  FilePlus2,
   FileWarning,
   ListTodo,
   Loader2,
   PackageSearch,
   RefreshCw,
   ShieldAlert,
+  Sparkles,
   Target,
+  Zap,
 } from "lucide-react"
 import { Link } from "react-router"
 import {
@@ -31,10 +36,11 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ItemDescription } from "@/components/item-description"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { dashboardService } from "@/features/dashboard/dashboard.service"
-import { operationalIndicators } from "@/features/dashboard/dashboard-indicators"
+import { buildOperationalWorkflow, operationalIndicators } from "@/features/dashboard/dashboard-indicators"
 import type {
   DashboardOperationalResponse,
   OperationalAlert,
@@ -94,6 +100,7 @@ function AlertBadge({ alert }: { alert: OperationalAlert }) {
 
 function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
   const indicators = operationalIndicators(data)
+  const workflow = buildOperationalWorkflow(data)
   const pendingData = [
     { stage: "Nota de Crédito", total: data.pendingByStage.awaitingCreditNote },
     { stage: "DIEx", total: data.pendingByStage.awaitingDiex },
@@ -105,9 +112,9 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
   ]
 
   const inventoryData = [
-    { name: "Disponível", value: Number(data.inventory.summary.totalAvailableAmount), color: "#66733c" },
-    { name: "Reservado", value: Number(data.inventory.summary.totalReservedAmount), color: "#c89b3c" },
-    { name: "Consumido", value: Number(data.inventory.summary.totalConsumedAmount), color: "#27311d" },
+    { name: "Disponível", value: Number(data.inventory.summary.totalAvailableAmount), color: "#39ff88" },
+    { name: "Reservado", value: Number(data.inventory.summary.totalReservedAmount), color: "#f4b942" },
+    { name: "Consumido", value: Number(data.inventory.summary.totalConsumedAmount), color: "#718078" },
   ]
 
   const metrics = [
@@ -116,25 +123,36 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
       value: data.operationalQueue.length,
       helper: `${data.staleProjects.length} sem avanço`,
       icon: ListTodo,
+      tone: "primary",
     },
     {
       label: "Alertas críticos",
       value: data.alerts.summary.bySeverity.CRITICAL,
       helper: `${data.alerts.summary.bySeverity.WARNING} em atenção`,
       icon: ShieldAlert,
+      tone: "danger",
     },
     {
       label: "Itens de ATA em risco",
       value: data.inventory.summary.lowStockItems + data.inventory.summary.insufficientItems,
       helper: `${data.inventory.summary.insufficientItems} insuficientes`,
       icon: PackageSearch,
+      tone: "warning",
     },
     {
       label: "Saldo disponível",
       value: formatCurrency(data.inventory.summary.totalAvailableAmount),
       helper: `${data.inventory.summary.itemsWithActiveReserve} itens reservados`,
       icon: Boxes,
+      tone: "primary",
     },
+  ]
+
+  const quickActions = [
+    { label: "Nova estimativa", description: "Iniciar composição de custos", to: "/estimates/new", icon: FilePlus2 },
+    { label: "Projetos", description: "Abrir carteira operacional", to: "/projects", icon: Target },
+    { label: "Kanban", description: "Visualizar fluxo por etapa", to: "/kanban", icon: Activity },
+    { label: "Ordens de Serviço", description: "Acompanhar execução", to: "/service-orders", icon: Zap },
   ]
 
   return (
@@ -157,23 +175,92 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
         {metrics.map((metric) => {
           const Icon = metric.icon
           return (
-            <Card key={metric.label} className="border-none shadow-sm">
+            <Card key={metric.label} className="group overflow-hidden">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
-                  <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <div className={`flex size-11 items-center justify-center rounded-sm border ${
+                    metric.tone === "danger"
+                      ? "border-red-400/20 bg-red-400/10 text-red-300"
+                      : metric.tone === "warning"
+                        ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                        : "border-primary/20 bg-primary/10 text-primary"
+                  }`}>
                     <Icon className="size-5" />
                   </div>
-                  <Badge variant="outline">Atual</Badge>
+                  <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[.18em] text-muted-foreground uppercase">
+                    <span className="size-1.5 animate-pulse rounded-full bg-primary" />
+                    Live
+                  </span>
                 </div>
                 <p className="mt-5 text-sm text-muted-foreground">{metric.label}</p>
                 <div className="mt-1 flex items-end justify-between gap-3">
-                  <p className="text-2xl font-semibold">{metric.value}</p>
+                  <p className="font-heading text-3xl font-semibold tracking-tight">{metric.value}</p>
                   <p className="text-right text-xs text-muted-foreground">{metric.helper}</p>
                 </div>
+                <div className="mt-4 h-px bg-gradient-to-r from-primary/70 via-primary/15 to-transparent transition-all group-hover:from-primary" />
               </CardContent>
             </Card>
           )
         })}
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1fr_1.65fr]">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <p className="font-mono text-[10px] tracking-[.2em] text-primary uppercase">Command center</p>
+              <CardTitle className="mt-1">Ações rápidas</CardTitle>
+            </div>
+            <Sparkles className="size-5 text-primary" />
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
+            {quickActions.map((action) => {
+              const Icon = action.icon
+              return (
+                <Link key={action.label} to={action.to} className="group flex items-center gap-3 rounded-sm border border-primary/10 bg-background/35 p-3 transition hover:border-primary/35 hover:bg-primary/[.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-primary/10 text-primary"><Icon className="size-4" /></span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-medium">{action.label}</span>
+                    <span className="block truncate text-xs text-muted-foreground">{action.description}</span>
+                  </span>
+                  <ArrowRight className="size-4 text-muted-foreground transition group-hover:translate-x-0.5 group-hover:text-primary" />
+                </Link>
+              )
+            })}
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden">
+          <CardHeader className="flex flex-row items-start justify-between gap-4">
+            <div>
+              <p className="font-mono text-[10px] tracking-[.2em] text-primary uppercase">Deployment pipeline</p>
+              <CardTitle className="mt-1">Fluxo operacional</CardTitle>
+              <p className="mt-1 text-xs text-muted-foreground">Volume aguardando atuação em cada transição documental.</p>
+            </div>
+            <Badge variant="outline">{indicators.totalPending} pendências</Badge>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {workflow.map((step, index) => (
+                <div key={step.label} className="relative rounded-sm border border-primary/10 bg-background/35 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-mono text-[10px] tracking-[.16em] text-primary">{step.shortLabel}</span>
+                    <span className="font-heading text-2xl font-semibold">{step.count}</span>
+                  </div>
+                  <p className="mt-3 text-xs text-muted-foreground">{step.label}</p>
+                  {index < workflow.length - 1 && <ArrowRight className="absolute top-1/2 -right-2.5 z-10 hidden size-4 -translate-y-1/2 rounded-full bg-card text-primary lg:block" />}
+                </div>
+              ))}
+              <div className="rounded-sm border border-primary/25 bg-primary/[.06] p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-mono text-[10px] tracking-[.16em] text-primary">STATUS</span>
+                  <CheckCircle2 className="size-5 text-primary" />
+                </div>
+                <p className="mt-4 text-xs font-medium text-primary">Conclusão e baixa</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
@@ -188,7 +275,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                 <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="stage" width={105} tickLine={false} axisLine={false} fontSize={11} />
                 <Tooltip />
-                <Bar dataKey="total" name="Projetos" radius={[0, 8, 8, 0]} fill="#66733c" />
+                <Bar dataKey="total" name="Projetos" radius={[0, 3, 3, 0]} fill="#39ff88" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -293,7 +380,8 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
             {data.inventory.criticalItems.length ? data.inventory.criticalItems.slice(0, 6).map((item) => (
               <div key={item.id} className="flex items-center justify-between gap-4 rounded-xl border p-3 text-sm">
                 <div className="min-w-0">
-                  <p className="truncate font-medium">ITEM-{item.ataItemCode} · {item.description}</p>
+                  <p className="font-medium">ITEM-{item.ataItemCode}</p>
+                  <ItemDescription className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description}</ItemDescription>
                   <p className="mt-1 text-xs text-muted-foreground">{item.ata.number} · {item.ata.vendorName}</p>
                 </div>
                 <div className="shrink-0 text-right">
