@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
 
-import { executiveIndicators, operationalIndicators, percentage } from "./dashboard-indicators"
+import { buildOperationalWorkflow, executiveIndicators, operationalIndicators, percentage } from "./dashboard-indicators"
 import type { DashboardExecutiveResponse, DashboardOperationalResponse } from "./dashboard.types"
 
 describe("dashboard indicators", () => {
@@ -28,5 +28,6 @@ describe("dashboard indicators", () => {
     } as DashboardOperationalResponse
 
     expect(operationalIndicators(data)).toEqual({ totalPending: 28, inventoryAtRisk: 6, urgentAlerts: 5, staleProjects: 2 })
+    expect(buildOperationalWorkflow(data).map((step) => step.count)).toEqual([1, 2, 3, 4, 5, 6, 7])
   })
 })
