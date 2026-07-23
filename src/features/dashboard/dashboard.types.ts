@@ -179,6 +179,8 @@ export type DashboardExecutiveResponse = {
     serviceOrdersIssued: number
     totalEstimatedAmount: string
     totalFinalizedEstimatedAmount: string
+    totalCommittedAmount: string
+    totalCompletedProjectsAmount: string
     totalWithDiex: string
     totalWithServiceOrder: string
     ataItemsAtRisk: number
@@ -190,6 +192,8 @@ export type DashboardExecutiveResponse = {
   }
   financial: {
     totalEstimatedAmount: string
+    totalCommittedAmount: string
+    totalCompletedProjectsAmount: string
     totalWithDiex: string
     totalWithServiceOrder: string
     inventoryCurrentReservedAmount: string
