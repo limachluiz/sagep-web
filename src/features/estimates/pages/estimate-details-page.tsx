@@ -18,6 +18,7 @@ import { Link, useParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ItemDescription } from "@/components/item-description"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -269,7 +270,7 @@ export function EstimateDetailsPage() {
               {estimate.items.map((item) => (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.referenceCode}</TableCell>
-                  <TableCell><p className="max-w-md">{item.description}</p>{item.notes && <p className="mt-1 text-xs text-muted-foreground">{item.notes}</p>}</TableCell>
+                  <TableCell className="min-w-72 max-w-xl"><ItemDescription>{item.description}</ItemDescription>{item.notes && <ItemDescription className="mt-1 text-xs text-muted-foreground">{item.notes}</ItemDescription>}</TableCell>
                   <TableCell>{item.unit}</TableCell>
                   <TableCell>{formatQuantity(item.quantity)}</TableCell>
                   <TableCell>

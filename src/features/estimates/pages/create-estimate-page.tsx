@@ -14,6 +14,7 @@ import { Link, useNavigate } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ItemDescription } from "@/components/item-description"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -312,7 +313,7 @@ export function CreateEstimatePage() {
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.referenceCode}</TableCell>
-                      <TableCell><p className="max-w-md">{item.description}</p></TableCell>
+                      <TableCell className="min-w-72 max-w-xl"><ItemDescription>{item.description}</ItemDescription></TableCell>
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
                       <TableCell>

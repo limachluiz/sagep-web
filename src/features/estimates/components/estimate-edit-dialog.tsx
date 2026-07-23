@@ -4,6 +4,7 @@ import { Loader2, PackagePlus, Search, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
+import { ItemDescription } from "@/components/item-description"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -162,7 +163,7 @@ export function EstimateEditDialog({ estimate, open, onOpenChange, onSaved }: Es
                     return (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.referenceCode}</TableCell>
-                        <TableCell><p className="max-w-sm">{item.description}</p></TableCell>
+                        <TableCell className="min-w-64 max-w-lg"><ItemDescription>{item.description}</ItemDescription></TableCell>
                         <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
                         <TableCell>{formatQuantity(item.balance.availableQuantity)} {item.unit}</TableCell>
                         <TableCell className="w-32">
