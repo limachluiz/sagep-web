@@ -139,15 +139,15 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
 
   return (
     <>
-      <Card className="overflow-hidden border-none bg-slate-950 text-white shadow-lg">
+      <Card className="sagep-signal-hero overflow-hidden text-white">
         <CardContent className="p-6 lg:p-7">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
             <div className="max-w-xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Situação operacional</Badge><h2 className="mt-3 text-2xl font-semibold">Prioridades que exigem atuação</h2><p className="mt-2 text-sm leading-6 text-slate-300">Visão consolidada dos gargalos documentais, projetos sem avanço e riscos de saldo que podem comprometer a execução.</p></div>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Pendências</dt><dd className="mt-1 text-2xl font-semibold">{indicators.totalPending}</dd></div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Alertas urgentes</dt><dd className="mt-1 text-2xl font-semibold text-amber-300">{indicators.urgentAlerts}</dd></div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Sem avanço</dt><dd className="mt-1 text-2xl font-semibold">{indicators.staleProjects}</dd></div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3"><dt className="text-xs text-slate-400">Itens em risco</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.inventoryAtRisk}</dd></div>
+              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Pendências</dt><dd className="mt-1 text-2xl font-semibold">{indicators.totalPending}</dd></div>
+              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Alertas urgentes</dt><dd className="mt-1 text-2xl font-semibold text-amber-300">{indicators.urgentAlerts}</dd></div>
+              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Sem avanço</dt><dd className="mt-1 text-2xl font-semibold">{indicators.staleProjects}</dd></div>
+              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Itens em risco</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.inventoryAtRisk}</dd></div>
             </dl>
           </div>
         </CardContent>

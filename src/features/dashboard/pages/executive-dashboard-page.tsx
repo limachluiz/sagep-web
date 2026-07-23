@@ -156,15 +156,15 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
 
   return (
     <>
-      <Card className="overflow-hidden border-none bg-slate-950 text-white shadow-lg">
+      <Card className="sagep-signal-hero overflow-hidden text-white">
         <CardContent className="p-6 lg:p-8">
           <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
             <div className="max-w-2xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Síntese para decisão</Badge><h2 className="mt-3 text-2xl font-semibold lg:text-3xl">Portfólio, execução financeira e resultado</h2><p className="mt-2 text-sm leading-6 text-slate-300">Leitura executiva para acompanhamento da carteira, eficiência documental e riscos que demandam direcionamento da chefia.</p></div>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[600px]">
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Carteira estimada</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalEstimatedAmount)}</dd></div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Valor com OS</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalWithServiceOrder)}</dd></div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Conversão até OS</dt><dd className="mt-1 text-2xl font-semibold text-emerald-300">{indicators.serviceOrderConversionRate.toFixed(1)}%</dd></div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-4"><dt className="text-xs text-slate-400">Projetos abertos</dt><dd className="mt-1 text-2xl font-semibold">{data.summary.projectsOpen}</dd></div>
+              <div className="sagep-metric-tile p-4"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Carteira estimada</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalEstimatedAmount)}</dd></div>
+              <div className="sagep-metric-tile p-4"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Valor com OS</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalWithServiceOrder)}</dd></div>
+              <div className="sagep-metric-tile p-4"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Conversão até OS</dt><dd className="mt-1 text-2xl font-semibold text-primary">{indicators.serviceOrderConversionRate.toFixed(1)}%</dd></div>
+              <div className="sagep-metric-tile p-4"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Projetos abertos</dt><dd className="mt-1 text-2xl font-semibold">{data.summary.projectsOpen}</dd></div>
             </dl>
           </div>
         </CardContent>
