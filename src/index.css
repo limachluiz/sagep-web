@@ -146,4 +146,12 @@
       linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
     background-size: 42px 42px;
   }
+
+  .sagep-signal-grid {
+    background-image:
+      linear-gradient(rgba(88, 242, 139, .025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(88, 242, 139, .025) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: linear-gradient(to right, black, transparent 82%);
+  }
 }
