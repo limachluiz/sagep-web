@@ -28,3 +28,17 @@ export function operationalIndicators(data: DashboardOperationalResponse) {
     staleProjects: data.staleProjects.length,
   }
 }
+
+export function buildOperationalWorkflow(data: DashboardOperationalResponse) {
+  const pending = data.pendingByStage
+
+  return [
+    { label: "Estimativa", shortLabel: "EST", count: pending.awaitingCreditNote },
+    { label: "Nota de Crédito", shortLabel: "NC", count: pending.awaitingDiex },
+    { label: "DIEx", shortLabel: "DIEx", count: pending.awaitingCommitmentNote },
+    { label: "Nota de Empenho", shortLabel: "NE", count: pending.awaitingServiceOrder },
+    { label: "Ordem de Serviço", shortLabel: "OS", count: pending.awaitingExecutionStart },
+    { label: "Execução", shortLabel: "EXEC", count: pending.awaitingAsBuilt },
+    { label: "As-Built / Atesto", shortLabel: "FINAL", count: pending.awaitingInvoiceAttestation },
+  ]
+}
