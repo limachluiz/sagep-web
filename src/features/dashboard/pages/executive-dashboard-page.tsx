@@ -6,13 +6,13 @@ import {
   BriefcaseBusiness,
   CircleDollarSign,
   FileCheck2,
+  Landmark,
   Loader2,
   PackageSearch,
+  BadgeCheck,
   RefreshCw,
   TrendingUp,
   Activity,
-  Ban,
-  Target,
 } from "lucide-react"
 import {
   Bar,
@@ -112,27 +112,27 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
 
   const metrics = [
     {
-      label: "Projetos no período",
-      value: data.summary.projectsTotal,
-      helper: `${data.summary.projectsOpen} em aberto`,
-      icon: BriefcaseBusiness,
-    },
-    {
-      label: "Taxa de conclusão",
-      value: `${indicators.completionRate.toFixed(1)}%`,
-      helper: `${data.summary.projectsCompleted} concluídos`,
-      icon: TrendingUp,
-    },
-    {
       label: "Valor estimado",
       value: formatCurrency(data.summary.totalEstimatedAmount),
       helper: `${data.summary.estimatesFinalized} estimativas finalizadas`,
       icon: CircleDollarSign,
     },
     {
-      label: "Ordens de Serviço",
-      value: data.summary.serviceOrdersIssued,
-      helper: formatCurrency(data.summary.totalWithServiceOrder),
+      label: "Valor empenhado",
+      value: formatCurrency(data.summary.totalCommittedAmount),
+      helper: "Projetos com Nota de Empenho",
+      icon: Landmark,
+    },
+    {
+      label: "Projetos concluídos",
+      value: formatCurrency(data.summary.totalCompletedProjectsAmount),
+      helper: `${data.summary.projectsCompleted} projetos finalizados`,
+      icon: BadgeCheck,
+    },
+    {
+      label: "Valor em Ordens de Serviço",
+      value: formatCurrency(data.summary.totalWithServiceOrder),
+      helper: `${data.summary.serviceOrdersIssued} OS emitidas`,
       icon: FileCheck2,
     },
   ]
@@ -189,9 +189,9 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><BriefcaseBusiness className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Carteira de projetos</p><p className="mt-1 text-2xl font-semibold">{data.summary.projectsTotal}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsOpen} em aberto · {indicators.completionRate.toFixed(1)}% concluídos</p></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="p-5"><Activity className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Carteira em aberto</p><p className="mt-1 text-2xl font-semibold">{indicators.openRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsOpen} projetos ativos</p></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardContent className="p-5"><Ban className="size-5 text-destructive" /><p className="mt-4 text-sm text-muted-foreground">Taxa de cancelamento</p><p className="mt-1 text-2xl font-semibold">{indicators.cancellationRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsCanceled} cancelados</p></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardContent className="p-5"><Target className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Conversão até DIEx</p><p className="mt-1 text-2xl font-semibold">{indicators.diexConversionRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">Sobre o valor estimado</p></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><TrendingUp className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Conversão financeira</p><p className="mt-1 text-2xl font-semibold">{indicators.serviceOrderConversionRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">Valor estimado convertido em OS</p></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="p-5"><PackageSearch className="size-5 text-amber-600" /><p className="mt-4 text-sm text-muted-foreground">Risco de abastecimento</p><p className="mt-1 text-2xl font-semibold">{data.summary.ataItemsAtRisk + data.summary.ataItemsInsufficient}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.ataItemsInsufficient} itens insuficientes</p></CardContent></Card>
       </div>
 
