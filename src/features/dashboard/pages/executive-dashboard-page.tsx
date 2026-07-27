@@ -12,6 +12,8 @@ import {
   BadgeCheck,
   RefreshCw,
   TrendingUp,
+  TrendingDown,
+  Minus,
   Activity,
 } from "lucide-react"
 import {
@@ -38,6 +40,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dashboardService } from "@/features/dashboard/dashboard.service"
 import { executiveIndicators } from "@/features/dashboard/dashboard-indicators"
+import { previousPeriodFilters, type ExecutiveFilterMode } from "@/features/dashboard/executive-period"
 import type {
   AmountBreakdown,
   DashboardExecutiveFilters,
@@ -45,7 +48,11 @@ import type {
   ProjectStage,
 } from "@/features/dashboard/dashboard.types"
 
-type FilterMode = "all" | "month" | "quarter" | "semester" | "year" | "interval" | "as_of"
+type ComparisonMetric = {
+  label: string
+  current: number
+  previous: number
+}
 
 const stageLabels: Record<ProjectStage, string> = {
   ESTIMATIVA_PRECO: "Estimativa",
@@ -107,7 +114,54 @@ function RankingList({ items }: { items: AmountBreakdown[] }) {
   )
 }
 
-function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
+function variation(current: number, previous: number) {
+  if (previous === 0) return current === 0 ? 0 : null
+  return ((current - previous) / Math.abs(previous)) * 100
+}
+
+function ComparisonStrip({ metrics }: { metrics: ComparisonMetric[] }) {
+  return (
+    <Card className="border-none shadow-sm">
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-3">
+          <span>Comparação com o período anterior</span>
+          <Badge variant="outline">Variação financeira</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {metrics.map((metric) => {
+          const delta = variation(metric.current, metric.previous)
+          const increased = delta !== null && delta > 0
+          const decreased = delta !== null && delta < 0
+          const Icon = increased ? TrendingUp : decreased ? TrendingDown : Minus
+          return (
+            <div key={metric.label} className="rounded-xl border bg-card/60 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-xs text-muted-foreground">{metric.label}</p>
+                <span className={`flex items-center gap-1 text-xs font-semibold ${increased ? "text-emerald-500" : decreased ? "text-amber-500" : "text-muted-foreground"}`}>
+                  <Icon className="size-3.5" />
+                  {delta === null ? "Novo" : `${Math.abs(delta).toFixed(1)}%`}
+                </span>
+              </div>
+              <p className="mt-3 text-lg font-semibold">{formatCurrency(metric.current)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">Anterior: {formatCurrency(metric.previous)}</p>
+            </div>
+          )
+        })}
+      </CardContent>
+    </Card>
+  )
+}
+
+function ExecutiveContent({
+  data,
+  previousData,
+  comparisonLoading,
+}: {
+  data: DashboardExecutiveResponse
+  previousData?: DashboardExecutiveResponse
+  comparisonLoading: boolean
+}) {
   const indicators = executiveIndicators(data)
 
   const metrics = [
@@ -154,6 +208,15 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
     { label: "Consumido", value: Number(data.financial.inventoryCurrentConsumedAmount) },
   ]
 
+  const comparisonMetrics: ComparisonMetric[] = previousData
+    ? [
+        { label: "Valor estimado", current: Number(data.summary.totalEstimatedAmount), previous: Number(previousData.summary.totalEstimatedAmount) },
+        { label: "Valor empenhado", current: Number(data.summary.totalCommittedAmount), previous: Number(previousData.summary.totalCommittedAmount) },
+        { label: "Projetos concluídos", current: Number(data.summary.totalCompletedProjectsAmount), previous: Number(previousData.summary.totalCompletedProjectsAmount) },
+        { label: "Valor em OS", current: Number(data.summary.totalWithServiceOrder), previous: Number(previousData.summary.totalWithServiceOrder) },
+      ]
+    : []
+
   return (
     <>
       <Card className="sagep-signal-hero overflow-hidden text-white">
@@ -187,6 +250,12 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
           )
         })}
       </div>
+
+      {comparisonLoading ? (
+        <Skeleton className="h-44 rounded-xl" />
+      ) : comparisonMetrics.length ? (
+        <ComparisonStrip metrics={comparisonMetrics} />
+      ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-none shadow-sm"><CardContent className="p-5"><BriefcaseBusiness className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Carteira de projetos</p><p className="mt-1 text-2xl font-semibold">{data.summary.projectsTotal}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsOpen} em aberto · {indicators.completionRate.toFixed(1)}% concluídos</p></CardContent></Card>
@@ -319,7 +388,7 @@ function ExecutiveContent({ data }: { data: DashboardExecutiveResponse }) {
 }
 
 export function ExecutiveDashboardPage() {
-  const [mode, setMode] = useState<FilterMode>("year")
+  const [mode, setMode] = useState<ExecutiveFilterMode>("year")
   const [referenceDate, setReferenceDate] = useState(today())
   const [startDate, setStartDate] = useState(firstDayOfMonth())
   const [endDate, setEndDate] = useState(today())
@@ -331,6 +400,7 @@ export function ExecutiveDashboardPage() {
     if (mode === "as_of") return { asOfDate }
     return { periodType: mode, referenceDate }
   }, [asOfDate, endDate, mode, referenceDate, startDate])
+  const comparisonFilters = useMemo(() => previousPeriodFilters(mode, filters), [filters, mode])
 
   const isInvalidInterval = mode === "interval" && (!startDate || !endDate || endDate < startDate)
   const dashboardQuery = useQuery({
@@ -338,6 +408,12 @@ export function ExecutiveDashboardPage() {
     queryFn: () => dashboardService.executive(filters),
     enabled: !isInvalidInterval,
     refetchInterval: 1000 * 60 * 5,
+  })
+  const comparisonQuery = useQuery({
+    queryKey: ["dashboard", "executive", "previous", comparisonFilters],
+    queryFn: () => dashboardService.executive(comparisonFilters ?? {}),
+    enabled: !isInvalidInterval && comparisonFilters !== null,
+    staleTime: 1000 * 60 * 5,
   })
 
   return (
@@ -365,7 +441,7 @@ export function ExecutiveDashboardPage() {
         <CardContent className="flex flex-col gap-4 p-5 xl:flex-row xl:items-end">
           <div className="space-y-2">
             <Label>Período de análise</Label>
-            <Select value={mode} onValueChange={(value) => setMode(value as FilterMode)}>
+            <Select value={mode} onValueChange={(value) => setMode(value as ExecutiveFilterMode)}>
               <SelectTrigger className="w-full xl:w-56" aria-label="Período de análise"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Visão acumulada</SelectItem>
@@ -379,7 +455,7 @@ export function ExecutiveDashboardPage() {
             </Select>
           </div>
 
-          {(["month", "quarter", "semester", "year"] as FilterMode[]).includes(mode) && (
+          {(["month", "quarter", "semester", "year"] as ExecutiveFilterMode[]).includes(mode) && (
             <div className="space-y-2">
               <Label htmlFor="reference-date">Data de referência</Label>
               <Input id="reference-date" type="date" className="xl:w-48" value={referenceDate} onChange={(event) => setReferenceDate(event.target.value)} />
@@ -434,7 +510,11 @@ export function ExecutiveDashboardPage() {
           {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-36 rounded-xl" />)}
         </div>
       ) : dashboardQuery.data ? (
-        <ExecutiveContent data={dashboardQuery.data} />
+        <ExecutiveContent
+          data={dashboardQuery.data}
+          previousData={comparisonQuery.data}
+          comparisonLoading={comparisonQuery.isLoading}
+        />
       ) : null}
     </div>
   )
