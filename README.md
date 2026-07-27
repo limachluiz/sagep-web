@@ -14,10 +14,10 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - controle de sessão com Zustand;
 - rotas públicas e protegidas;
 - layout responsivo autenticado;
-- dashboards operacional e executivo com dados reais, filtros e comparação temporal;
+- dashboards operacional e executivo com dados reais, filtros por período, UF, OM, tipo e responsável, comparação temporal e cards acionáveis;
 - projetos com timeline, próxima ação e fluxo documental;
 - abas dos detalhes do projeto persistidas na URL para navegação direta;
-- Kanban de projetos e Gantt de Ordens de Serviço em módulos próprios;
+- Kanban de projetos e Gantt de Ordens de Serviço em módulos próprios, com filtros organizacionais, gargalos, atrasos e lacunas de planejamento;
 - CRUD de projetos, tarefas, estimativas, DIEx e Ordens de Serviço;
 - seletores de vínculos com códigos amigáveis, títulos e OMs, mantendo IDs internos ocultos;
 - arquivamento, restauração e exclusão lógica conforme permissões;

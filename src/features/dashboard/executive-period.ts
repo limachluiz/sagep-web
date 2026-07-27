@@ -14,6 +14,11 @@ export function previousPeriodFilters(
   filters: DashboardExecutiveFilters,
 ): DashboardExecutiveFilters | null {
   if (mode === "all" || mode === "as_of") return null
+  const portfolioFilters: DashboardExecutiveFilters = {}
+  if (filters.stateUf) portfolioFilters.stateUf = filters.stateUf
+  if (filters.omId) portfolioFilters.omId = filters.omId
+  if (filters.projectType) portfolioFilters.projectType = filters.projectType
+  if (filters.ownerId) portfolioFilters.ownerId = filters.ownerId
 
   if (mode === "interval" && filters.startDate && filters.endDate) {
     const start = new Date(`${filters.startDate}T12:00:00`)
@@ -22,7 +27,7 @@ export function previousPeriodFilters(
     const previousEnd = new Date(start)
     previousEnd.setDate(previousEnd.getDate() - 1)
     const previousStart = new Date(previousEnd.getTime() - duration)
-    return { startDate: toDateInput(previousStart), endDate: toDateInput(previousEnd) }
+    return { ...portfolioFilters, startDate: toDateInput(previousStart), endDate: toDateInput(previousEnd) }
   }
 
   if (filters.periodType && filters.referenceDate) {
@@ -31,7 +36,7 @@ export function previousPeriodFilters(
     if (filters.periodType === "quarter") reference.setMonth(reference.getMonth() - 3)
     if (filters.periodType === "semester") reference.setMonth(reference.getMonth() - 6)
     if (filters.periodType === "year") reference.setFullYear(reference.getFullYear() - 1)
-    return { periodType: filters.periodType, referenceDate: toDateInput(reference) }
+    return { ...portfolioFilters, periodType: filters.periodType, referenceDate: toDateInput(reference) }
   }
 
   return null

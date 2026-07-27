@@ -28,6 +28,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts"
+import { Link } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -41,6 +42,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { dashboardService } from "@/features/dashboard/dashboard.service"
 import { executiveIndicators } from "@/features/dashboard/dashboard-indicators"
 import { previousPeriodFilters, type ExecutiveFilterMode } from "@/features/dashboard/executive-period"
+import { militaryOrganizationsService } from "@/features/projects/military-organizations.service"
+import type { FederativeUnit, ProjectType } from "@/features/projects/projects.types"
+import { usersService } from "@/features/users/users.service"
 import type {
   AmountBreakdown,
   DashboardExecutiveFilters,
@@ -170,24 +174,28 @@ function ExecutiveContent({
       value: formatCurrency(data.summary.totalEstimatedAmount),
       helper: `${data.summary.estimatesFinalized} estimativas finalizadas`,
       icon: CircleDollarSign,
+      to: "/estimates",
     },
     {
       label: "Valor empenhado",
       value: formatCurrency(data.summary.totalCommittedAmount),
       helper: "Projetos com Nota de Empenho",
       icon: Landmark,
+      to: "/projects",
     },
     {
       label: "Projetos concluídos",
       value: formatCurrency(data.summary.totalCompletedProjectsAmount),
       helper: `${data.summary.projectsCompleted} projetos finalizados`,
       icon: BadgeCheck,
+      to: "/projects?status=CONCLUIDO",
     },
     {
       label: "Valor em Ordens de Serviço",
       value: formatCurrency(data.summary.totalWithServiceOrder),
       helper: `${data.summary.serviceOrdersIssued} OS emitidas`,
       icon: FileCheck2,
+      to: "/service-orders",
     },
   ]
 
@@ -237,7 +245,8 @@ function ExecutiveContent({
         {metrics.map((metric) => {
           const Icon = metric.icon
           return (
-            <Card key={metric.label} className="border-none shadow-sm">
+            <Link key={metric.label} to={metric.to} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Card className="h-full border-none shadow-sm transition hover:-translate-y-0.5 hover:ring-1 hover:ring-primary/30">
               <CardContent className="p-5">
                 <div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <Icon className="size-5" />
@@ -247,6 +256,7 @@ function ExecutiveContent({
                 <p className="mt-2 text-xs text-muted-foreground">{metric.helper}</p>
               </CardContent>
             </Card>
+            </Link>
           )
         })}
       </div>
@@ -393,13 +403,37 @@ export function ExecutiveDashboardPage() {
   const [startDate, setStartDate] = useState(firstDayOfMonth())
   const [endDate, setEndDate] = useState(today())
   const [asOfDate, setAsOfDate] = useState(today())
+  const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
+  const [omId, setOmId] = useState("all")
+  const [projectType, setProjectType] = useState<ProjectType | "all">("all")
+  const [ownerId, setOwnerId] = useState("all")
+
+  const organizationsQuery = useQuery({
+    queryKey: ["military-organizations", "dashboard-filters"],
+    queryFn: () => militaryOrganizationsService.list({ page: 1, pageSize: 100, active: true }),
+    staleTime: 1000 * 60 * 10,
+  })
+  const ownersQuery = useQuery({
+    queryKey: ["users", "dashboard-filter-options"],
+    queryFn: () => usersService.options(),
+    staleTime: 1000 * 60 * 10,
+  })
+  const organizationOptions = (organizationsQuery.data?.items ?? []).filter(
+    (organization) => stateUf === "all" || organization.stateUf === stateUf,
+  )
 
   const filters = useMemo<DashboardExecutiveFilters>(() => {
-    if (mode === "all") return {}
-    if (mode === "interval") return { startDate, endDate }
-    if (mode === "as_of") return { asOfDate }
-    return { periodType: mode, referenceDate }
-  }, [asOfDate, endDate, mode, referenceDate, startDate])
+    const portfolioFilters = {
+      stateUf: stateUf === "all" ? undefined : stateUf,
+      omId: omId === "all" ? undefined : omId,
+      projectType: projectType === "all" ? undefined : projectType,
+      ownerId: ownerId === "all" ? undefined : ownerId,
+    }
+    if (mode === "all") return portfolioFilters
+    if (mode === "interval") return { ...portfolioFilters, startDate, endDate }
+    if (mode === "as_of") return { ...portfolioFilters, asOfDate }
+    return { ...portfolioFilters, periodType: mode, referenceDate }
+  }, [asOfDate, endDate, mode, omId, ownerId, projectType, referenceDate, startDate, stateUf])
   const comparisonFilters = useMemo(() => previousPeriodFilters(mode, filters), [filters, mode])
 
   const isInvalidInterval = mode === "interval" && (!startDate || !endDate || endDate < startDate)
@@ -438,7 +472,7 @@ export function ExecutiveDashboardPage() {
       </div>
 
       <Card className="border-none shadow-sm">
-        <CardContent className="flex flex-col gap-4 p-5 xl:flex-row xl:items-end">
+        <CardContent className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
           <div className="space-y-2">
             <Label>Período de análise</Label>
             <Select value={mode} onValueChange={(value) => setMode(value as ExecutiveFilterMode)}>
@@ -482,9 +516,44 @@ export function ExecutiveDashboardPage() {
             </div>
           )}
 
-          <div className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          <div className="space-y-2">
+            <Label>UF</Label>
+            <Select value={stateUf} onValueChange={(value) => { setStateUf(value as FederativeUnit | "all"); setOmId("all") }}>
+              <SelectTrigger aria-label="Filtrar Dashboard por UF"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Todas as UFs</SelectItem>{(["AM", "RO", "RR", "AC"] as FederativeUnit[]).map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Organização Militar</Label>
+            <Select value={omId} onValueChange={setOmId}>
+              <SelectTrigger aria-label="Filtrar Dashboard por OM"><SelectValue placeholder={organizationsQuery.isLoading ? "Carregando..." : "Todas as OMs"} /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Todas as OMs</SelectItem>{organizationOptions.map((organization) => <SelectItem key={organization.id} value={organization.id}>{organization.sigla} · {organization.cityName}/{organization.stateUf}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Tipo de projeto</Label>
+            <Select value={projectType} onValueChange={(value) => setProjectType(value as ProjectType | "all")}>
+              <SelectTrigger aria-label="Filtrar Dashboard por tipo"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Todos os tipos</SelectItem><SelectItem value="CFTV">CFTV</SelectItem><SelectItem value="FIBRA_OPTICA_PONTO_LOGICO">Fibra / Ponto Lógico</SelectItem></SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Responsável</Label>
+            <Select value={ownerId} onValueChange={setOwnerId}>
+              <SelectTrigger aria-label="Filtrar Dashboard por responsável"><SelectValue placeholder={ownersQuery.isLoading ? "Carregando..." : "Todos os responsáveis"} /></SelectTrigger>
+              <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}>{owner.rank ? `${owner.rank} ` : ""}{owner.name}</SelectItem>)}</SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground md:col-span-2 xl:col-span-4">
             <BarChart3 className="size-4" />
-            Atualização automática a cada 5 minutos
+            <span>Atualização automática a cada 5 minutos</span>
+            {(stateUf !== "all" || omId !== "all" || projectType !== "all" || ownerId !== "all") && (
+              <Button variant="ghost" size="sm" className="ml-auto" onClick={() => { setStateUf("all"); setOmId("all"); setProjectType("all"); setOwnerId("all") }}>Limpar filtros da carteira</Button>
+            )}
           </div>
         </CardContent>
       </Card>

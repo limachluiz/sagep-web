@@ -27,7 +27,9 @@ import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { projectsService } from "@/features/projects/projects.service"
 import { kanbanIndicators } from "@/features/dashboard/planning-indicators"
-import type { ProjectKanbanCard, ProjectType } from "@/features/projects/projects.types"
+import { militaryOrganizationsService } from "@/features/projects/military-organizations.service"
+import type { FederativeUnit, ProjectKanbanCard, ProjectType } from "@/features/projects/projects.types"
+import { usersService } from "@/features/users/users.service"
 
 const nextStage: Partial<Record<ProjectStage, ProjectStage>> = {
   ESTIMATIVA_PRECO: "AGUARDANDO_NOTA_CREDITO",
@@ -114,6 +116,11 @@ export function ProjectsKanbanPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [scope, setScope] = useState<"accessible" | "mine">("accessible")
   const [emptyColumns, setEmptyColumns] = useState<"show" | "hide">("show")
+  const [stage, setStage] = useState<ProjectStage | "all">("all")
+  const [projectType, setProjectType] = useState<ProjectType | "all">("all")
+  const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
+  const [omId, setOmId] = useState("all")
+  const [ownerId, setOwnerId] = useState("all")
   const [draggedCard, setDraggedCard] = useState<ProjectKanbanCard | null>(null)
 
   useEffect(() => {
@@ -121,11 +128,30 @@ export function ProjectsKanbanPage() {
     return () => window.clearTimeout(timeout)
   }, [search])
 
+  const organizationsQuery = useQuery({
+    queryKey: ["military-organizations", "kanban-filters"],
+    queryFn: () => militaryOrganizationsService.list({ page: 1, pageSize: 100, active: true }),
+    staleTime: 1000 * 60 * 10,
+  })
+  const ownersQuery = useQuery({
+    queryKey: ["users", "kanban-filter-options"],
+    queryFn: () => usersService.options(),
+    staleTime: 1000 * 60 * 10,
+  })
+  const organizationOptions = (organizationsQuery.data?.items ?? []).filter(
+    (organization) => stateUf === "all" || organization.stateUf === stateUf,
+  )
+
   const kanbanQuery = useQuery({
-    queryKey: ["projects", "kanban", debouncedSearch, scope],
+    queryKey: ["projects", "kanban", debouncedSearch, scope, stage, projectType, stateUf, omId, ownerId],
     queryFn: () => projectsService.kanban({
       search: debouncedSearch || undefined,
       onlyMine: scope === "mine",
+      stage: stage === "all" ? undefined : stage,
+      projectType: projectType === "all" ? undefined : projectType,
+      stateUf: stateUf === "all" ? undefined : stateUf,
+      omId: omId === "all" ? undefined : omId,
+      ownerId: scope === "mine" || ownerId === "all" ? undefined : ownerId,
     }),
   })
 
@@ -176,7 +202,7 @@ export function ProjectsKanbanPage() {
       </div>
 
       <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(260px,1fr)_190px_190px]">
+        <CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Buscar projeto..." aria-label="Buscar no Kanban" />
@@ -189,12 +215,35 @@ export function ProjectsKanbanPage() {
             <SelectTrigger className="w-full" aria-label="Visibilidade das etapas vazias"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="show">Exibir etapas vazias</SelectItem><SelectItem value="hide">Ocultar etapas vazias</SelectItem></SelectContent>
           </Select>
+          <Select value={stage} onValueChange={(value) => setStage(value as ProjectStage | "all")}>
+            <SelectTrigger className="w-full" aria-label="Filtrar Kanban por etapa"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas as etapas</SelectItem>{(kanbanQuery.data?.columns ?? []).map((column) => <SelectItem key={column.stage} value={column.stage}>{column.label}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={projectType} onValueChange={(value) => setProjectType(value as ProjectType | "all")}>
+            <SelectTrigger className="w-full" aria-label="Filtrar Kanban por tipo"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todos os tipos</SelectItem>{Object.entries(typeLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={stateUf} onValueChange={(value) => { setStateUf(value as FederativeUnit | "all"); setOmId("all") }}>
+            <SelectTrigger className="w-full" aria-label="Filtrar Kanban por UF"><SelectValue /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas as UFs</SelectItem>{(["AM", "RO", "RR", "AC"] as FederativeUnit[]).map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={omId} onValueChange={setOmId}>
+            <SelectTrigger className="w-full" aria-label="Filtrar Kanban por OM"><SelectValue placeholder="Todas as OMs" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todas as OMs</SelectItem>{organizationOptions.map((organization) => <SelectItem key={organization.id} value={organization.id}>{organization.sigla} · {organization.cityName}/{organization.stateUf}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={ownerId} onValueChange={setOwnerId} disabled={scope === "mine"}>
+            <SelectTrigger className="w-full" aria-label="Filtrar Kanban por responsável"><SelectValue placeholder="Todos os responsáveis" /></SelectTrigger>
+            <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}>{owner.rank ? `${owner.rank} ` : ""}{owner.name}</SelectItem>)}</SelectContent>
+          </Select>
+          {(search || scope !== "accessible" || emptyColumns !== "show" || stage !== "all" || projectType !== "all" || stateUf !== "all" || omId !== "all" || ownerId !== "all") && (
+            <Button variant="ghost" onClick={() => { setSearch(""); setDebouncedSearch(""); setScope("accessible"); setEmptyColumns("show"); setStage("all"); setProjectType("all"); setStateUf("all"); setOmId("all"); setOwnerId("all") }}>Limpar filtros</Button>
+          )}
         </CardContent>
       </Card>
 
       {kanbanQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar o Kanban</AlertTitle><AlertDescription>{kanbanQuery.error.message}</AlertDescription></Alert>}
 
-      {indicators && <Card className="sagep-signal-hero overflow-hidden text-white"><CardContent className="flex flex-col justify-between gap-6 p-6 lg:flex-row lg:items-center"><div className="max-w-xl"><Badge>Leitura do fluxo</Badge><h2 className="mt-3 text-2xl font-semibold">Distribuição e gargalo do portfólio</h2><p className="mt-2 text-sm text-muted-foreground">Identifique rapidamente onde os projetos estão concentrados e qual etapa exige maior capacidade de resposta.</p></div><dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]"><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Projetos</dt><dd className="mt-1 text-2xl font-semibold">{indicators.totalProjects}</dd></div><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Etapas ativas</dt><dd className="mt-1 text-2xl font-semibold">{indicators.activeColumns}</dd></div><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Concluídos</dt><dd className="mt-1 text-2xl font-semibold text-primary">{indicators.completed}</dd></div><div className="sagep-metric-tile p-3"><dt className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Target className="size-3" />Gargalo</dt><dd className="mt-1 truncate text-sm font-semibold" title={indicators.bottleneck?.label}>{indicators.bottleneck?.label ?? "Sem dados"}</dd><p className="mt-1 text-xs text-muted-foreground">{indicators.bottleneck?.count ?? 0} projeto(s)</p></div></dl></CardContent></Card>}
+      {indicators && <Card className="sagep-signal-hero overflow-hidden text-white"><CardContent className="flex flex-col justify-between gap-6 p-6 lg:flex-row lg:items-center"><div className="max-w-xl"><Badge>Leitura do fluxo</Badge><h2 className="mt-3 text-2xl font-semibold">Distribuição e gargalo do portfólio</h2><p className="mt-2 text-sm text-muted-foreground">Identifique rapidamente onde os projetos estão concentrados e qual etapa exige maior capacidade de resposta.</p></div><div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]"><div className="sagep-metric-tile p-3"><p className="text-xs text-muted-foreground uppercase">Projetos</p><p className="mt-1 text-2xl font-semibold">{indicators.totalProjects}</p></div><div className="sagep-metric-tile p-3"><p className="text-xs text-muted-foreground uppercase">Etapas ativas</p><p className="mt-1 text-2xl font-semibold">{indicators.activeColumns}</p></div><button type="button" className="sagep-metric-tile p-3 text-left transition hover:border-primary/60" onClick={() => setStage("SERVICO_CONCLUIDO")}><span className="block text-xs text-muted-foreground uppercase">Concluídos</span><span className="mt-1 block text-2xl font-semibold text-primary">{indicators.completed}</span></button><button type="button" className="sagep-metric-tile p-3 text-left transition hover:border-primary/60" disabled={!indicators.bottleneck?.count} onClick={() => indicators.bottleneck && setStage(indicators.bottleneck.stage)}><span className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Target className="size-3" />Gargalo</span><span className="mt-1 block truncate text-sm font-semibold" title={indicators.bottleneck?.label}>{indicators.bottleneck?.label ?? "Sem dados"}</span><span className="mt-1 block text-xs text-muted-foreground">{indicators.bottleneck?.count ?? 0} projeto(s)</span></button></div></CardContent></Card>}
 
       {kanbanQuery.isLoading ? (
         <div className="flex gap-4 overflow-hidden">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-[480px] min-w-80" />)}</div>

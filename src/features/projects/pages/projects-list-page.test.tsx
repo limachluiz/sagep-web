@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen } from "@testing-library/react"
+import { render, screen, waitFor } from "@testing-library/react"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter } from "react-router"
 
@@ -62,5 +62,14 @@ describe("ProjectsListPage", () => {
     expect(screen.getByRole("combobox", { name: "Filtrar por etapa" })).toBeInTheDocument()
     expect(await screen.findAllByRole("link", { name: "Abrir projeto PRJ-42" })).toHaveLength(2)
     expect(screen.queryByText(/até não definida/i)).not.toBeInTheDocument()
+  })
+
+  it("aplica filtros recebidos por links do Dashboard", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/projects?status=CONCLUIDO"]}><ProjectsListPage /></MemoryRouter></QueryClientProvider>)
+
+    await waitFor(() => expect(projectsService.list).toHaveBeenCalledWith(expect.objectContaining({
+      status: "CONCLUIDO",
+    })))
   })
 })

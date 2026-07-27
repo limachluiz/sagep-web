@@ -155,6 +155,10 @@ export type DashboardExecutiveFilters = {
   startDate?: string
   endDate?: string
   asOfDate?: string
+  stateUf?: "AM" | "RO" | "RR" | "AC"
+  omId?: string
+  projectType?: "CFTV" | "FIBRA_OPTICA_PONTO_LOGICO"
+  ownerId?: string
 }
 
 export type DashboardExecutiveResponse = {
@@ -167,6 +171,10 @@ export type DashboardExecutiveResponse = {
     startDate: string | null
     endDate: string | null
     asOfDate: string | null
+    stateUf: DashboardExecutiveFilters["stateUf"] | null
+    omId: string | null
+    projectType: DashboardExecutiveFilters["projectType"] | null
+    ownerId: string | null
   }
   summary: {
     projectsTotal: number

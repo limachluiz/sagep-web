@@ -1,5 +1,5 @@
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
-import type { ProjectStatus } from "@/features/projects/projects.types"
+import type { FederativeUnit, ProjectStatus, ProjectType } from "@/features/projects/projects.types"
 
 export type GanttServiceOrder = {
   id: string
@@ -11,6 +11,17 @@ export type GanttServiceOrder = {
     title: string
     stage: ProjectStage
     status: ProjectStatus
+    projectType: ProjectType | null
+    owner: {
+      id: string
+      name: string
+    }
+    om: {
+      id: string
+      sigla: string
+      cityName: string
+      stateUf: FederativeUnit
+    } | null
   }
   plannedStartDate: string | null
   plannedEndDate: string | null

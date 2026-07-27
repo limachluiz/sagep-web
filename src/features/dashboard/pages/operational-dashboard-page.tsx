@@ -124,6 +124,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
       helper: `${data.staleProjects.length} sem avanço`,
       icon: ListTodo,
       tone: "primary",
+      to: "/projects",
     },
     {
       label: "Alertas críticos",
@@ -131,6 +132,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
       helper: `${data.alerts.summary.bySeverity.WARNING} em atenção`,
       icon: ShieldAlert,
       tone: "danger",
+      to: "/alerts",
     },
     {
       label: "Itens de ATA em risco",
@@ -138,6 +140,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
       helper: `${data.inventory.summary.insufficientItems} insuficientes`,
       icon: PackageSearch,
       tone: "warning",
+      to: "/atas",
     },
     {
       label: "Saldo disponível",
@@ -145,6 +148,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
       helper: `${data.inventory.summary.itemsWithActiveReserve} itens reservados`,
       icon: Boxes,
       tone: "primary",
+      to: "/atas",
     },
   ]
 
@@ -175,7 +179,8 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
         {metrics.map((metric) => {
           const Icon = metric.icon
           return (
-            <Card key={metric.label} className="group overflow-hidden">
+            <Link key={metric.label} to={metric.to} className="block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
+            <Card className="group h-full overflow-hidden transition hover:-translate-y-0.5 hover:border-primary/35">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between">
                   <div className={`flex size-11 items-center justify-center rounded-sm border ${
@@ -200,6 +205,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                 <div className="mt-4 h-px bg-gradient-to-r from-primary/70 via-primary/15 to-transparent transition-all group-hover:from-primary" />
               </CardContent>
             </Card>
+            </Link>
           )
         })}
       </div>

@@ -24,6 +24,22 @@ describe("previousPeriodFilters", () => {
     })
   })
 
+  it("preserva os filtros da carteira ao comparar períodos", () => {
+    expect(previousPeriodFilters("year", {
+      periodType: "year",
+      referenceDate: "2026-07-26",
+      stateUf: "AM",
+      projectType: "CFTV",
+      ownerId: "user-test",
+    })).toEqual({
+      periodType: "year",
+      referenceDate: "2025-07-26",
+      stateUf: "AM",
+      projectType: "CFTV",
+      ownerId: "user-test",
+    })
+  })
+
   it("não compara visão acumulada nem posição histórica", () => {
     expect(previousPeriodFilters("all", {})).toBeNull()
     expect(previousPeriodFilters("as_of", { asOfDate: "2026-07-26" })).toBeNull()

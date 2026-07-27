@@ -10,13 +10,28 @@ import type {
   ProjectMutationResponse,
   ProjectsListFilters,
   ProjectsListResponse,
+  FederativeUnit,
+  ProjectType,
 } from "./projects.types"
 
 export const projectsService = {
-  kanban(filters: { search?: string; onlyMine?: boolean }) {
+  kanban(filters: {
+    search?: string
+    onlyMine?: boolean
+    stage?: string
+    projectType?: ProjectType
+    omId?: string
+    stateUf?: FederativeUnit
+    ownerId?: string
+  }) {
     const query = new URLSearchParams()
     if (filters.search) query.set("search", filters.search)
     if (filters.onlyMine) query.set("onlyMine", "true")
+    if (filters.stage) query.set("stage", filters.stage)
+    if (filters.projectType) query.set("projectType", filters.projectType)
+    if (filters.omId) query.set("omId", filters.omId)
+    if (filters.stateUf) query.set("stateUf", filters.stateUf)
+    if (filters.ownerId) query.set("ownerId", filters.ownerId)
     const suffix = query.size ? `?${query.toString()}` : ""
     return api.get<ProjectKanbanResponse>(`/projects/kanban${suffix}`)
   },

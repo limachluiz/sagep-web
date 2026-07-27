@@ -8,12 +8,15 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
+import type { FederativeUnit, ProjectType } from "@/features/projects/projects.types"
 import { serviceOrdersService } from "@/features/service-orders/service-orders.service"
 import { ganttIndicators } from "@/features/dashboard/planning-indicators"
 import type { GanttServiceOrder } from "@/features/service-orders/service-orders.types"
+import { usersService } from "@/features/users/users.service"
 
 const dayMs = 86_400_000
 
@@ -78,23 +81,42 @@ export function ServiceOrdersGanttPage() {
   const [projectId, setProjectId] = useState("")
   const [from, setFrom] = useState("")
   const [until, setUntil] = useState("")
+  const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
+  const [projectType, setProjectType] = useState<ProjectType | "all">("all")
+  const [ownerId, setOwnerId] = useState("all")
+  const [scheduleView, setScheduleView] = useState<"all" | "delayed" | "on_track" | "unscheduled">("all")
   const projectsQuery = useQuery({
     queryKey: ["projects", "gantt-filter-options"],
     queryFn: () => projectsService.list({ page: 1, pageSize: 100 }),
   })
   const projectOptions = projectsQuery.data?.items ?? []
   const selectedProject = projectOptions.find((project) => project.id === projectId)
+  const ownersQuery = useQuery({
+    queryKey: ["users", "gantt-filter-options"],
+    queryFn: () => usersService.options(),
+    staleTime: 1000 * 60 * 10,
+  })
   const filters = useMemo(() => ({
     projectCode: selectedProject?.projectCode,
     from: from || undefined,
     until: until || undefined,
-  }), [from, selectedProject?.projectCode, until])
+    stateUf: stateUf === "all" ? undefined : stateUf,
+    projectType: projectType === "all" ? undefined : projectType,
+    ownerId: ownerId === "all" ? undefined : ownerId,
+  }), [from, ownerId, projectType, selectedProject?.projectCode, stateUf, until])
   const invalidRange = Boolean(from && until && until < from)
   const ganttQuery = useQuery({ queryKey: ["service-orders", "gantt", filters], queryFn: () => serviceOrdersService.gantt(filters), enabled: !invalidRange })
-  const scheduled = ganttQuery.data?.serviceOrders.filter((item) => item.plannedStartDate || item.plannedEndDate) ?? []
-  const unscheduled = ganttQuery.data?.serviceOrders.filter((item) => !item.plannedStartDate && !item.plannedEndDate) ?? []
-  const delayed = scheduled.filter((item) => item.isDelayed).length
-  const indicators = ganttQuery.data ? ganttIndicators(ganttQuery.data.serviceOrders) : null
+  const allServiceOrders = ganttQuery.data?.serviceOrders ?? []
+  const indicators = ganttQuery.data ? ganttIndicators(allServiceOrders) : null
+  const visibleServiceOrders = allServiceOrders.filter((item) => {
+    const hasSchedule = Boolean(item.plannedStartDate || item.plannedEndDate)
+    if (scheduleView === "delayed") return hasSchedule && item.isDelayed
+    if (scheduleView === "on_track") return hasSchedule && !item.isDelayed
+    if (scheduleView === "unscheduled") return !hasSchedule
+    return true
+  })
+  const scheduled = visibleServiceOrders.filter((item) => item.plannedStartDate || item.plannedEndDate)
+  const unscheduled = visibleServiceOrders.filter((item) => !item.plannedStartDate && !item.plannedEndDate)
   const range = useMemo(() => {
     if (ganttQuery.data?.range.start && ganttQuery.data.range.end) {
       const start = startOfDay(ganttQuery.data.range.start)
@@ -105,7 +127,7 @@ export function ServiceOrdersGanttPage() {
     return { start: today, end: addDays(today, 30) }
   }, [ganttQuery.data])
   const ticks = Array.from({ length: 7 }, (_, index) => addDays(range.start, Math.round((differenceInDays(range.start, range.end) * index) / 6)))
-  const clearFilters = () => { setProjectId(""); setFrom(""); setUntil("") }
+  const clearFilters = () => { setProjectId(""); setFrom(""); setUntil(""); setStateUf("all"); setProjectType("all"); setOwnerId("all"); setScheduleView("all") }
 
   return (
     <div className="space-y-6">
@@ -114,7 +136,7 @@ export function ServiceOrdersGanttPage() {
         <Button variant="outline" onClick={() => ganttQuery.refetch()} disabled={ganttQuery.isFetching}><RefreshCw className={ganttQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>
       </div>
 
-      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(280px,1fr)_1fr_1fr_auto]">
+      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
         <ProjectSelect
           projects={projectOptions}
           value={projectId}
@@ -126,7 +148,23 @@ export function ServiceOrdersGanttPage() {
         />
         <Input type="date" aria-label="Data inicial" value={from} onChange={(event) => setFrom(event.target.value)} />
         <Input type="date" aria-label="Data final" value={until} onChange={(event) => setUntil(event.target.value)} />
-        <Button variant="ghost" onClick={clearFilters} disabled={!projectId && !from && !until}>Limpar</Button>
+        <Select value={stateUf} onValueChange={(value) => setStateUf(value as FederativeUnit | "all")}>
+          <SelectTrigger aria-label="Filtrar Gantt por UF"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Todas as UFs</SelectItem>{(["AM", "RO", "RR", "AC"] as FederativeUnit[]).map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={projectType} onValueChange={(value) => setProjectType(value as ProjectType | "all")}>
+          <SelectTrigger aria-label="Filtrar Gantt por tipo"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Todos os tipos</SelectItem><SelectItem value="CFTV">CFTV</SelectItem><SelectItem value="FIBRA_OPTICA_PONTO_LOGICO">Fibra / Ponto Lógico</SelectItem></SelectContent>
+        </Select>
+        <Select value={ownerId} onValueChange={setOwnerId}>
+          <SelectTrigger aria-label="Filtrar Gantt por responsável"><SelectValue placeholder="Todos os responsáveis" /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}>{owner.rank ? `${owner.rank} ` : ""}{owner.name}</SelectItem>)}</SelectContent>
+        </Select>
+        <Select value={scheduleView} onValueChange={(value) => setScheduleView(value as typeof scheduleView)}>
+          <SelectTrigger aria-label="Filtrar Gantt por situação do cronograma"><SelectValue /></SelectTrigger>
+          <SelectContent><SelectItem value="all">Todas as situações</SelectItem><SelectItem value="delayed">Somente atrasadas</SelectItem><SelectItem value="on_track">No prazo</SelectItem><SelectItem value="unscheduled">Sem cronograma</SelectItem></SelectContent>
+        </Select>
+        <Button variant="ghost" onClick={clearFilters} disabled={!projectId && !from && !until && stateUf === "all" && projectType === "all" && ownerId === "all" && scheduleView === "all"}>Limpar filtros</Button>
       </CardContent></Card>
 
       {invalidRange && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Período inválido</AlertTitle><AlertDescription>A data final deve ser igual ou posterior à data inicial.</AlertDescription></Alert>}
@@ -135,9 +173,9 @@ export function ServiceOrdersGanttPage() {
       {indicators && <Card className="sagep-signal-hero overflow-hidden text-white"><CardContent className="flex flex-col justify-between gap-6 p-6 lg:flex-row lg:items-center"><div className="max-w-xl"><Badge>Controle de execução</Badge><h2 className="mt-3 text-2xl font-semibold">Prazos, avanço e risco do cronograma</h2><p className="mt-2 text-sm text-muted-foreground">Síntese das Ordens de Serviço planejadas para priorização de atrasos e correção de lacunas no cronograma.</p></div><dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[540px]"><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Cobertura</dt><dd className="mt-1 text-2xl font-semibold">{indicators.planningCoverage.toFixed(1)}%</dd></div><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Progresso médio</dt><dd className="mt-1 text-2xl font-semibold text-primary">{indicators.averageProgress}%</dd></div><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Taxa de atraso</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.delayedRate.toFixed(1)}%</dd></div><div className="sagep-metric-tile p-3"><dt className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Target className="size-3" />No prazo</dt><dd className="mt-1 text-2xl font-semibold">{indicators.onTrack}</dd></div></dl></CardContent></Card>}
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><CalendarDays className="size-6 text-primary" /><div><p className="text-sm text-muted-foreground">Planejadas</p><p className="text-2xl font-semibold">{scheduled.length}</p></div></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><ClockAlert className="size-6 text-destructive" /><div><p className="text-sm text-muted-foreground">Atrasadas</p><p className="text-2xl font-semibold">{delayed}</p></div></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><CircleDashed className="size-6 text-amber-600" /><div><p className="text-sm text-muted-foreground">Sem cronograma</p><p className="text-2xl font-semibold">{unscheduled.length}</p></div></CardContent></Card>
+        <button type="button" className="text-left" onClick={() => setScheduleView("all")}><Card className="h-full border-none shadow-sm transition hover:ring-1 hover:ring-primary/40"><CardContent className="flex items-center gap-4 p-5"><CalendarDays className="size-6 text-primary" /><div><p className="text-sm text-muted-foreground">Planejadas</p><p className="text-2xl font-semibold">{indicators?.scheduled ?? 0}</p></div></CardContent></Card></button>
+        <button type="button" className="text-left" onClick={() => setScheduleView("delayed")}><Card className="h-full border-none shadow-sm transition hover:ring-1 hover:ring-destructive/40"><CardContent className="flex items-center gap-4 p-5"><ClockAlert className="size-6 text-destructive" /><div><p className="text-sm text-muted-foreground">Atrasadas</p><p className="text-2xl font-semibold">{indicators?.delayed ?? 0}</p></div></CardContent></Card></button>
+        <button type="button" className="text-left" onClick={() => setScheduleView("unscheduled")}><Card className="h-full border-none shadow-sm transition hover:ring-1 hover:ring-amber-500/40"><CardContent className="flex items-center gap-4 p-5"><CircleDashed className="size-6 text-amber-600" /><div><p className="text-sm text-muted-foreground">Sem cronograma</p><p className="text-2xl font-semibold">{indicators?.unscheduled ?? 0}</p></div></CardContent></Card></button>
         <Card className="border-none shadow-sm"><CardContent className="flex items-center gap-4 p-5"><Gauge className="size-6 text-primary" /><div><p className="text-sm text-muted-foreground">Progresso médio</p><p className="text-2xl font-semibold">{indicators?.averageProgress ?? 0}%</p></div></CardContent></Card>
       </div>
 

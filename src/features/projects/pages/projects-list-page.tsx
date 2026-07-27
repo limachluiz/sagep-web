@@ -15,7 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react"
-import { Link, useNavigate } from "react-router"
+import { Link, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -81,14 +81,22 @@ function formatDate(value: string | null) {
 
 export function ProjectsListPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const canCreate = hasPermission("projects.edit_all") || hasPermission("projects.edit_own")
   const canViewArchived = hasPermission("projects.restore") || hasPermission("projects.delete")
-  const [search, setSearch] = useState("")
-  const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [status, setStatus] = useState<ProjectStatus | "all">("all")
-  const [stage, setStage] = useState<ProjectStage | "all">("all")
+  const initialSearch = searchParams.get("search") ?? ""
+  const initialStatus = searchParams.get("status")
+  const initialStage = searchParams.get("stage")
+  const [search, setSearch] = useState(initialSearch)
+  const [debouncedSearch, setDebouncedSearch] = useState(initialSearch)
+  const [status, setStatus] = useState<ProjectStatus | "all">(
+    initialStatus && initialStatus in statusLabels ? initialStatus as ProjectStatus : "all",
+  )
+  const [stage, setStage] = useState<ProjectStage | "all">(
+    initialStage && initialStage in stageLabels ? initialStage as ProjectStage : "all",
+  )
   const [visibility, setVisibility] = useState<"active" | "archived">("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -113,6 +121,19 @@ export function ProjectsListPage() {
 
     return () => window.clearTimeout(timeout)
   }, [search])
+
+  useEffect(() => {
+    const next = new URLSearchParams(searchParams)
+    if (debouncedSearch) next.set("search", debouncedSearch)
+    else next.delete("search")
+    if (status !== "all") next.set("status", status)
+    else next.delete("status")
+    if (stage !== "all") next.set("stage", stage)
+    else next.delete("stage")
+    if (next.toString() !== searchParams.toString()) {
+      setSearchParams(next, { replace: true })
+    }
+  }, [debouncedSearch, searchParams, setSearchParams, stage, status])
 
   const filters = useMemo(
     () => ({
