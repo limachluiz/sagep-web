@@ -112,7 +112,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
   ]
 
   const inventoryData = [
-    { name: "Disponível", value: Number(data.inventory.summary.totalAvailableAmount), color: "#39ff88" },
+    { name: "Disponível", value: Number(data.inventory.summary.totalAvailableAmount), color: "var(--chart-1)" },
     { name: "Reservado", value: Number(data.inventory.summary.totalReservedAmount), color: "#f4b942" },
     { name: "Consumido", value: Number(data.inventory.summary.totalConsumedAmount), color: "#718078" },
   ]
@@ -192,9 +192,9 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                   }`}>
                     <Icon className="size-5" />
                   </div>
-                  <span className="flex items-center gap-1.5 font-mono text-[10px] tracking-[.18em] text-muted-foreground uppercase">
-                    <span className="size-1.5 animate-pulse rounded-full bg-primary" />
-                    Live
+                  <span className="flex items-center gap-1.5 text-[10px] font-semibold tracking-[.14em] text-muted-foreground uppercase">
+                    <CheckCircle2 className="size-3 text-primary" />
+                    Atualizado
                   </span>
                 </div>
                 <p className="mt-5 text-sm text-muted-foreground">{metric.label}</p>
@@ -214,7 +214,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
-              <p className="font-mono text-[10px] tracking-[.2em] text-primary uppercase">Command center</p>
+              <p className="text-[10px] font-semibold tracking-[.16em] text-primary uppercase">Painel operacional</p>
               <CardTitle className="mt-1">Ações rápidas</CardTitle>
             </div>
             <Sparkles className="size-5 text-primary" />
@@ -239,7 +239,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
         <Card className="overflow-hidden">
           <CardHeader className="flex flex-row items-start justify-between gap-4">
             <div>
-              <p className="font-mono text-[10px] tracking-[.2em] text-primary uppercase">Deployment pipeline</p>
+              <p className="text-[10px] font-semibold tracking-[.16em] text-primary uppercase">Fluxo de projetos</p>
               <CardTitle className="mt-1">Fluxo operacional</CardTitle>
               <p className="mt-1 text-xs text-muted-foreground">Volume aguardando atuação em cada transição documental.</p>
             </div>
@@ -281,7 +281,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                 <XAxis type="number" allowDecimals={false} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="stage" width={105} tickLine={false} axisLine={false} fontSize={11} />
                 <Tooltip />
-                <Bar dataKey="total" name="Projetos" radius={[0, 3, 3, 0]} fill="#39ff88" />
+                <Bar dataKey="total" name="Projetos" radius={[0, 3, 3, 0]} fill="var(--chart-1)" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

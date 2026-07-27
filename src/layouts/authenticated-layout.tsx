@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Building2,
@@ -14,6 +15,8 @@ import {
   LogOut,
   Menu,
   MonitorSmartphone,
+  PanelLeftClose,
+  PanelLeftOpen,
   FileChartColumn,
   Settings,
   ShieldCheck,
@@ -25,6 +28,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { authService } from "@/features/auth/auth.service"
 import type { Permission } from "@/features/auth/auth.types"
@@ -166,6 +170,9 @@ function getInitials(nameOrEmail?: string) {
 export function AuthenticatedLayout() {
   const navigate = useNavigate()
   const { user, refreshToken, logout, hasAnyPermission } = useAuthStore()
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => typeof window !== "undefined" && window.localStorage.getItem("sagep:sidebar-collapsed") === "true",
+  )
 
   const userDisplayName = user?.name ?? user?.email ?? "Usuário"
   const userRole = user?.role ?? "USUÁRIO"
@@ -188,35 +195,54 @@ export function AuthenticatedLayout() {
     }
   }
 
+  const toggleSidebar = () => {
+    setSidebarCollapsed((currentValue) => {
+      const nextValue = !currentValue
+      window.localStorage.setItem("sagep:sidebar-collapsed", String(nextValue))
+      return nextValue
+    })
+  }
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <a href="#main-content" className="sr-only fixed left-4 top-4 z-[70] rounded-sm bg-primary px-4 py-2 font-semibold text-primary-foreground focus:not-sr-only">Pular para o conteúdo</a>
 
-      <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center border-b border-primary/10 bg-[#09100d]/95 text-foreground shadow-[0_1px_30px_rgba(0,0,0,.35)] backdrop-blur-xl">
-        <div className="hidden h-full w-[248px] shrink-0 items-center gap-3 border-r border-primary/10 px-5 lg:flex">
-          <div className="flex size-9 items-center justify-center rounded-sm border border-primary/25 bg-primary/10 text-primary shadow-[0_0_22px_rgba(57,255,136,.08)]">
+      <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center border-b border-border/70 bg-background/92 text-foreground shadow-sm backdrop-blur-xl">
+        <div className={`hidden h-full shrink-0 items-center gap-3 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,padding] duration-200 lg:flex ${sidebarCollapsed ? "w-20 justify-center px-0" : "w-[248px] px-5"}`}>
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">
             <Gauge className="size-5" />
           </div>
-          <div>
-            <p className="font-heading text-lg font-extrabold tracking-[0.2em] text-primary">SAGEP<span className="animate-pulse">_</span></p>
-            <p className="text-[9px] uppercase tracking-[0.14em] text-muted-foreground">4º CTA · Project Control</p>
+          <div className={sidebarCollapsed ? "hidden" : "min-w-0"}>
+            <p className="font-heading text-lg font-extrabold tracking-[0.16em] text-sidebar-primary">SAGEP</p>
+            <p className="truncate text-[9px] uppercase tracking-[0.13em] text-sidebar-foreground/55">4º CTA · Gestão de Projetos</p>
           </div>
         </div>
 
         <div className="flex min-w-0 flex-1 items-center gap-3 px-3 sm:px-4 lg:px-6">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="hidden text-muted-foreground hover:bg-accent hover:text-accent-foreground lg:inline-flex"
+            onClick={toggleSidebar}
+            aria-label={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+            title={sidebarCollapsed ? "Expandir menu lateral" : "Recolher menu lateral"}
+          >
+            {sidebarCollapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+          </Button>
           <Sheet>
-            <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white lg:hidden" aria-label="Abrir menu principal"><Menu className="size-5" /></Button></SheetTrigger>
-            <SheetContent side="left" className="w-[min(88vw,320px)] gap-0 border-primary/15 bg-[#09100d] p-0 text-foreground">
-              <SheetHeader className="border-b border-primary/10 px-5 py-5"><SheetTitle className="flex items-center gap-3 text-foreground"><span className="flex size-10 items-center justify-center rounded-sm border border-primary/25 bg-primary/10 text-primary"><Gauge className="size-5" /></span><span><span className="block font-heading text-lg tracking-[0.2em] text-primary">SAGEP_</span><span className="block text-[10px] font-normal uppercase tracking-wider text-muted-foreground">4º CTA · Project Control</span></span></SheetTitle></SheetHeader>
+            <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent hover:text-accent-foreground lg:hidden" aria-label="Abrir menu principal"><Menu className="size-5" /></Button></SheetTrigger>
+            <SheetContent side="left" className="w-[min(88vw,320px)] gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
+              <SheetHeader className="border-b border-sidebar-border px-5 py-5"><SheetTitle className="flex items-center gap-3 text-sidebar-foreground"><span className="flex size-10 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary"><Gauge className="size-5" /></span><span><span className="block font-heading text-lg tracking-[0.16em] text-sidebar-primary">SAGEP</span><span className="block text-[10px] font-normal uppercase tracking-wider text-sidebar-foreground/55">4º CTA · Gestão de Projetos</span></span></SheetTitle></SheetHeader>
               <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4" aria-label="Navegação móvel">
-                {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-primary/45">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard"} className={({ isActive }) => ["flex items-center gap-3 border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-primary bg-primary/10 text-primary" : "border-transparent text-muted-foreground hover:bg-white/[.035] hover:text-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
+                {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/40">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/65 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
               </nav>
-              <div className="border-t border-primary/10 p-4"><div className="flex items-center gap-3"><Avatar><AvatarFallback className="border border-primary/25 bg-primary/10 text-primary">{initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-muted-foreground">{userRole}</p></div><Button size="icon" variant="ghost" className="text-muted-foreground hover:bg-primary/10 hover:text-primary" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button></div></div>
+              <div className="border-t border-sidebar-border p-4"><div className="flex items-center gap-3"><Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/55">{userRole}</p></div><Button size="icon" variant="ghost" className="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button></div></div>
             </SheetContent>
           </Sheet>
 
           <div className="mr-auto lg:hidden">
-            <p className="font-heading text-base font-extrabold tracking-[0.18em] text-primary">SAGEP_</p>
+            <p className="font-heading text-base font-extrabold tracking-[0.16em] text-primary">SAGEP</p>
           </div>
 
           <div className="md:hidden"><GlobalSearchDialog compact /></div>
@@ -229,33 +255,34 @@ export function AuthenticatedLayout() {
               UASG 160016
             </Badge>
             <NotificationsMenu />
+            <ThemeToggle />
             <div className="hidden text-right sm:block"><p className="max-w-40 truncate text-xs font-medium text-foreground">{userDisplayName}</p><p className="text-[9px] uppercase tracking-wider text-muted-foreground">{userRole}</p></div>
             <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
           </div>
         </div>
       </header>
 
-      <aside className="fixed bottom-0 left-0 top-16 z-30 hidden w-[248px] border-r border-primary/10 bg-[#09100d] text-foreground lg:flex lg:flex-col">
+      <aside className={`fixed bottom-0 left-0 top-16 z-30 hidden border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-200 lg:flex lg:flex-col ${sidebarCollapsed ? "w-20" : "w-[248px]"}`}>
         <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="Navegação principal">
           {visibleNavigation.map((group) => (
             <div key={group.label}>
-              <p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-primary/45">{group.label}</p>
-              <div className="space-y-0.5">{group.items.map((item) => { const Icon = item.icon; return <NavLink key={item.href} to={item.href} end={item.href === "/dashboard"} className={({ isActive }) => ["group flex items-center gap-3 border-l-2 px-3 py-2 text-[13px] font-medium transition", isActive ? "border-primary bg-primary/[.09] text-primary shadow-[inset_12px_0_24px_-20px_rgba(57,255,136,.9)]" : "border-transparent text-muted-foreground hover:bg-white/[.035] hover:text-foreground"].join(" ")}><Icon className="size-4 transition group-hover:text-primary" />{item.label}</NavLink> })}</div>
+              <p className={`mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/40 ${sidebarCollapsed ? "sr-only" : ""}`}>{group.label}</p>
+              <div className="space-y-0.5">{group.items.map((item) => { const Icon = item.icon; return <NavLink key={item.href} to={item.href} end={item.href === "/dashboard"} title={sidebarCollapsed ? item.label : undefined} aria-label={sidebarCollapsed ? item.label : undefined} className={({ isActive }) => ["group flex items-center rounded-md border-l-2 py-2.5 text-[13px] font-medium transition", sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/65 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4 shrink-0 transition" /><span className={sidebarCollapsed ? "sr-only" : ""}>{item.label}</span></NavLink> })}</div>
             </div>
           ))}
         </nav>
 
         <div className="p-3">
-          <Separator className="mb-3 bg-primary/10" />
-          <div className="flex items-center gap-3 border border-primary/10 bg-primary/[.035] p-3">
-            <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
-            <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-muted-foreground">{userRole}</p></div>
-            <Button size="icon" variant="ghost" className="text-muted-foreground hover:bg-primary/10 hover:text-primary" onClick={handleLogout} title="Sair" aria-label="Sair do sistema"><LogOut className="size-4" /></Button>
+          <Separator className="mb-3 bg-sidebar-border" />
+          <div className={`flex items-center border border-sidebar-border bg-sidebar-accent/35 p-3 ${sidebarCollapsed ? "justify-center" : "gap-3"}`}>
+            <Avatar className="size-9"><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">{initials}</AvatarFallback></Avatar>
+            <div className={sidebarCollapsed ? "sr-only" : "min-w-0 flex-1"}><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-sidebar-foreground/55">{userRole}</p></div>
+            {!sidebarCollapsed && <Button size="icon" variant="ghost" className="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} title="Sair" aria-label="Sair do sistema"><LogOut className="size-4" /></Button>}
           </div>
         </div>
       </aside>
 
-      <div className="pt-16 lg:pl-[248px]">
+      <div className={`pt-16 transition-[padding] duration-200 ${sidebarCollapsed ? "lg:pl-20" : "lg:pl-[248px]"}`}>
         <main id="main-content" tabIndex={-1} className="sagep-grid-pattern min-h-[calc(100vh-4rem)] p-3 outline-none sm:p-5 lg:p-7 xl:p-8">
           <Outlet />
         </main>
