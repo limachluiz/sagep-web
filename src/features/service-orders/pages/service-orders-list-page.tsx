@@ -17,7 +17,11 @@ const money = (value: string) => new Intl.NumberFormat("pt-BR", { style: "curren
 const date = (value: string | null) => value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value)) : "Não definido"
 
 export function ServiceOrdersListPage() {
-  const canViewArchived = useAuthStore((state) => state.hasPermission("service_orders.restore"))
+  const canViewArchived = useAuthStore(
+    (state) =>
+      state.hasPermission("service_orders.restore") ||
+      state.hasPermission("service_orders.delete"),
+  )
   const [search, setSearch] = useState("")
   const [debounced, setDebounced] = useState("")
   const [page, setPage] = useState(1)

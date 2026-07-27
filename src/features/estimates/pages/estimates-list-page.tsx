@@ -57,7 +57,9 @@ function formatDate(value: string) {
 
 export function EstimatesListPage() {
   const canCreate = useAuthStore((state) => state.hasPermission("estimates.create"))
-  const canViewArchived = useAuthStore((state) => state.hasPermission("estimates.restore"))
+  const canViewArchived = useAuthStore(
+    (state) => state.hasPermission("estimates.restore") || state.hasPermission("estimates.delete"),
+  )
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [status, setStatus] = useState<EstimateStatus | "all">("all")

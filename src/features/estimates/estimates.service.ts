@@ -51,6 +51,10 @@ export const estimatesService = {
     return api.post<{ message: string; estimate: Estimate }>(`/estimates/${estimateId}/restore`, {})
   },
 
+  softDelete(estimateId: string) {
+    return api.delete<{ message: string; deletedAt: string }>(`/estimates/${estimateId}/permanent`)
+  },
+
   listAtas(type: Ata["type"]) {
     const query = new URLSearchParams({
       page: "1",

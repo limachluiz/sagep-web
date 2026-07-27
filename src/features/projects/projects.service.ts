@@ -57,6 +57,10 @@ export const projectsService = {
     return api.post<{ message: string; project: ProjectMutationResponse }>(`/projects/${projectId}/restore`, {})
   },
 
+  softDelete(projectId: string) {
+    return api.delete<{ message: string; deletedAt: string }>(`/projects/${projectId}/permanent`)
+  },
+
   updateFlow(projectId: string, payload: ProjectFlowPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}/flow`, payload)
   },

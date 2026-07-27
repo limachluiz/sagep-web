@@ -18,6 +18,7 @@ import {
   ReceiptText,
   RefreshCw,
   RotateCcw,
+  Trash2,
   Play,
   UserRound,
   Users,
@@ -26,6 +27,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ArchiveActionDialog } from "@/components/archive-action-dialog"
+import { DeleteActionDialog } from "@/components/delete-action-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -283,6 +285,7 @@ export function ProjectDetailsPage() {
   const [invoiceAttestationOpen, setInvoiceAttestationOpen] = useState(false)
   const [completeServiceOpen, setCompleteServiceOpen] = useState(false)
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -323,6 +326,17 @@ export function ProjectDetailsPage() {
     onError: (error) => toast.error(error.message),
   })
 
+  const deleteMutation = useMutation({
+    mutationFn: () => projectsService.softDelete(projectId!),
+    onSuccess: () => {
+      toast.success("Projeto excluído com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate("/projects")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
   if (detailsQuery.isLoading) {
     return <div className="space-y-4">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className={index === 0 ? "h-40" : "h-28"} />)}</div>
   }
@@ -346,6 +360,7 @@ export function ProjectDetailsPage() {
     "OS_LIBERADA",
   ].includes(details.workflow.stage)
   const canRestore = Boolean(details.project.archivedAt) && hasPermission("projects.restore")
+  const canDelete = Boolean(details.project.archivedAt) && hasPermission("projects.delete")
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
   const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
@@ -397,6 +412,7 @@ export function ProjectDetailsPage() {
               {canManage && !details.project.archivedAt && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               {canArchive && <Button variant="secondary" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
               {canRestore && <Button variant="secondary" className="gap-2" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}
+              {canDelete && <Button variant="destructive" className="gap-2" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}
               <Button variant="secondary" className="gap-2" onClick={() => detailsQuery.refetch()} disabled={detailsQuery.isFetching}>
                 {detailsQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar
               </Button>
@@ -448,6 +464,16 @@ export function ProjectDetailsPage() {
           : "A ação é permitida somente antes do início da execução. Estimativas, DIEx, OS, tarefas e membros permanecerão preservados."}
         pending={archiveMutation.isPending || restoreMutation.isPending}
         onConfirm={() => details.project.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()}
+      />
+
+      <DeleteActionDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        entityLabel="projeto"
+        entityCode={`PRJ-${details.project.projectCode}`}
+        description="As estimativas, DIEx, Ordens de Serviço e tarefas vinculadas também serão excluídas logicamente."
+        pending={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
       />
 
       {creditNoteOpen && (

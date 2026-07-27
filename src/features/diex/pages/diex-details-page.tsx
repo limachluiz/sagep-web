@@ -1,11 +1,12 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Archive, ArrowLeft, Building2, Download, ExternalLink, FileSignature, Pencil, RotateCcw, UserRound } from "lucide-react"
+import { AlertTriangle, Archive, ArrowLeft, Building2, Download, ExternalLink, FileSignature, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ArchiveActionDialog } from "@/components/archive-action-dialog"
+import { DeleteActionDialog } from "@/components/delete-action-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,10 +30,12 @@ export function DiexDetailsPage() {
   const canIssue = useAuthStore((state) => state.hasPermission("diex.issue"))
   const canCancel = useAuthStore((state) => state.hasPermission("diex.cancel"))
   const canRestore = useAuthStore((state) => state.hasPermission("diex.restore"))
+  const canDelete = useAuthStore((state) => state.hasPermission("diex.delete"))
   const [documentLoading, setDocumentLoading] = useState<"html" | "pdf" | null>(null)
   const [completeOpen, setCompleteOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const query = useQuery({ queryKey: ["diex", "details", diexId, includeArchived], queryFn: () => diexService.details(diexId, includeArchived), enabled: Boolean(diexId) })
   const archiveMutation = useMutation({
     mutationFn: () => diexService.archive(diexId),
@@ -52,6 +55,17 @@ export function DiexDetailsPage() {
       queryClient.invalidateQueries({ queryKey: ["diex"] })
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       navigate(`/diex/${diexId}`)
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const deleteMutation = useMutation({
+    mutationFn: () => diexService.softDelete(diexId),
+    onSuccess: () => {
+      toast.success("DIEx excluído com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["diex"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate("/diex")
     },
     onError: (error) => toast.error(error.message),
   })
@@ -75,7 +89,7 @@ export function DiexDetailsPage() {
   const documentReady = Boolean(diex.diexNumber && diex.issuedAt)
 
   return <div className="space-y-6">
-    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex flex-wrap gap-2">{canIssue && !diex.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}{canCancel && !diex.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && diex.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
+    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex flex-wrap gap-2">{canIssue && !diex.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}{canCancel && !diex.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && diex.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}{canDelete && diex.archivedAt && <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
 
     {!documentReady && <Alert><AlertTriangle /><AlertTitle>Documento ainda indisponível</AlertTitle><AlertDescription>O número e a data de emissão precisam ser preenchidos pela SALC antes da geração oficial.</AlertDescription></Alert>}
 
@@ -85,5 +99,6 @@ export function DiexDetailsPage() {
     {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
     {editOpen && <EditDiexDialog diex={diex} open={editOpen} onOpenChange={setEditOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId, includeArchived], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
     <ArchiveActionDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen} mode={diex.archivedAt ? "restore" : "archive"} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description={diex.archivedAt ? "O documento voltará ao fluxo ativo do projeto." : "A reserva de saldo será liberada e o projeto retornará à etapa documental anterior. A ação é bloqueada quando existe OS ativa vinculada."} pending={archiveMutation.isPending || restoreMutation.isPending} onConfirm={() => diex.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()} />
+    <DeleteActionDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description="Ordens de Serviço dependentes também serão excluídas logicamente." pending={deleteMutation.isPending} onConfirm={() => deleteMutation.mutate()} />
   </div>
 }

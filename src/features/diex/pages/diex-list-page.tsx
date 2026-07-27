@@ -24,7 +24,9 @@ function formatDate(value: string | null) {
 }
 
 export function DiexListPage() {
-  const canViewArchived = useAuthStore((state) => state.hasPermission("diex.restore"))
+  const canViewArchived = useAuthStore(
+    (state) => state.hasPermission("diex.restore") || state.hasPermission("diex.delete"),
+  )
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [page, setPage] = useState(1)

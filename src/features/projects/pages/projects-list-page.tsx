@@ -84,7 +84,7 @@ export function ProjectsListPage() {
   const queryClient = useQueryClient()
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const canCreate = hasPermission("projects.edit_all") || hasPermission("projects.edit_own")
-  const canViewArchived = hasPermission("projects.restore")
+  const canViewArchived = hasPermission("projects.restore") || hasPermission("projects.delete")
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [status, setStatus] = useState<ProjectStatus | "all">("all")

@@ -17,5 +17,6 @@ export const serviceOrdersApi = {
   update(id: string, payload: UpdateServiceOrderPayload) { return api.patch<ServiceOrder>(`/service-orders/${id}`, payload) },
   archive(id: string) { return api.delete<{ message: string }>(`/service-orders/${id}`) },
   restore(id: string) { return api.post<{ message: string; serviceOrder: ServiceOrder }>(`/service-orders/${id}/restore`, {}) },
+  softDelete(id: string) { return api.delete<{ message: string; deletedAt: string }>(`/service-orders/${id}/permanent`) },
   document(id: string, format: "html" | "pdf") { return api.getBlob(`/service-orders/${id}/document/${format}`) },
 }

@@ -34,6 +34,10 @@ export const diexService = {
     return api.post<{ message: string; diex: DiexRequest }>(`/diex/${diexId}/restore`, {})
   },
 
+  softDelete(diexId: string) {
+    return api.delete<{ message: string; deletedAt: string }>(`/diex/${diexId}/permanent`)
+  },
+
   document(diexId: string, format: "html" | "pdf") {
     return api.getBlob(`/diex/${diexId}/document/${format}`)
   },

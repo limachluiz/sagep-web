@@ -15,12 +15,14 @@ import {
   Loader2,
   Pencil,
   RotateCcw,
+  Trash2,
 } from "lucide-react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { ArchiveActionDialog } from "@/components/archive-action-dialog"
+import { DeleteActionDialog } from "@/components/delete-action-dialog"
 import { ItemDescription } from "@/components/item-description"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -78,6 +80,7 @@ export function EstimateDetailsPage() {
   const [editOpen, setEditOpen] = useState(false)
   const [statusConfirmation, setStatusConfirmation] = useState<"FINALIZADA" | "CANCELADA" | null>(null)
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
 
   const estimateQuery = useQuery({
     queryKey: ["estimates", "details", estimateId, includeArchived],
@@ -121,6 +124,18 @@ export function EstimateDetailsPage() {
       queryClient.invalidateQueries({ queryKey: ["estimates"] })
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       navigate(`/estimates/${estimateId}`)
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => estimatesService.softDelete(estimateId),
+    onSuccess: () => {
+      toast.success("Estimativa excluída com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["estimates"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate("/estimates")
     },
     onError: (error) => toast.error(error.message),
   })
@@ -174,6 +189,7 @@ export function EstimateDetailsPage() {
   const canFinalize = isDraft && !estimate.archivedAt && hasPermission("estimates.finalize")
   const canArchive = !estimate.archivedAt && hasPermission("estimates.archive")
   const canRestore = Boolean(estimate.archivedAt) && hasPermission("estimates.restore")
+  const canDelete = Boolean(estimate.archivedAt) && hasPermission("estimates.delete")
 
   return (
     <div className="space-y-6">
@@ -217,6 +233,11 @@ export function EstimateDetailsPage() {
             {canRestore && (
               <Button variant="outline" className="gap-2" onClick={() => setArchiveDialogOpen(true)}>
                 <RotateCcw className="size-4" />Restaurar
+              </Button>
+            )}
+            {canDelete && (
+              <Button variant="destructive" className="gap-2" onClick={() => setDeleteDialogOpen(true)}>
+                <Trash2 className="size-4" />Excluir
               </Button>
             )}
             <Button variant="outline" className="gap-2" onClick={() => handleDocument("html")} disabled={Boolean(documentLoading)}>
@@ -387,6 +408,15 @@ export function EstimateDetailsPage() {
           : "O registro sairá das consultas ativas, mas continuará disponível no histórico. A operação será bloqueada se houver DIEx ou OS vinculados."}
         pending={archiveMutation.isPending || restoreMutation.isPending}
         onConfirm={() => estimate.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()}
+      />
+      <DeleteActionDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        entityLabel="estimativa"
+        entityCode={`EST-${estimate.estimateCode}`}
+        description="DIEx e Ordens de Serviço dependentes também serão excluídos logicamente."
+        pending={deleteMutation.isPending}
+        onConfirm={() => deleteMutation.mutate()}
       />
     </div>
   )
