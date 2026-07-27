@@ -1,0 +1,214 @@
+import { zodResolver } from "@hookform/resolvers/zod"
+import { Loader2 } from "lucide-react"
+import { useEffect } from "react"
+import { useForm, useWatch } from "react-hook-form"
+import { z } from "zod"
+
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
+import { Textarea } from "@/components/ui/textarea"
+import { taskPriorityLabels, taskStatusLabels } from "@/features/tasks/tasks.constants"
+import type {
+  CreateTaskPayload,
+  Task,
+  TaskStatus,
+  UpdateTaskPayload,
+} from "@/features/tasks/tasks.types"
+
+const schema = z.object({
+  projectCode: z.string().trim().refine(
+    (value) => /^\d+$/.test(value) && Number(value) > 0,
+    "Informe um código de projeto válido.",
+  ),
+  title: z.string().trim().min(3, "Informe um título com pelo menos 3 caracteres."),
+  description: z.string(),
+  status: z.enum(["PENDENTE", "EM_ANDAMENTO", "REVISAO", "CONCLUIDA", "CANCELADA"]),
+  priority: z.enum(["1", "2", "3", "4", "5"]),
+  assigneeUserCode: z.string().refine(
+    (value) => value === "" || (/^\d+$/.test(value) && Number(value) > 0),
+    "Informe um código de usuário válido.",
+  ),
+  dueDate: z.string(),
+})
+
+type FormValues = z.infer<typeof schema>
+
+type TaskFormSheetProps = {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  task?: Task
+  initialProjectCode?: number
+  canAssign: boolean
+  pending?: boolean
+  onSubmit: (payload: CreateTaskPayload | UpdateTaskPayload) => Promise<void>
+}
+
+function dateInputValue(value: string | null | undefined) {
+  return value ? value.slice(0, 10) : ""
+}
+
+export function TaskFormSheet({
+  open,
+  onOpenChange,
+  task,
+  initialProjectCode,
+  canAssign,
+  pending = false,
+  onSubmit,
+}: TaskFormSheetProps) {
+  const isEditing = Boolean(task)
+  const form = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      projectCode: initialProjectCode ? String(initialProjectCode) : "",
+      title: "",
+      description: "",
+      status: "PENDENTE",
+      priority: "3",
+      assigneeUserCode: "",
+      dueDate: "",
+    },
+  })
+  const status = useWatch({ control: form.control, name: "status" })
+  const priority = useWatch({ control: form.control, name: "priority" })
+
+  useEffect(() => {
+    if (!open) return
+    form.reset({
+      projectCode: String(task?.project.projectCode ?? initialProjectCode ?? ""),
+      title: task?.title ?? "",
+      description: task?.description ?? "",
+      status: task?.status ?? "PENDENTE",
+      priority: String(task?.priority ?? 3) as FormValues["priority"],
+      assigneeUserCode: task?.assignee ? String(task.assignee.userCode) : "",
+      dueDate: dateInputValue(task?.dueDate),
+    })
+  }, [form, initialProjectCode, open, task])
+
+  const submit = form.handleSubmit(async (values) => {
+    const common = {
+      title: values.title.trim(),
+      description: values.description.trim() || undefined,
+      status: values.status as TaskStatus,
+      priority: Number(values.priority),
+      dueDate: values.dueDate || undefined,
+    }
+
+    if (task) {
+      const payload: UpdateTaskPayload = { ...common }
+      if (canAssign) {
+        if (values.assigneeUserCode) payload.assigneeUserCode = Number(values.assigneeUserCode)
+        else if (task.assignee) payload.clearAssignee = true
+      }
+      if (!values.dueDate && task.dueDate) payload.clearDueDate = true
+      await onSubmit(payload)
+      return
+    }
+
+    const payload: CreateTaskPayload = {
+      ...common,
+      projectCode: Number(values.projectCode),
+    }
+    if (canAssign && values.assigneeUserCode) {
+      payload.assigneeUserCode = Number(values.assigneeUserCode)
+    }
+    await onSubmit(payload)
+  })
+
+  return (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+        <SheetHeader className="border-b px-6 py-5">
+          <SheetTitle className="text-xl">{isEditing ? "Editar tarefa" : "Nova tarefa"}</SheetTitle>
+          <SheetDescription>
+            {isEditing
+              ? `Atualize os dados da TSK-${task?.taskCode}.`
+              : "Cadastre uma atividade vinculada a um projeto do SAGEP."}
+          </SheetDescription>
+        </SheetHeader>
+
+        <form id="task-form" className="space-y-5 px-6 py-2" onSubmit={submit}>
+          <div className="space-y-2">
+            <Label htmlFor="task-project-code">Código do projeto</Label>
+            <Input
+              id="task-project-code"
+              type="number"
+              min="1"
+              placeholder="Ex.: 12"
+              disabled={isEditing}
+              {...form.register("projectCode")}
+            />
+            {form.formState.errors.projectCode && <p className="text-xs text-destructive">{form.formState.errors.projectCode.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="task-title">Título</Label>
+            <Input id="task-title" placeholder="Ex.: Conferir certificações da fibra" {...form.register("title")} />
+            {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="task-description">Descrição</Label>
+            <Textarea id="task-description" rows={5} placeholder="Detalhes, critérios de aceite e observações..." {...form.register("description")} />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={status} onValueChange={(value) => form.setValue("status", value as TaskStatus, { shouldValidate: true })}>
+                <SelectTrigger className="w-full" aria-label="Status da tarefa"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(taskStatusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Prioridade</Label>
+              <Select value={priority} onValueChange={(value) => form.setValue("priority", value as FormValues["priority"], { shouldValidate: true })}>
+                <SelectTrigger className="w-full" aria-label="Prioridade da tarefa"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(taskPriorityLabels).map(([value, label]) => <SelectItem key={value} value={value}>{value} · {label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="task-due-date">Prazo</Label>
+              <Input id="task-due-date" type="date" {...form.register("dueDate")} />
+            </div>
+
+            {canAssign && (
+              <div className="space-y-2">
+                <Label htmlFor="task-assignee-code">Código do responsável</Label>
+                <Input id="task-assignee-code" type="number" min="1" placeholder="Opcional" {...form.register("assigneeUserCode")} />
+                <p className="text-xs text-muted-foreground">O usuário precisa ser responsável ou membro do projeto.</p>
+                {form.formState.errors.assigneeUserCode && <p className="text-xs text-destructive">{form.formState.errors.assigneeUserCode.message}</p>}
+              </div>
+            )}
+          </div>
+        </form>
+
+        <SheetFooter className="border-t px-6 py-5 sm:flex-row sm:justify-end">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>Cancelar</Button>
+          <Button type="submit" form="task-form" disabled={pending}>
+            {pending && <Loader2 className="size-4 animate-spin" />}
+            {isEditing ? "Salvar alterações" : "Criar tarefa"}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
+}

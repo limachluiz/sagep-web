@@ -4,7 +4,7 @@ Frontend do **Sistema de Apoio à Gestão de Projetos (SAGEP)**, desenvolvido pa
 
 ## Estado atual
 
-Esta branch estabelece a fundação oficial do frontend:
+Esta branch contém a aplicação operacional integrada ao backend:
 
 - aplicação React 19 com TypeScript e Vite;
 - design system com Tailwind CSS 4 e componentes shadcn/ui;
@@ -14,8 +14,13 @@ Esta branch estabelece a fundação oficial do frontend:
 - controle de sessão com Zustand;
 - rotas públicas e protegidas;
 - layout responsivo autenticado;
-- dashboard operacional inicial com dados simulados;
-- React Query preparado para o consumo da API.
+- dashboards operacional e executivo com dados reais, filtros e comparação temporal;
+- projetos com timeline, próxima ação e fluxo documental;
+- Kanban de projetos e Gantt de Ordens de Serviço em módulos próprios;
+- CRUD de projetos, tarefas, estimativas, DIEx e Ordens de Serviço;
+- arquivamento, restauração e exclusão lógica conforme permissões;
+- ATAs e saldos, OMs, usuários, sessões, permissões e relatórios;
+- React Query integrado aos contratos da API.
 
 ## Tecnologias
 
@@ -79,7 +84,8 @@ src/
 ├── config/           # variáveis e configuração do ambiente
 ├── features/         # módulos funcionais por domínio
 │   ├── auth/         # autenticação, sessão e proteção de rotas
-│   └── dashboard/    # dashboards operacional e executivo
+│   ├── dashboard/    # dashboards operacional e executivo
+│   └── tasks/        # tarefas, responsáveis, prioridades e prazos
 ├── layouts/          # estruturas de página compartilhadas
 ├── lib/              # cliente HTTP e utilitários
 └── index.css         # tokens visuais e estilos globais
@@ -93,14 +99,16 @@ Kanban e Gantt serão módulos próprios, separados do dashboard.
 
 ## Roadmap
 
-1. Fundação do projeto e design system
-2. Login, autenticação, refresh token e perfis
-3. Dashboard operacional e executivo
-4. Projetos, detalhes, timeline e próxima ação
-5. Kanban e Gantt
-6. Estimativas, NC, DIEx, NE, OS e conclusão
-7. ATAs, saldos, OMs, usuários e administração
-8. Testes, responsividade, acessibilidade e entrega
+- [x] Fundação do projeto e design system
+- [x] Login, autenticação, refresh token e perfis
+- [x] Dashboard operacional e executivo
+- [x] Projetos, detalhes, timeline e próxima ação
+- [x] Kanban e Gantt
+- [x] Tarefas com CRUD e ciclo de arquivamento
+- [x] Estimativas, NC, DIEx, NE, OS e conclusão
+- [x] ATAs, saldos, OMs, usuários e administração
+- [ ] Homologação com dados reais e testes de integração
+- [ ] Revisão final de responsividade e acessibilidade
 
 ## Backend
 

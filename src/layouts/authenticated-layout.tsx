@@ -10,6 +10,7 @@ import {
   Gauge,
   Landmark,
   LayoutDashboard,
+  ListTodo,
   LogOut,
   Menu,
   MonitorSmartphone,
@@ -75,6 +76,12 @@ const navigation: NavigationGroup[] = [
     href: "/gantt",
     icon: CalendarRange,
     anyOf: ["projects.view_all", "projects.edit_own"],
+  },
+  {
+    label: "Tarefas",
+    href: "/tasks",
+    icon: ListTodo,
+    anyOf: ["tasks.view_all", "tasks.create", "tasks.edit_all", "tasks.edit_own", "tasks.complete", "tasks.assign", "tasks.archive", "tasks.restore", "tasks.delete"],
   },
   ]},
   { label: "Documentos", items: [

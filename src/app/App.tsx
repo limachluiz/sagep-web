@@ -25,6 +25,8 @@ const ProjectsListPage = lazy(() => import("@/features/projects/pages/projects-l
 const ServiceOrdersGanttPage = lazy(() => import("@/features/service-orders/pages/service-orders-gantt-page").then((module) => ({ default: module.ServiceOrdersGanttPage })))
 const ServiceOrderDetailsPage = lazy(() => import("@/features/service-orders/pages/service-order-details-page").then((module) => ({ default: module.ServiceOrderDetailsPage })))
 const ServiceOrdersListPage = lazy(() => import("@/features/service-orders/pages/service-orders-list-page").then((module) => ({ default: module.ServiceOrdersListPage })))
+const TaskDetailsPage = lazy(() => import("@/features/tasks/pages/task-details-page").then((module) => ({ default: module.TaskDetailsPage })))
+const TasksListPage = lazy(() => import("@/features/tasks/pages/tasks-list-page").then((module) => ({ default: module.TasksListPage })))
 const UsersPage = lazy(() => import("@/features/users/pages/users-page").then((module) => ({ default: module.UsersPage })))
 const PermissionsSettingsPage = lazy(() => import("@/features/permissions/pages/permissions-settings-page").then((module) => ({ default: module.PermissionsSettingsPage })))
 const ReportsPage = lazy(() => import("@/features/reports/pages/reports-page").then((module) => ({ default: module.ReportsPage })))
@@ -87,6 +89,22 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
                 <ServiceOrdersGanttPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/tasks"
+            element={
+              <PermissionRoute anyOf={["tasks.view_all", "tasks.create", "tasks.edit_all", "tasks.edit_own", "tasks.complete", "tasks.assign", "tasks.archive", "tasks.restore", "tasks.delete"]}>
+                <TasksListPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/tasks/:taskId"
+            element={
+              <PermissionRoute anyOf={["tasks.view_all", "tasks.create", "tasks.edit_all", "tasks.edit_own", "tasks.complete", "tasks.assign", "tasks.archive", "tasks.restore", "tasks.delete"]}>
+                <TaskDetailsPage />
               </PermissionRoute>
             }
           />
