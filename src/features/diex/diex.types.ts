@@ -94,3 +94,14 @@ export type CreateDiexPayload = {
   issuedAt?: string
   notes?: string
 }
+
+export type UpdateDiexPayload = {
+  diexNumber?: string
+  issuedAt?: string
+  supplierCnpj?: string
+  requesterName?: string
+  requesterRank?: string
+  requesterCpf?: string
+  requesterRole?: string
+  notes?: string
+}

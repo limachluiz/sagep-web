@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
+  Archive,
   ArrowLeft,
   CalendarDays,
   CheckCircle2,
@@ -16,6 +17,7 @@ import {
   PackageCheck,
   ReceiptText,
   RefreshCw,
+  RotateCcw,
   Play,
   UserRound,
   Users,
@@ -23,6 +25,7 @@ import {
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ArchiveActionDialog } from "@/components/archive-action-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -279,6 +282,7 @@ export function ProjectDetailsPage() {
   const [reviewAsBuiltOpen, setReviewAsBuiltOpen] = useState(false)
   const [invoiceAttestationOpen, setInvoiceAttestationOpen] = useState(false)
   const [completeServiceOpen, setCompleteServiceOpen] = useState(false)
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -293,6 +297,28 @@ export function ProjectDetailsPage() {
       toast.success("Projeto atualizado com sucesso.")
       setEditOpen(false)
       queryClient.invalidateQueries({ queryKey: ["projects"] })
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: () => projectsService.archive(projectId!),
+    onSuccess: () => {
+      toast.success("Projeto arquivado. O histórico e os documentos vinculados foram preservados.")
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate("/projects")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: () => projectsService.restore(projectId!),
+    onSuccess: () => {
+      toast.success("Projeto restaurado com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate(`/projects/${projectId}`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -312,6 +338,14 @@ export function ProjectDetailsPage() {
 
   const details = detailsQuery.data
   const canManage = hasPermission("projects.edit_all") || (hasPermission("projects.edit_own") && details.project.owner.id === user?.id)
+  const canArchive = canManage && !details.project.archivedAt && [
+    "ESTIMATIVA_PRECO",
+    "AGUARDANDO_NOTA_CREDITO",
+    "DIEX_REQUISITORIO",
+    "AGUARDANDO_NOTA_EMPENHO",
+    "OS_LIBERADA",
+  ].includes(details.workflow.stage)
+  const canRestore = Boolean(details.project.archivedAt) && hasPermission("projects.restore")
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
   const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
@@ -360,7 +394,9 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {canManage && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
+              {canManage && !details.project.archivedAt && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
+              {canArchive && <Button variant="secondary" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
+              {canRestore && <Button variant="secondary" className="gap-2" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}
               <Button variant="secondary" className="gap-2" onClick={() => detailsQuery.refetch()} disabled={detailsQuery.isFetching}>
                 {detailsQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar
               </Button>
@@ -399,6 +435,19 @@ export function ProjectDetailsPage() {
         project={details.project}
         pending={updateMutation.isPending}
         onSubmit={async (payload) => { await updateMutation.mutateAsync(payload) }}
+      />
+
+      <ArchiveActionDialog
+        open={archiveDialogOpen}
+        onOpenChange={setArchiveDialogOpen}
+        mode={details.project.archivedAt ? "restore" : "archive"}
+        entityLabel="projeto"
+        entityCode={`PRJ-${details.project.projectCode}`}
+        description={details.project.archivedAt
+          ? "O projeto voltará à carteira ativa com seus vínculos e histórico."
+          : "A ação é permitida somente antes do início da execução. Estimativas, DIEx, OS, tarefas e membros permanecerão preservados."}
+        pending={archiveMutation.isPending || restoreMutation.isPending}
+        onConfirm={() => details.project.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()}
       />
 
       {creditNoteOpen && (

@@ -20,12 +20,15 @@ export const estimatesService = {
     if (filters.search) query.set("search", filters.search)
     if (filters.status) query.set("status", filters.status)
     if (filters.stateUf) query.set("stateUf", filters.stateUf)
+    if (filters.includeArchived) query.set("includeArchived", "true")
+    if (filters.onlyArchived) query.set("onlyArchived", "true")
 
     return api.get<EstimatesListResponse>(`/estimates?${query.toString()}`)
   },
 
-  details(estimateId: string) {
-    return api.get<Estimate>(`/estimates/${estimateId}`)
+  details(estimateId: string, includeArchived = false) {
+    const suffix = includeArchived ? "?includeArchived=true" : ""
+    return api.get<Estimate>(`/estimates/${estimateId}${suffix}`)
   },
 
   create(payload: CreateEstimatePayload) {
@@ -38,6 +41,14 @@ export const estimatesService = {
 
   updateStatus(estimateId: string, status: "FINALIZADA" | "CANCELADA") {
     return api.patch<Estimate>(`/estimates/${estimateId}/status`, { status })
+  },
+
+  archive(estimateId: string) {
+    return api.delete<{ message: string; estimate: Estimate }>(`/estimates/${estimateId}`)
+  },
+
+  restore(estimateId: string) {
+    return api.post<{ message: string; estimate: Estimate }>(`/estimates/${estimateId}/restore`, {})
   },
 
   listAtas(type: Ata["type"]) {

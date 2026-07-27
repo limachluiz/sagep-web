@@ -95,6 +95,8 @@ export type EstimatesListFilters = {
   search?: string
   status?: EstimateStatus
   stateUf?: FederativeUnit
+  includeArchived?: boolean
+  onlyArchived?: boolean
 }
 
 export type EstimatesListResponse = {

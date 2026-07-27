@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
+  Archive,
   ArrowLeft,
   Building2,
   Download,
@@ -13,11 +14,13 @@ import {
   CircleCheck,
   Loader2,
   Pencil,
+  RotateCcw,
 } from "lucide-react"
-import { Link, useParams } from "react-router"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ArchiveActionDialog } from "@/components/archive-action-dialog"
 import { ItemDescription } from "@/components/item-description"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -66,15 +69,19 @@ function formatDate(value: string) {
 
 export function EstimateDetailsPage() {
   const { estimateId = "" } = useParams()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const includeArchived = searchParams.get("includeArchived") === "true"
   const queryClient = useQueryClient()
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const [documentLoading, setDocumentLoading] = useState<"html" | "pdf" | null>(null)
   const [editOpen, setEditOpen] = useState(false)
   const [statusConfirmation, setStatusConfirmation] = useState<"FINALIZADA" | "CANCELADA" | null>(null)
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
 
   const estimateQuery = useQuery({
-    queryKey: ["estimates", "details", estimateId],
-    queryFn: () => estimatesService.details(estimateId),
+    queryKey: ["estimates", "details", estimateId, includeArchived],
+    queryFn: () => estimatesService.details(estimateId, includeArchived),
     enabled: Boolean(estimateId),
   })
 
@@ -91,6 +98,29 @@ export function EstimateDetailsPage() {
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       setStatusConfirmation(null)
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const archiveMutation = useMutation({
+    mutationFn: () => estimatesService.archive(estimateId),
+    onSuccess: () => {
+      toast.success("Estimativa arquivada com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["estimates"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate("/estimates")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const restoreMutation = useMutation({
+    mutationFn: () => estimatesService.restore(estimateId),
+    onSuccess: () => {
+      toast.success("Estimativa restaurada com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["estimates"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      navigate(`/estimates/${estimateId}`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -140,8 +170,10 @@ export function EstimateDetailsPage() {
 
   const estimate = estimateQuery.data
   const isDraft = estimate.status === "RASCUNHO"
-  const canEdit = isDraft && hasPermission("estimates.edit")
-  const canFinalize = isDraft && hasPermission("estimates.finalize")
+  const canEdit = isDraft && !estimate.archivedAt && hasPermission("estimates.edit")
+  const canFinalize = isDraft && !estimate.archivedAt && hasPermission("estimates.finalize")
+  const canArchive = !estimate.archivedAt && hasPermission("estimates.archive")
+  const canRestore = Boolean(estimate.archivedAt) && hasPermission("estimates.restore")
 
   return (
     <div className="space-y-6">
@@ -154,6 +186,7 @@ export function EstimateDetailsPage() {
             <div className="mb-3 flex flex-wrap items-center gap-2">
               <Badge>EST-{estimate.estimateCode}</Badge>
               <Badge variant={statusVariants[estimate.status]}>{statusLabels[estimate.status]}</Badge>
+              {estimate.archivedAt && <Badge variant="outline">Arquivada</Badge>}
             </div>
             <h1 className="text-3xl font-semibold tracking-tight">Estimativa de preço</h1>
             <p className="mt-2 text-sm text-muted-foreground">
@@ -174,6 +207,16 @@ export function EstimateDetailsPage() {
             {canFinalize && (
               <Button className="gap-2" onClick={() => setStatusConfirmation("FINALIZADA")}>
                 <CircleCheck className="size-4" />Finalizar
+              </Button>
+            )}
+            {canArchive && (
+              <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}>
+                <Archive className="size-4" />Arquivar
+              </Button>
+            )}
+            {canRestore && (
+              <Button variant="outline" className="gap-2" onClick={() => setArchiveDialogOpen(true)}>
+                <RotateCcw className="size-4" />Restaurar
               </Button>
             )}
             <Button variant="outline" className="gap-2" onClick={() => handleDocument("html")} disabled={Boolean(documentLoading)}>
@@ -332,6 +375,19 @@ export function EstimateDetailsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ArchiveActionDialog
+        open={archiveDialogOpen}
+        onOpenChange={setArchiveDialogOpen}
+        mode={estimate.archivedAt ? "restore" : "archive"}
+        entityLabel="estimativa"
+        entityCode={`EST-${estimate.estimateCode}`}
+        description={estimate.archivedAt
+          ? "A estimativa voltará a ficar disponível no projeto."
+          : "O registro sairá das consultas ativas, mas continuará disponível no histórico. A operação será bloqueada se houver DIEx ou OS vinculados."}
+        pending={archiveMutation.isPending || restoreMutation.isPending}
+        onConfirm={() => estimate.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()}
+      />
     </div>
   )
 }

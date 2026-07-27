@@ -57,10 +57,12 @@ function formatDate(value: string) {
 
 export function EstimatesListPage() {
   const canCreate = useAuthStore((state) => state.hasPermission("estimates.create"))
+  const canViewArchived = useAuthStore((state) => state.hasPermission("estimates.restore"))
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [status, setStatus] = useState<EstimateStatus | "all">("all")
   const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
+  const [visibility, setVisibility] = useState<"active" | "archived">("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -80,8 +82,9 @@ export function EstimatesListPage() {
       search: debouncedSearch || undefined,
       status: status === "all" ? undefined : status,
       stateUf: stateUf === "all" ? undefined : stateUf,
+      onlyArchived: visibility === "archived" || undefined,
     }),
-    [debouncedSearch, page, pageSize, stateUf, status],
+    [debouncedSearch, page, pageSize, stateUf, status, visibility],
   )
 
   const estimatesQuery = useQuery({
@@ -130,7 +133,7 @@ export function EstimatesListPage() {
       </div>
 
       <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_220px_auto]">
+        <CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_200px_200px_180px_auto]">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -161,6 +164,16 @@ export function EstimatesListPage() {
             </SelectContent>
           </Select>
 
+          {canViewArchived && (
+            <Select value={visibility} onValueChange={(value) => { setVisibility(value as "active" | "archived"); setPage(1) }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Ativas</SelectItem>
+                <SelectItem value="archived">Arquivadas</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
           {hasActiveFilters && (
             <Button variant="ghost" className="gap-2" onClick={clearFilters}>
               <X className="size-4" /> Limpar
@@ -181,7 +194,7 @@ export function EstimatesListPage() {
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2">
             <FileSpreadsheet className="size-5 text-primary" />
-            Estimativas cadastradas
+            {visibility === "archived" ? "Estimativas arquivadas" : "Estimativas cadastradas"}
           </CardTitle>
           {meta && <Badge variant="outline">{meta.totalItems} estimativa(s)</Badge>}
         </CardHeader>
@@ -225,10 +238,10 @@ export function EstimatesListPage() {
                     </TableCell>
                     <TableCell>{estimate.items.length}</TableCell>
                     <TableCell className="font-semibold">{formatCurrency(estimate.totalAmount)}</TableCell>
-                    <TableCell><Badge variant={statusVariants[estimate.status]}>{statusLabels[estimate.status]}</Badge></TableCell>
+                    <TableCell><div className="flex flex-wrap gap-1"><Badge variant={statusVariants[estimate.status]}>{statusLabels[estimate.status]}</Badge>{estimate.archivedAt && <Badge variant="outline">Arquivada</Badge>}</div></TableCell>
                     <TableCell className="text-right">
                       <Button asChild size="sm" variant="outline">
-                        <Link to={`/estimates/${estimate.id}`}>Detalhes</Link>
+                        <Link to={`/estimates/${estimate.id}${visibility === "archived" ? "?includeArchived=true" : ""}`}>Detalhes</Link>
                       </Button>
                     </TableCell>
                   </TableRow>

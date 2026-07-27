@@ -49,6 +49,14 @@ export const projectsService = {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}`, payload)
   },
 
+  archive(projectId: string) {
+    return api.delete<{ message: string; project: ProjectMutationResponse }>(`/projects/${projectId}`)
+  },
+
+  restore(projectId: string) {
+    return api.post<{ message: string; project: ProjectMutationResponse }>(`/projects/${projectId}/restore`, {})
+  },
+
   updateFlow(projectId: string, payload: ProjectFlowPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}/flow`, payload)
   },

@@ -1,10 +1,11 @@
 import { useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, ArrowLeft, Building2, Download, ExternalLink, FileSignature, UserRound } from "lucide-react"
-import { Link, useParams } from "react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { AlertTriangle, Archive, ArrowLeft, Building2, Download, ExternalLink, FileSignature, Pencil, RotateCcw, UserRound } from "lucide-react"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { ArchiveActionDialog } from "@/components/archive-action-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -12,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { diexService } from "@/features/diex/diex.service"
 import { CompleteDiexDialog } from "@/features/diex/components/complete-diex-dialog"
+import { EditDiexDialog } from "@/features/diex/components/edit-diex-dialog"
 import { useAuthStore } from "@/features/auth/auth.store"
 
 function formatCurrency(value: string) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value)) }
@@ -20,11 +22,39 @@ function formatDate(value: string | null) { return value ? new Intl.DateTimeForm
 
 export function DiexDetailsPage() {
   const { diexId = "" } = useParams()
+  const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const includeArchived = searchParams.get("includeArchived") === "true"
   const queryClient = useQueryClient()
   const canIssue = useAuthStore((state) => state.hasPermission("diex.issue"))
+  const canCancel = useAuthStore((state) => state.hasPermission("diex.cancel"))
+  const canRestore = useAuthStore((state) => state.hasPermission("diex.restore"))
   const [documentLoading, setDocumentLoading] = useState<"html" | "pdf" | null>(null)
   const [completeOpen, setCompleteOpen] = useState(false)
-  const query = useQuery({ queryKey: ["diex", "details", diexId], queryFn: () => diexService.details(diexId), enabled: Boolean(diexId) })
+  const [editOpen, setEditOpen] = useState(false)
+  const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
+  const query = useQuery({ queryKey: ["diex", "details", diexId, includeArchived], queryFn: () => diexService.details(diexId, includeArchived), enabled: Boolean(diexId) })
+  const archiveMutation = useMutation({
+    mutationFn: () => diexService.archive(diexId),
+    onSuccess: () => {
+      toast.success("DIEx arquivado e saldo reservado liberado.")
+      queryClient.invalidateQueries({ queryKey: ["diex"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      navigate("/diex")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const restoreMutation = useMutation({
+    mutationFn: () => diexService.restore(diexId),
+    onSuccess: () => {
+      toast.success("DIEx restaurado com sucesso.")
+      queryClient.invalidateQueries({ queryKey: ["diex"] })
+      queryClient.invalidateQueries({ queryKey: ["projects"] })
+      navigate(`/diex/${diexId}`)
+    },
+    onError: (error) => toast.error(error.message),
+  })
 
   const handleDocument = async (format: "html" | "pdf") => {
     const previewWindow = format === "html" ? window.open("", "_blank") : null
@@ -45,7 +75,7 @@ export function DiexDetailsPage() {
   const documentReady = Boolean(diex.diexNumber && diex.issuedAt)
 
   return <div className="space-y-6">
-    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge></div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex gap-2">{canIssue && !documentReady && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
+    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex flex-wrap gap-2">{canIssue && !diex.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}{canCancel && !diex.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && diex.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
 
     {!documentReady && <Alert><AlertTriangle /><AlertTitle>Documento ainda indisponível</AlertTitle><AlertDescription>O número e a data de emissão precisam ser preenchidos pela SALC antes da geração oficial.</AlertDescription></Alert>}
 
@@ -53,5 +83,7 @@ export function DiexDetailsPage() {
 
     <Card className="border-none shadow-sm"><CardHeader><CardTitle>Itens requisitados</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Descrição</TableHead><TableHead>Unidade</TableHead><TableHead>Quantidade</TableHead><TableHead>Valor unitário</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader><TableBody>{diex.items.map((item) => <TableRow key={item.id}><TableCell className="font-medium">{item.itemCode}</TableCell><TableCell>{item.description}</TableCell><TableCell>{item.supplyUnit}</TableCell><TableCell>{formatQuantity(item.quantityRequested)}</TableCell><TableCell>{formatCurrency(item.unitPrice)}</TableCell><TableCell className="text-right font-semibold">{formatCurrency(item.totalPrice)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
     {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
+    {editOpen && <EditDiexDialog diex={diex} open={editOpen} onOpenChange={setEditOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId, includeArchived], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
+    <ArchiveActionDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen} mode={diex.archivedAt ? "restore" : "archive"} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description={diex.archivedAt ? "O documento voltará ao fluxo ativo do projeto." : "A reserva de saldo será liberada e o projeto retornará à etapa documental anterior. A ação é bloqueada quando existe OS ativa vinculada."} pending={archiveMutation.isPending || restoreMutation.isPending} onConfirm={() => diex.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()} />
   </div>
 }

@@ -77,3 +77,19 @@ export type CreateServiceOrderPayload = {
   contractorRepresentativeName?: string
   notes?: string
 }
+
+export type UpdateServiceOrderPayload = {
+  serviceOrderNumber?: string
+  issuedAt?: string
+  contractorCnpj?: string
+  requesterName?: string
+  requesterRank?: string
+  requesterCpf?: string
+  plannedStartDate?: string
+  plannedEndDate?: string
+  executionLocation?: string
+  contactName?: string
+  contactPhone?: string
+  contractorRepresentativeName?: string
+  notes?: string
+}
