@@ -1,8 +1,24 @@
 import { api } from "@/lib/api"
 import type { UserRole } from "@/features/auth/auth.types"
-import type { AdminUser, CreateUserPayload, UpdateUserPayload, UsersListFilters, UsersListResponse } from "./users.types"
+import type {
+  AdminUser,
+  CreateUserPayload,
+  UpdateUserPayload,
+  UserOptionsFilters,
+  UserOptionsResponse,
+  UsersListFilters,
+  UsersListResponse,
+} from "./users.types"
 
 export const usersService = {
+  options(filters: UserOptionsFilters = {}) {
+    const query = new URLSearchParams()
+    if (filters.projectId) query.set("projectId", filters.projectId)
+    if (filters.projectCode) query.set("projectCode", String(filters.projectCode))
+    const suffix = query.size ? `?${query.toString()}` : ""
+    return api.get<UserOptionsResponse>(`/users/options${suffix}`)
+  },
+
   list({ page = 1, pageSize = 10, search, role, active }: UsersListFilters = {}) {
     const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
     if (search) query.set("search", search)

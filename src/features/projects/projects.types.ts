@@ -154,7 +154,7 @@ export type AsBuiltReviewPayload =
   | { approved: false; reviewedAt: string; rejectionReason: string }
 
 export type AddProjectMemberPayload = {
-  userCode: number
+  userId: string
   role?: string
 }
 

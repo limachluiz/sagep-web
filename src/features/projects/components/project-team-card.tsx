@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Loader2, Plus, Trash2, UserRound } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { projectsService } from "@/features/projects/projects.service"
 import type { ProjectDetailsResponse } from "@/features/projects/projects.types"
+import { usersService } from "@/features/users/users.service"
 
 function initials(name: string) {
   return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
@@ -33,20 +35,30 @@ type ProjectTeamCardProps = {
 export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
   const queryClient = useQueryClient()
   const [addOpen, setAddOpen] = useState(false)
-  const [userCode, setUserCode] = useState("")
+  const [selectedUserId, setSelectedUserId] = useState("")
   const [memberRole, setMemberRole] = useState("")
   const [memberToRemove, setMemberToRemove] = useState<ProjectDetailsResponse["project"]["members"][number] | null>(null)
 
   const refreshProject = () => queryClient.invalidateQueries({ queryKey: ["projects", "details", details.project.id] })
+  const userOptionsQuery = useQuery({
+    queryKey: ["users", "options"],
+    queryFn: () => usersService.options(),
+    enabled: addOpen,
+  })
+  const unavailableIds = new Set([
+    details.project.owner.id,
+    ...details.project.members.map((member) => member.user.id),
+  ])
+  const availableUsers = userOptionsQuery.data?.items.filter((user) => !unavailableIds.has(user.id)) ?? []
 
   const addMutation = useMutation({
     mutationFn: () => projectsService.addMember(details.project.id, {
-      userCode: Number(userCode),
+      userId: selectedUserId,
       role: memberRole.trim() || undefined,
     }),
     onSuccess: (member) => {
       toast.success(`${member.user.name} foi adicionado à equipe.`)
-      setUserCode("")
+      setSelectedUserId("")
       setMemberRole("")
       setAddOpen(false)
       refreshProject()
@@ -118,12 +130,27 @@ export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Adicionar membro</DialogTitle>
-            <DialogDescription>Informe o código numérico do usuário cadastrado no SAGEP.</DialogDescription>
+            <DialogDescription>Selecione um usuário ativo cadastrado no SAGEP.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="member-user-code">Código do usuário</Label>
-              <Input id="member-user-code" type="number" min="1" placeholder="Ex.: 12" value={userCode} onChange={(event) => setUserCode(event.target.value)} />
+              <Label>Usuário</Label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId} disabled={userOptionsQuery.isLoading || userOptionsQuery.isError}>
+                <SelectTrigger className="w-full" aria-label="Usuário da equipe">
+                  <SelectValue placeholder={userOptionsQuery.isLoading ? "Carregando usuários..." : "Selecione um usuário"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.map((user) => (
+                    <SelectItem key={user.id} value={user.id}>
+                      {user.name} · USR-{user.userCode}{user.rank ? ` · ${user.rank}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {userOptionsQuery.isError && <p className="text-xs text-destructive">Não foi possível carregar os usuários disponíveis.</p>}
+              {!userOptionsQuery.isLoading && !userOptionsQuery.isError && availableUsers.length === 0 && (
+                <p className="text-xs text-muted-foreground">Todos os usuários ativos já estão vinculados a este projeto.</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="member-role">Função no projeto (opcional)</Label>
@@ -132,7 +159,7 @@ export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
           </div>
           <DialogFooter>
             <DialogClose asChild><Button variant="outline" disabled={addMutation.isPending}>Cancelar</Button></DialogClose>
-            <Button disabled={!userCode || Number(userCode) < 1 || addMutation.isPending} onClick={() => addMutation.mutate()}>
+            <Button disabled={!selectedUserId || addMutation.isPending} onClick={() => addMutation.mutate()}>
               {addMutation.isPending && <Loader2 className="size-4 animate-spin" />}Adicionar membro
             </Button>
           </DialogFooter>

@@ -13,6 +13,15 @@ export type AdminUser = {
   updatedAt: string
 }
 
+export type UserOption = Pick<
+  AdminUser,
+  "id" | "userCode" | "name" | "email" | "role" | "rank" | "active"
+>
+
+export type UserOptionsResponse = {
+  items: UserOption[]
+}
+
 export type UsersListResponse = {
   items: AdminUser[]
   meta: {
@@ -31,6 +40,11 @@ export type UsersListFilters = {
   search?: string
   role?: UserRole
   active?: boolean
+}
+
+export type UserOptionsFilters = {
+  projectId?: string
+  projectCode?: number
 }
 
 export type CreateUserPayload = {

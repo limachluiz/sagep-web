@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
+import { useQuery } from "@tanstack/react-query"
 import { Loader2 } from "lucide-react"
 import { useEffect } from "react"
 import { useForm, useWatch } from "react-hook-form"
@@ -24,6 +25,7 @@ import type {
   TaskStatus,
   UpdateTaskPayload,
 } from "@/features/tasks/tasks.types"
+import { usersService } from "@/features/users/users.service"
 
 const schema = z.object({
   projectCode: z.string().trim().refine(
@@ -34,10 +36,7 @@ const schema = z.object({
   description: z.string(),
   status: z.enum(["PENDENTE", "EM_ANDAMENTO", "REVISAO", "CONCLUIDA", "CANCELADA"]),
   priority: z.enum(["1", "2", "3", "4", "5"]),
-  assigneeUserCode: z.string().refine(
-    (value) => value === "" || (/^\d+$/.test(value) && Number(value) > 0),
-    "Informe um código de usuário válido.",
-  ),
+  assigneeId: z.string(),
   dueDate: z.string(),
 })
 
@@ -75,12 +74,26 @@ export function TaskFormSheet({
       description: "",
       status: "PENDENTE",
       priority: "3",
-      assigneeUserCode: "",
+      assigneeId: "",
       dueDate: "",
     },
   })
   const status = useWatch({ control: form.control, name: "status" })
   const priority = useWatch({ control: form.control, name: "priority" })
+  const projectCode = useWatch({ control: form.control, name: "projectCode" })
+  const assigneeId = useWatch({ control: form.control, name: "assigneeId" })
+  const numericProjectCode = /^\d+$/.test(projectCode) && Number(projectCode) > 0
+    ? Number(projectCode)
+    : undefined
+  const assigneeOptionsQuery = useQuery({
+    queryKey: ["users", "options", "project", numericProjectCode],
+    queryFn: () => usersService.options({ projectCode: numericProjectCode }),
+    enabled: open && canAssign && Boolean(numericProjectCode),
+  })
+  const assigneeOptions = assigneeOptionsQuery.data?.items ?? []
+  const visibleAssigneeOptions = task?.assignee && !assigneeOptions.some((user) => user.id === task.assignee?.id)
+    ? [task.assignee, ...assigneeOptions]
+    : assigneeOptions
 
   useEffect(() => {
     if (!open) return
@@ -90,7 +103,7 @@ export function TaskFormSheet({
       description: task?.description ?? "",
       status: task?.status ?? "PENDENTE",
       priority: String(task?.priority ?? 3) as FormValues["priority"],
-      assigneeUserCode: task?.assignee ? String(task.assignee.userCode) : "",
+      assigneeId: task?.assignee?.id ?? "",
       dueDate: dateInputValue(task?.dueDate),
     })
   }, [form, initialProjectCode, open, task])
@@ -107,7 +120,7 @@ export function TaskFormSheet({
     if (task) {
       const payload: UpdateTaskPayload = { ...common }
       if (canAssign) {
-        if (values.assigneeUserCode) payload.assigneeUserCode = Number(values.assigneeUserCode)
+        if (values.assigneeId) payload.assigneeId = values.assigneeId
         else if (task.assignee) payload.clearAssignee = true
       }
       if (!values.dueDate && task.dueDate) payload.clearDueDate = true
@@ -119,8 +132,8 @@ export function TaskFormSheet({
       ...common,
       projectCode: Number(values.projectCode),
     }
-    if (canAssign && values.assigneeUserCode) {
-      payload.assigneeUserCode = Number(values.assigneeUserCode)
+    if (canAssign && values.assigneeId) {
+      payload.assigneeId = values.assigneeId
     }
     await onSubmit(payload)
   })
@@ -192,10 +205,26 @@ export function TaskFormSheet({
 
             {canAssign && (
               <div className="space-y-2">
-                <Label htmlFor="task-assignee-code">Código do responsável</Label>
-                <Input id="task-assignee-code" type="number" min="1" placeholder="Opcional" {...form.register("assigneeUserCode")} />
-                <p className="text-xs text-muted-foreground">O usuário precisa ser responsável ou membro do projeto.</p>
-                {form.formState.errors.assigneeUserCode && <p className="text-xs text-destructive">{form.formState.errors.assigneeUserCode.message}</p>}
+                <Label>Responsável</Label>
+                <Select
+                  value={assigneeId || "__unassigned"}
+                  onValueChange={(value) => form.setValue("assigneeId", value === "__unassigned" ? "" : value, { shouldDirty: true })}
+                  disabled={!numericProjectCode || assigneeOptionsQuery.isLoading || assigneeOptionsQuery.isError}
+                >
+                  <SelectTrigger className="w-full" aria-label="Responsável pela tarefa">
+                    <SelectValue placeholder={numericProjectCode ? "Selecione um responsável" : "Informe primeiro o projeto"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__unassigned">Não atribuído</SelectItem>
+                    {visibleAssigneeOptions.map((user) => (
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.name} · USR-{user.userCode}{"rank" in user && user.rank ? ` · ${user.rank}` : ""}{user.active === false ? " · inativo" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Disponíveis: responsável e membros ativos do projeto.</p>
+                {assigneeOptionsQuery.isError && <p className="text-xs text-destructive">{assigneeOptionsQuery.error.message}</p>}
               </div>
             )}
           </div>

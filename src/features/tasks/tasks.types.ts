@@ -72,6 +72,7 @@ export type CreateTaskPayload = {
   description?: string
   status?: TaskStatus
   priority?: number
+  assigneeId?: string
   assigneeUserCode?: number
   dueDate?: string
 }
@@ -81,6 +82,7 @@ export type UpdateTaskPayload = {
   description?: string
   status?: TaskStatus
   priority?: number
+  assigneeId?: string
   assigneeUserCode?: number
   clearAssignee?: boolean
   dueDate?: string
