@@ -185,6 +185,12 @@ export type ProjectTimelineItem = {
   context?: Record<string, unknown>
 }
 
+export type ProjectAuditItem = ProjectTimelineItem & {
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+  metadata: Record<string, unknown> | null
+}
+
 export type ProjectTaskItem = {
   id: string
   taskCode: number
@@ -238,6 +244,7 @@ export type ProjectDetailsResponse = {
     targetStage?: ProjectStage
   }>
   timeline: ProjectTimelineItem[]
+  auditTrail: ProjectAuditItem[] | null
   tasks: ProjectTaskItem[]
   documents: {
     estimates: Array<{

@@ -18,6 +18,7 @@ import {
   ReceiptText,
   RefreshCw,
   RotateCcw,
+  ShieldCheck,
   Trash2,
   Play,
   UserRound,
@@ -36,7 +37,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
+import { ProjectAuditPanel } from "@/features/projects/components/project-audit-panel"
+import { ProjectDocumentsPanel } from "@/features/projects/components/project-documents-panel"
+import { ProjectFinancialCard } from "@/features/projects/components/project-financial-card"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
+import { ProjectTeamSummary } from "@/features/projects/components/project-team-summary"
 import { ProjectTasksOverview, ProjectTasksPanel } from "@/features/projects/components/project-tasks-panel"
 import { ProjectWorkflowProgress } from "@/features/projects/components/project-workflow-progress"
 import {
@@ -117,18 +122,22 @@ function formatDate(value: string | null, withTime = false) {
 }
 
 function ProjectOverview({
-  details,
   canManage,
+  details,
   canViewTasks,
   canCreateTasks,
   onCreateTask,
+  onShowDocuments,
+  onShowTeam,
   onShowTasks,
 }: {
-  details: ProjectDetailsResponse
   canManage: boolean
+  details: ProjectDetailsResponse
   canViewTasks: boolean
   canCreateTasks: boolean
   onCreateTask: () => void
+  onShowDocuments: () => void
+  onShowTeam: () => void
   onShowTasks: () => void
 }) {
   const milestoneEntries = Object.entries(details.workflow.milestones).filter(
@@ -145,6 +154,8 @@ function ProjectOverview({
           onShowAll={onShowTasks}
         />
       )}
+
+      <ProjectFinancialCard details={details} />
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <div className="space-y-6">
@@ -169,7 +180,12 @@ function ProjectOverview({
         </Card>
 
         <Card className="border-none shadow-sm">
-          <CardHeader><CardTitle>Pendências do projeto</CardTitle></CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between gap-3">
+            <CardTitle>Pendências do projeto</CardTitle>
+            <Badge variant={details.pendingActions.some((action) => action.severity === "BLOCKER") ? "destructive" : "outline"}>
+              {details.pendingActions.length}
+            </Badge>
+          </CardHeader>
           <CardContent className="space-y-3">
             {details.pendingActions.length ? details.pendingActions.map((action) => (
               <div key={action.code} className="flex items-center justify-between gap-4 rounded-xl border p-4">
@@ -195,7 +211,17 @@ function ProjectOverview({
         </div>
 
         <div className="space-y-6">
-          <ProjectTeamCard details={details} canManage={canManage} />
+          <ProjectTeamSummary canManage={canManage} details={details} onShowTeam={onShowTeam} />
+
+          <Card className="border-none shadow-sm">
+            <CardHeader><CardTitle>Controle documental</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Estimativas</span><span className="font-medium">{details.documents.estimates.length}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">DIEx</span><span className="font-medium">{details.documents.diexRequests.length}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Ordens de Serviço</span><span className="font-medium">{details.documents.serviceOrders.length}</span></div>
+              <Button variant="outline" className="mt-2 w-full" onClick={onShowDocuments}>Abrir documentos</Button>
+            </CardContent>
+          </Card>
 
           <Card className="border-none shadow-sm">
             <CardHeader><CardTitle>Datas do projeto</CardTitle></CardHeader>
@@ -209,69 +235,6 @@ function ProjectOverview({
           </Card>
         </div>
       </div>
-    </div>
-  )
-}
-
-function Documents({ details }: { details: ProjectDetailsResponse }) {
-  const groups = [
-    {
-      title: "Estimativas",
-      icon: FileSpreadsheet,
-      items: details.documents.estimates.map((item) => ({
-        id: item.id,
-        code: `EST-${item.estimateCode}`,
-        status: item.status,
-        description: `${item.destinationCityName}/${item.destinationStateUf}`,
-        amount: item.totalAmount,
-        date: item.createdAt,
-      })),
-    },
-    {
-      title: "DIEx requisitórios",
-      icon: ClipboardCheck,
-      items: details.documents.diexRequests.map((item) => ({
-        id: item.id,
-        code: item.diexNumber ?? `DIEX-${item.diexCode}`,
-        status: item.documentStatus ?? "RASCUNHO",
-        description: item.supplierName ?? "Fornecedor não informado",
-        amount: item.totalAmount,
-        date: item.issuedAt ?? item.createdAt,
-      })),
-    },
-    {
-      title: "Ordens de Serviço",
-      icon: FileCheck2,
-      items: details.documents.serviceOrders.map((item) => ({
-        id: item.id,
-        code: item.serviceOrderNumber ?? `OS-${item.serviceOrderCode}`,
-        status: item.documentStatus ?? "RASCUNHO",
-        description: item.contractorName ?? "Contratada não informada",
-        amount: item.totalAmount,
-        date: item.issuedAt ?? item.createdAt,
-      })),
-    },
-  ]
-
-  return (
-    <div className="grid gap-6 xl:grid-cols-3">
-      {groups.map((group) => {
-        const Icon = group.icon
-        return (
-          <Card key={group.title} className="border-none shadow-sm">
-            <CardHeader><CardTitle className="flex items-center gap-2"><Icon className="size-5 text-primary" />{group.title}<Badge variant="outline" className="ml-auto">{group.items.length}</Badge></CardTitle></CardHeader>
-            <CardContent className="space-y-3">
-              {group.items.length ? group.items.map((item) => (
-                <div key={item.id} className="rounded-xl border p-3">
-                  <div className="flex items-center justify-between gap-3"><p className="font-medium">{item.code}</p><Badge variant="secondary">{item.status}</Badge></div>
-                  <p className="mt-2 truncate text-xs text-muted-foreground">{item.description}</p>
-                  <div className="mt-3 flex items-center justify-between text-sm"><span className="font-medium">{formatCurrency(item.amount)}</span><span className="text-xs text-muted-foreground">{formatDate(item.date)}</span></div>
-                </div>
-              )) : <p className="py-10 text-center text-sm text-muted-foreground">Nenhum documento.</p>}
-            </CardContent>
-          </Card>
-        )
-      })}
     </div>
   )
 }
@@ -342,7 +305,8 @@ export function ProjectDetailsPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const canViewTasks = hasPermission("tasks.view_all") || hasPermission("tasks.create") || hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete") || hasPermission("tasks.assign") || hasPermission("tasks.archive") || hasPermission("tasks.restore") || hasPermission("tasks.delete")
-  const activeTab = resolveProjectDetailsTab(searchParams.get("tab"), canViewTasks)
+  const canViewAudit = hasPermission("audit.view")
+  const activeTab = resolveProjectDetailsTab(searchParams.get("tab"), canViewTasks, canViewAudit)
   const selectTab = (tab: ProjectDetailsTab) => {
     setSearchParams(searchParamsForProjectTab(searchParams, tab), { replace: true })
   }
@@ -529,15 +493,19 @@ export function ProjectDetailsPage() {
           <TabsTrigger value="overview"><UserRound data-icon="inline-start" />Visão geral</TabsTrigger>
           {canViewTasks && <TabsTrigger value="tasks"><ListChecks data-icon="inline-start" />Tarefas <Badge variant="outline" className="ml-1">{details.tasks.length}</Badge></TabsTrigger>}
           <TabsTrigger value="documents"><FileCheck2 data-icon="inline-start" />Documentos</TabsTrigger>
+          <TabsTrigger value="team"><Users data-icon="inline-start" />Equipe <Badge variant="outline" className="ml-1">{details.operationalSummary.membersCount + 1}</Badge></TabsTrigger>
           <TabsTrigger value="timeline"><CalendarDays data-icon="inline-start" />Timeline</TabsTrigger>
+          {canViewAudit && <TabsTrigger value="audit"><ShieldCheck data-icon="inline-start" />Auditoria</TabsTrigger>}
         </TabsList>
         <TabsContent value="overview">
           <ProjectOverview
-            details={details}
             canManage={canManage}
+            details={details}
             canViewTasks={canViewTasks}
             canCreateTasks={canCreateTasks}
             onCreateTask={() => setCreateTaskOpen(true)}
+            onShowDocuments={() => selectTab("documents")}
+            onShowTeam={() => selectTab("team")}
             onShowTasks={() => selectTab("tasks")}
           />
         </TabsContent>
@@ -553,8 +521,12 @@ export function ProjectDetailsPage() {
             />
           </TabsContent>
         )}
-        <TabsContent value="documents"><Documents details={details} /></TabsContent>
+        <TabsContent value="documents"><ProjectDocumentsPanel details={details} /></TabsContent>
+        <TabsContent value="team"><ProjectTeamCard details={details} canManage={canManage} /></TabsContent>
         <TabsContent value="timeline"><Timeline details={details} /></TabsContent>
+        {canViewAudit && details.auditTrail && (
+          <TabsContent value="audit"><ProjectAuditPanel items={details.auditTrail} /></TabsContent>
+        )}
       </Tabs>
 
       <ProjectFormSheet

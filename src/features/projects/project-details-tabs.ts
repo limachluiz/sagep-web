@@ -1,18 +1,28 @@
-export type ProjectDetailsTab = "overview" | "tasks" | "documents" | "timeline"
+export type ProjectDetailsTab =
+  | "overview"
+  | "tasks"
+  | "documents"
+  | "team"
+  | "timeline"
+  | "audit"
 
 const projectDetailsTabs = new Set<ProjectDetailsTab>([
   "overview",
   "tasks",
   "documents",
+  "team",
   "timeline",
+  "audit",
 ])
 
 export function resolveProjectDetailsTab(
   value: string | null,
   canViewTasks: boolean,
+  canViewAudit = false,
 ): ProjectDetailsTab {
   if (!value || !projectDetailsTabs.has(value as ProjectDetailsTab)) return "overview"
   if (value === "tasks" && !canViewTasks) return "overview"
+  if (value === "audit" && !canViewAudit) return "overview"
   return value as ProjectDetailsTab
 }
 

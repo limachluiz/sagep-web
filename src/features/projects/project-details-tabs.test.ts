@@ -6,11 +6,14 @@ import {
 } from "@/features/projects/project-details-tabs"
 
 describe("abas dos detalhes do projeto", () => {
-  it("resolve abas válidas e protege a aba de tarefas por permissão", () => {
-    expect(resolveProjectDetailsTab("documents", true)).toBe("documents")
-    expect(resolveProjectDetailsTab("tasks", true)).toBe("tasks")
-    expect(resolveProjectDetailsTab("tasks", false)).toBe("overview")
-    expect(resolveProjectDetailsTab("unknown", true)).toBe("overview")
+  it("resolve abas válidas e protege tarefas e auditoria por permissão", () => {
+    expect(resolveProjectDetailsTab("documents", true, false)).toBe("documents")
+    expect(resolveProjectDetailsTab("team", true, false)).toBe("team")
+    expect(resolveProjectDetailsTab("tasks", true, false)).toBe("tasks")
+    expect(resolveProjectDetailsTab("tasks", false, false)).toBe("overview")
+    expect(resolveProjectDetailsTab("audit", true, false)).toBe("overview")
+    expect(resolveProjectDetailsTab("audit", true, true)).toBe("audit")
+    expect(resolveProjectDetailsTab("unknown", true, true)).toBe("overview")
   })
 
   it("persiste a aba na URL sem remover outros parâmetros", () => {

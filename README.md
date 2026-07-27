@@ -105,6 +105,7 @@ Kanban e Gantt serão módulos próprios, separados do dashboard.
 - [x] Login, autenticação, refresh token e perfis
 - [x] Dashboard operacional e executivo
 - [x] Projetos, detalhes, timeline e próxima ação
+- [x] Detalhes do projeto com tarefas, documentos, equipe e auditoria contextual
 - [x] Kanban e Gantt
 - [x] Tarefas com CRUD e ciclo de arquivamento
 - [x] Estimativas, NC, DIEx, NE, OS e conclusão

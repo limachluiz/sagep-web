@@ -1,6 +1,7 @@
 export type UserRole = "ADMIN" | "GESTOR" | "PROJETISTA" | "CONSULTA"
 
 export type Permission =
+  | "audit.view"
   | "permissions.view"
   | "projects.view_all"
   | "projects.edit_own"
