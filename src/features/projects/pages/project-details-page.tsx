@@ -37,6 +37,7 @@ import { useAuthStore } from "@/features/auth/auth.store"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
+import { ProjectTasksOverview, ProjectTasksPanel } from "@/features/projects/components/project-tasks-panel"
 import { ProjectWorkflowProgress } from "@/features/projects/components/project-workflow-progress"
 import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
 import { CommitmentNoteDialog } from "@/features/projects/components/commitment-note-dialog"
@@ -45,6 +46,9 @@ import { CreateDiexDialog } from "@/features/diex/components/create-diex-dialog"
 import { CreateServiceOrderDialog } from "@/features/service-orders/components/create-service-order-dialog"
 import { StartExecutionDialog } from "@/features/service-orders/components/start-execution-dialog"
 import { projectsService } from "@/features/projects/projects.service"
+import { TaskFormSheet } from "@/features/tasks/components/task-form-sheet"
+import { tasksService } from "@/features/tasks/tasks.service"
+import type { CreateTaskPayload, TaskStatus, UpdateTaskPayload } from "@/features/tasks/tasks.types"
 import type {
   ProjectDetailsResponse,
   ProjectMutationPayload,
@@ -107,14 +111,38 @@ function formatDate(value: string | null, withTime = false) {
   return new Intl.DateTimeFormat("pt-BR", withTime ? { dateStyle: "short", timeStyle: "short" } : { dateStyle: "short" }).format(new Date(value))
 }
 
-function ProjectOverview({ details, canManage }: { details: ProjectDetailsResponse; canManage: boolean }) {
+function ProjectOverview({
+  details,
+  canManage,
+  canViewTasks,
+  canCreateTasks,
+  onCreateTask,
+  onShowTasks,
+}: {
+  details: ProjectDetailsResponse
+  canManage: boolean
+  canViewTasks: boolean
+  canCreateTasks: boolean
+  onCreateTask: () => void
+  onShowTasks: () => void
+}) {
   const milestoneEntries = Object.entries(details.workflow.milestones).filter(
     ([key]) => key !== "asBuiltRejectionReason" || details.workflow.milestones[key],
   )
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <div className="space-y-6">
+    <div className="space-y-6">
+      {canViewTasks && (
+        <ProjectTasksOverview
+          tasks={details.tasks}
+          canCreate={canCreateTasks}
+          onCreate={onCreateTask}
+          onShowAll={onShowTasks}
+        />
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
         <Card className="border-none shadow-sm">
           <CardHeader><CardTitle>Marcos do workflow</CardTitle></CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
@@ -159,21 +187,22 @@ function ProjectOverview({ details, canManage }: { details: ProjectDetailsRespon
             )}
           </CardContent>
         </Card>
-      </div>
+        </div>
 
-      <div className="space-y-6">
-        <ProjectTeamCard details={details} canManage={canManage} />
+        <div className="space-y-6">
+          <ProjectTeamCard details={details} canManage={canManage} />
 
-        <Card className="border-none shadow-sm">
-          <CardHeader><CardTitle>Datas do projeto</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Início previsto</span><span className="font-medium">{formatDate(details.project.startDate)}</span></div>
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Tipo</span><span className="text-right font-medium">{details.project.projectType ? projectTypeLabels[details.project.projectType] : "Não classificado"}</span></div>
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">OM de destino</span><span className="text-right font-medium">{details.project.om ? `${details.project.om.sigla} · ${details.project.om.cityName}/${details.project.om.stateUf}` : "Não informada"}</span></div>
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Criado em</span><span className="font-medium">{formatDate(details.project.createdAt)}</span></div>
-            <div className="flex justify-between gap-4"><span className="text-muted-foreground">Última atualização</span><span className="font-medium">{formatDate(details.project.updatedAt, true)}</span></div>
-          </CardContent>
-        </Card>
+          <Card className="border-none shadow-sm">
+            <CardHeader><CardTitle>Datas do projeto</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Início previsto</span><span className="font-medium">{formatDate(details.project.startDate)}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Tipo</span><span className="text-right font-medium">{details.project.projectType ? projectTypeLabels[details.project.projectType] : "Não classificado"}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">OM de destino</span><span className="text-right font-medium">{details.project.om ? `${details.project.om.sigla} · ${details.project.om.cityName}/${details.project.om.stateUf}` : "Não informada"}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Criado em</span><span className="font-medium">{formatDate(details.project.createdAt)}</span></div>
+              <div className="flex justify-between gap-4"><span className="text-muted-foreground">Última atualização</span><span className="font-medium">{formatDate(details.project.updatedAt, true)}</span></div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   )
@@ -243,24 +272,42 @@ function Documents({ details }: { details: ProjectDetailsResponse }) {
 }
 
 function Timeline({ details }: { details: ProjectDetailsResponse }) {
+  const entityLabels: Record<string, string> = {
+    PROJECT: "Projeto",
+    TASK: "Tarefa",
+    ESTIMATE: "Estimativa",
+    DIEX_REQUEST: "DIEx",
+    SERVICE_ORDER: "Ordem de Serviço",
+  }
+
   return (
     <Card className="border-none shadow-sm">
       <CardHeader><CardTitle>Histórico unificado</CardTitle></CardHeader>
       <CardContent>
         {details.timeline.length ? (
           <div className="relative space-y-0 before:absolute before:bottom-4 before:left-4 before:top-4 before:w-px before:bg-border">
-            {details.timeline.map((item) => (
+            {details.timeline.map((item) => {
+              const isTask = item.entityType === "TASK"
+              const linkedTask = isTask ? details.tasks.find((task) => task.id === item.entityId) : undefined
+              return (
               <div key={item.id} className="relative flex gap-4 pb-6 last:pb-0">
-                <div className="z-10 mt-1 flex size-8 shrink-0 items-center justify-center rounded-full border bg-background text-primary"><Clock3 className="size-4" /></div>
+                <div className={isTask ? "z-10 mt-1 flex size-8 shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10 text-primary" : "z-10 mt-1 flex size-8 shrink-0 items-center justify-center rounded-full border bg-background text-primary"}>
+                  {isTask ? <ListChecks className="size-4" /> : <Clock3 className="size-4" />}
+                </div>
                 <div className="min-w-0 flex-1 rounded-xl border p-4">
                   <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-                    <div><p className="font-medium">{item.label}</p>{item.summary && <p className="mt-1 text-sm text-muted-foreground">{item.summary}</p>}</div>
-                    <Badge variant="outline">{item.entityType}</Badge>
+                    <div>
+                      <p className="font-medium">{item.label}</p>
+                      {item.summary && <p className="mt-1 text-sm text-muted-foreground">{item.summary}</p>}
+                      {isTask && <Button asChild variant="link" className="mt-2 h-auto p-0 text-xs"><Link to={`/tasks/${item.entityId}${linkedTask?.archivedAt ? "?includeArchived=true" : ""}`}>Abrir tarefa</Link></Button>}
+                    </div>
+                    <Badge variant={isTask ? "secondary" : "outline"}>{entityLabels[item.entityType] ?? item.entityType}</Badge>
                   </div>
                   <p className="mt-3 text-xs text-muted-foreground">{item.actorName ?? "Sistema"} · {formatDate(item.at, true)}</p>
                 </div>
               </div>
-            ))}
+              )
+            })}
           </div>
         ) : <p className="py-12 text-center text-sm text-muted-foreground">Nenhum evento registrado.</p>}
       </CardContent>
@@ -286,6 +333,8 @@ export function ProjectDetailsPage() {
   const [completeServiceOpen, setCompleteServiceOpen] = useState(false)
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [createTaskOpen, setCreateTaskOpen] = useState(false)
+  const [activeTab, setActiveTab] = useState("overview")
   const [searchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const detailsQuery = useQuery({
@@ -300,6 +349,34 @@ export function ProjectDetailsPage() {
       toast.success("Projeto atualizado com sucesso.")
       setEditOpen(false)
       queryClient.invalidateQueries({ queryKey: ["projects"] })
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const invalidateTaskContext = () => {
+    queryClient.invalidateQueries({ queryKey: ["tasks"] })
+    queryClient.invalidateQueries({ queryKey: ["projects"] })
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+  }
+
+  const createTaskMutation = useMutation({
+    mutationFn: (payload: CreateTaskPayload | UpdateTaskPayload) =>
+      tasksService.create(payload as CreateTaskPayload),
+    onSuccess: (task) => {
+      toast.success(`Tarefa TSK-${task.taskCode} criada com sucesso.`)
+      setCreateTaskOpen(false)
+      setActiveTab("tasks")
+      invalidateTaskContext()
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
+  const taskStatusMutation = useMutation({
+    mutationFn: ({ taskId, status }: { taskId: string; status: TaskStatus }) =>
+      tasksService.updateStatus(taskId, status),
+    onSuccess: () => {
+      toast.success("Status da tarefa atualizado.")
+      invalidateTaskContext()
     },
     onError: (error) => toast.error(error.message),
   })
@@ -363,6 +440,7 @@ export function ProjectDetailsPage() {
   const canDelete = Boolean(details.project.archivedAt) && hasPermission("projects.delete")
   const canViewTasks = hasPermission("tasks.view_all") || hasPermission("tasks.create") || hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete") || hasPermission("tasks.assign") || hasPermission("tasks.archive") || hasPermission("tasks.restore") || hasPermission("tasks.delete")
   const canCreateTasks = hasPermission("tasks.create") && !details.project.archivedAt
+  const canChangeTaskStatus = !details.project.archivedAt && (hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete"))
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
   const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
@@ -411,8 +489,8 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {canViewTasks && <Button asChild variant="secondary" className="gap-2"><Link to={`/tasks?projectId=${details.project.id}&projectCode=${details.project.projectCode}`}><ListChecks className="size-4" />Tarefas</Link></Button>}
-              {canCreateTasks && <Button asChild variant="secondary" className="gap-2"><Link to={`/tasks?projectId=${details.project.id}&projectCode=${details.project.projectCode}&new=true`}><ListChecks className="size-4" />Nova tarefa</Link></Button>}
+              {canViewTasks && <Button variant="secondary" className="gap-2" onClick={() => setActiveTab("tasks")}><ListChecks className="size-4" />Tarefas</Button>}
+              {canCreateTasks && <Button variant="secondary" className="gap-2" onClick={() => setCreateTaskOpen(true)}><ListChecks className="size-4" />Nova tarefa</Button>}
               {canManage && !details.project.archivedAt && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               {canArchive && <Button variant="secondary" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
               {canRestore && <Button variant="secondary" className="gap-2" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}
@@ -438,13 +516,35 @@ export function ProjectDetailsPage() {
         {metricCards.map((metric) => { const Icon = metric.icon; return <Card key={metric.label} className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">{metric.label}</p><p className="mt-2 text-2xl font-semibold">{metric.value}</p></div><div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="size-5" /></div></CardContent></Card> })}
       </div>
 
-      <Tabs defaultValue="overview">
-        <TabsList className="mb-5">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="mb-5 max-w-full overflow-x-auto">
           <TabsTrigger value="overview"><UserRound data-icon="inline-start" />Visão geral</TabsTrigger>
+          {canViewTasks && <TabsTrigger value="tasks"><ListChecks data-icon="inline-start" />Tarefas <Badge variant="outline" className="ml-1">{details.tasks.length}</Badge></TabsTrigger>}
           <TabsTrigger value="documents"><FileCheck2 data-icon="inline-start" />Documentos</TabsTrigger>
           <TabsTrigger value="timeline"><CalendarDays data-icon="inline-start" />Timeline</TabsTrigger>
         </TabsList>
-        <TabsContent value="overview"><ProjectOverview details={details} canManage={canManage} /></TabsContent>
+        <TabsContent value="overview">
+          <ProjectOverview
+            details={details}
+            canManage={canManage}
+            canViewTasks={canViewTasks}
+            canCreateTasks={canCreateTasks}
+            onCreateTask={() => setCreateTaskOpen(true)}
+            onShowTasks={() => setActiveTab("tasks")}
+          />
+        </TabsContent>
+        {canViewTasks && (
+          <TabsContent value="tasks">
+            <ProjectTasksPanel
+              tasks={details.tasks}
+              canCreate={canCreateTasks}
+              canChangeStatus={canChangeTaskStatus}
+              statusPendingId={taskStatusMutation.isPending ? taskStatusMutation.variables?.taskId ?? null : null}
+              onCreate={() => setCreateTaskOpen(true)}
+              onStatusChange={(taskId, status) => taskStatusMutation.mutate({ taskId, status })}
+            />
+          </TabsContent>
+        )}
         <TabsContent value="documents"><Documents details={details} /></TabsContent>
         <TabsContent value="timeline"><Timeline details={details} /></TabsContent>
       </Tabs>
@@ -455,6 +555,18 @@ export function ProjectDetailsPage() {
         project={details.project}
         pending={updateMutation.isPending}
         onSubmit={async (payload) => { await updateMutation.mutateAsync(payload) }}
+      />
+
+      <TaskFormSheet
+        open={createTaskOpen}
+        onOpenChange={setCreateTaskOpen}
+        initialProjectId={details.project.id}
+        initialProjectCode={details.project.projectCode}
+        initialProjectTitle={details.project.title}
+        lockProject
+        canAssign={hasPermission("tasks.assign")}
+        pending={createTaskMutation.isPending}
+        onSubmit={async (payload) => { await createTaskMutation.mutateAsync(payload) }}
       />
 
       <ArchiveActionDialog

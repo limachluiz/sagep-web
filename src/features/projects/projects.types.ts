@@ -185,6 +185,19 @@ export type ProjectTimelineItem = {
   context?: Record<string, unknown>
 }
 
+export type ProjectTaskItem = {
+  id: string
+  taskCode: number
+  title: string
+  status: "PENDENTE" | "EM_ANDAMENTO" | "REVISAO" | "CONCLUIDA" | "CANCELADA"
+  priority: number
+  dueDate: string | null
+  archivedAt: string | null
+  createdAt: string
+  updatedAt: string
+  assignee: ProjectPerson | null
+}
+
 export type ProjectDetailsResponse = {
   project: {
     id: string
@@ -225,6 +238,7 @@ export type ProjectDetailsResponse = {
     targetStage?: ProjectStage
   }>
   timeline: ProjectTimelineItem[]
+  tasks: ProjectTaskItem[]
   documents: {
     estimates: Array<{
       id: string

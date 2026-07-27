@@ -46,6 +46,8 @@ type TaskFormSheetProps = {
   task?: Task
   initialProjectId?: string
   initialProjectCode?: number
+  initialProjectTitle?: string
+  lockProject?: boolean
   canAssign: boolean
   pending?: boolean
   onSubmit: (payload: CreateTaskPayload | UpdateTaskPayload) => Promise<void>
@@ -61,6 +63,8 @@ export function TaskFormSheet({
   task,
   initialProjectId,
   initialProjectCode,
+  initialProjectTitle,
+  lockProject = false,
   canAssign,
   pending = false,
   onSubmit,
@@ -85,7 +89,7 @@ export function TaskFormSheet({
   const projectsQuery = useQuery({
     queryKey: ["projects", "task-options"],
     queryFn: () => projectsService.list({ page: 1, pageSize: 100 }),
-    enabled: open && !isEditing,
+    enabled: open && !isEditing && !lockProject,
   })
   const projectOptions = projectsQuery.data?.items ?? []
   const initialProject = initialProjectId
@@ -166,12 +170,17 @@ export function TaskFormSheet({
                 form.setValue("projectId", value, { shouldDirty: true, shouldValidate: true })
                 form.setValue("assigneeId", "", { shouldDirty: true })
               }}
-              disabled={isEditing || projectsQuery.isLoading || projectsQuery.isError}
+              disabled={isEditing || lockProject || projectsQuery.isLoading || projectsQuery.isError}
             >
               <SelectTrigger className="w-full" aria-label="Projeto da tarefa">
                 <SelectValue placeholder={projectsQuery.isLoading ? "Carregando projetos..." : "Selecione o projeto"} />
               </SelectTrigger>
               <SelectContent>
+                {lockProject && initialProjectId && (
+                  <SelectItem value={initialProjectId}>
+                    PRJ-{initialProjectCode} · {initialProjectTitle ?? "Projeto selecionado"}
+                  </SelectItem>
+                )}
                 {task && (
                   <SelectItem value={task.project.id}>
                     PRJ-{task.project.projectCode} · {task.project.title}
