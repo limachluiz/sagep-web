@@ -18,6 +18,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import { ProjectSelect } from "@/features/projects/components/project-select"
+import type { ProjectSelectOption } from "@/features/projects/components/project-select.utils"
 import { projectsService } from "@/features/projects/projects.service"
 import { taskPriorityLabels, taskStatusLabels } from "@/features/tasks/tasks.constants"
 import type {
@@ -92,6 +94,22 @@ export function TaskFormSheet({
     enabled: open && !isEditing && !lockProject,
   })
   const projectOptions = projectsQuery.data?.items ?? []
+  const fixedProjectOption: ProjectSelectOption | null = task
+    ? {
+        id: task.project.id,
+        projectCode: task.project.projectCode,
+        title: task.project.title,
+        om: null,
+      }
+    : lockProject && initialProjectId
+      ? {
+          id: initialProjectId,
+          projectCode: initialProjectCode ?? 0,
+          title: initialProjectTitle ?? "Projeto selecionado",
+          om: null,
+        }
+      : null
+  const visibleProjectOptions = fixedProjectOption ? [fixedProjectOption] : projectOptions
   const initialProject = initialProjectId
     ? projectOptions.find((project) => project.id === initialProjectId)
     : projectOptions.find((project) => project.projectCode === initialProjectCode)
@@ -164,35 +182,18 @@ export function TaskFormSheet({
         <form id="task-form" className="space-y-5 px-6 py-2" onSubmit={submit}>
           <div className="space-y-2">
             <Label>Projeto</Label>
-            <Select
+            <ProjectSelect
+              projects={visibleProjectOptions}
               value={projectId}
               onValueChange={(value) => {
                 form.setValue("projectId", value, { shouldDirty: true, shouldValidate: true })
                 form.setValue("assigneeId", "", { shouldDirty: true })
               }}
-              disabled={isEditing || lockProject || projectsQuery.isLoading || projectsQuery.isError}
-            >
-              <SelectTrigger className="w-full" aria-label="Projeto da tarefa">
-                <SelectValue placeholder={projectsQuery.isLoading ? "Carregando projetos..." : "Selecione o projeto"} />
-              </SelectTrigger>
-              <SelectContent>
-                {lockProject && initialProjectId && (
-                  <SelectItem value={initialProjectId}>
-                    PRJ-{initialProjectCode} · {initialProjectTitle ?? "Projeto selecionado"}
-                  </SelectItem>
-                )}
-                {task && (
-                  <SelectItem value={task.project.id}>
-                    PRJ-{task.project.projectCode} · {task.project.title}
-                  </SelectItem>
-                )}
-                {!task && projectOptions.map((project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    PRJ-{project.projectCode} · {project.title}{project.om ? ` · ${project.om.sigla}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              disabled={isEditing || lockProject}
+              loading={projectsQuery.isLoading}
+              error={projectsQuery.isError}
+              ariaLabel="Projeto da tarefa"
+            />
             {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
             {projectsQuery.isError && <p className="text-xs text-destructive">{projectsQuery.error.message}</p>}
           </div>

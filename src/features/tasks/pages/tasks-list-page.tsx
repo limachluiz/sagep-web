@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
 import { TaskFormSheet } from "@/features/tasks/components/task-form-sheet"
 import {
@@ -146,19 +147,15 @@ export function TasksListPage() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder="Buscar por título ou descrição..." value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
-          <Select value={selectedProjectId || "__all"} onValueChange={(value) => { setProjectId(value === "__all" ? "" : value); setPage(1) }}>
-            <SelectTrigger className="w-full" aria-label="Filtrar por projeto">
-              <SelectValue placeholder={projectsQuery.isLoading ? "Carregando projetos..." : "Todos os projetos"} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="__all">Todos os projetos</SelectItem>
-              {projectOptions.map((project) => (
-                <SelectItem key={project.id} value={project.id}>
-                  PRJ-{project.projectCode} · {project.title}{project.om ? ` · ${project.om.sigla}` : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <ProjectSelect
+            projects={projectOptions}
+            value={selectedProjectId}
+            onValueChange={(value) => { setProjectId(value); setPage(1) }}
+            allowAll
+            loading={projectsQuery.isLoading}
+            error={projectsQuery.isError}
+            ariaLabel="Filtrar por projeto"
+          />
           <Select value={status} onValueChange={(value) => { setStatus(value as TaskStatus | "all"); setPage(1) }}>
             <SelectTrigger className="w-full" aria-label="Filtrar por status"><SelectValue /></SelectTrigger>
             <SelectContent>

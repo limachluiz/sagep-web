@@ -16,8 +16,10 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - layout responsivo autenticado;
 - dashboards operacional e executivo com dados reais, filtros e comparação temporal;
 - projetos com timeline, próxima ação e fluxo documental;
+- abas dos detalhes do projeto persistidas na URL para navegação direta;
 - Kanban de projetos e Gantt de Ordens de Serviço em módulos próprios;
 - CRUD de projetos, tarefas, estimativas, DIEx e Ordens de Serviço;
+- seletores de vínculos com códigos amigáveis, títulos e OMs, mantendo IDs internos ocultos;
 - arquivamento, restauração e exclusão lógica conforme permissões;
 - ATAs e saldos, OMs, usuários, sessões, permissões e relatórios;
 - React Query integrado aos contratos da API.

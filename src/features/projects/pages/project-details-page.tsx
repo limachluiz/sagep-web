@@ -39,6 +39,11 @@ import { ProjectFormSheet } from "@/features/projects/components/project-form-sh
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
 import { ProjectTasksOverview, ProjectTasksPanel } from "@/features/projects/components/project-tasks-panel"
 import { ProjectWorkflowProgress } from "@/features/projects/components/project-workflow-progress"
+import {
+  resolveProjectDetailsTab,
+  searchParamsForProjectTab,
+  type ProjectDetailsTab,
+} from "@/features/projects/project-details-tabs"
 import { CreditNoteDialog } from "@/features/projects/components/credit-note-dialog"
 import { CommitmentNoteDialog } from "@/features/projects/components/commitment-note-dialog"
 import { DateFlowDialog, ReviewAsBuiltDialog } from "@/features/projects/components/project-closing-dialogs"
@@ -334,9 +339,13 @@ export function ProjectDetailsPage() {
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
-  const [activeTab, setActiveTab] = useState("overview")
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
+  const canViewTasks = hasPermission("tasks.view_all") || hasPermission("tasks.create") || hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete") || hasPermission("tasks.assign") || hasPermission("tasks.archive") || hasPermission("tasks.restore") || hasPermission("tasks.delete")
+  const activeTab = resolveProjectDetailsTab(searchParams.get("tab"), canViewTasks)
+  const selectTab = (tab: ProjectDetailsTab) => {
+    setSearchParams(searchParamsForProjectTab(searchParams, tab), { replace: true })
+  }
   const detailsQuery = useQuery({
     queryKey: ["projects", "details", projectId, includeArchived],
     queryFn: () => projectsService.details(projectId!, includeArchived),
@@ -365,7 +374,7 @@ export function ProjectDetailsPage() {
     onSuccess: (task) => {
       toast.success(`Tarefa TSK-${task.taskCode} criada com sucesso.`)
       setCreateTaskOpen(false)
-      setActiveTab("tasks")
+      selectTab("tasks")
       invalidateTaskContext()
     },
     onError: (error) => toast.error(error.message),
@@ -438,7 +447,6 @@ export function ProjectDetailsPage() {
   ].includes(details.workflow.stage)
   const canRestore = Boolean(details.project.archivedAt) && hasPermission("projects.restore")
   const canDelete = Boolean(details.project.archivedAt) && hasPermission("projects.delete")
-  const canViewTasks = hasPermission("tasks.view_all") || hasPermission("tasks.create") || hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete") || hasPermission("tasks.assign") || hasPermission("tasks.archive") || hasPermission("tasks.restore") || hasPermission("tasks.delete")
   const canCreateTasks = hasPermission("tasks.create") && !details.project.archivedAt
   const canChangeTaskStatus = !details.project.archivedAt && (hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete"))
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
@@ -489,7 +497,7 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {canViewTasks && <Button variant="secondary" className="gap-2" onClick={() => setActiveTab("tasks")}><ListChecks className="size-4" />Tarefas</Button>}
+              {canViewTasks && <Button variant="secondary" className="gap-2" onClick={() => selectTab("tasks")}><ListChecks className="size-4" />Tarefas</Button>}
               {canCreateTasks && <Button variant="secondary" className="gap-2" onClick={() => setCreateTaskOpen(true)}><ListChecks className="size-4" />Nova tarefa</Button>}
               {canManage && !details.project.archivedAt && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               {canArchive && <Button variant="secondary" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
@@ -516,7 +524,7 @@ export function ProjectDetailsPage() {
         {metricCards.map((metric) => { const Icon = metric.icon; return <Card key={metric.label} className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">{metric.label}</p><p className="mt-2 text-2xl font-semibold">{metric.value}</p></div><div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="size-5" /></div></CardContent></Card> })}
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={(value) => selectTab(value as ProjectDetailsTab)}>
         <TabsList className="mb-5 max-w-full overflow-x-auto">
           <TabsTrigger value="overview"><UserRound data-icon="inline-start" />Visão geral</TabsTrigger>
           {canViewTasks && <TabsTrigger value="tasks"><ListChecks data-icon="inline-start" />Tarefas <Badge variant="outline" className="ml-1">{details.tasks.length}</Badge></TabsTrigger>}
@@ -530,7 +538,7 @@ export function ProjectDetailsPage() {
             canViewTasks={canViewTasks}
             canCreateTasks={canCreateTasks}
             onCreateTask={() => setCreateTaskOpen(true)}
-            onShowTasks={() => setActiveTab("tasks")}
+            onShowTasks={() => selectTab("tasks")}
           />
         </TabsContent>
         {canViewTasks && (

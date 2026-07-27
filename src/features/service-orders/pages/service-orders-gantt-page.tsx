@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, CircleDashed, ClockAlert, Gauge, RefreshCw, Search, Target } from "lucide-react"
+import { AlertTriangle, CalendarDays, CalendarRange, CheckCircle2, CircleDashed, ClockAlert, Gauge, RefreshCw, Target } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Link } from "react-router"
 
@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import { ProjectSelect } from "@/features/projects/components/project-select"
+import { projectsService } from "@/features/projects/projects.service"
 import { serviceOrdersService } from "@/features/service-orders/service-orders.service"
 import { ganttIndicators } from "@/features/dashboard/planning-indicators"
 import type { GanttServiceOrder } from "@/features/service-orders/service-orders.types"
@@ -73,10 +75,20 @@ function GanttRow({ item, rangeStart, rangeEnd }: { item: GanttServiceOrder; ran
 }
 
 export function ServiceOrdersGanttPage() {
-  const [projectCode, setProjectCode] = useState("")
+  const [projectId, setProjectId] = useState("")
   const [from, setFrom] = useState("")
   const [until, setUntil] = useState("")
-  const filters = useMemo(() => ({ projectCode: projectCode ? Number(projectCode) : undefined, from: from || undefined, until: until || undefined }), [from, projectCode, until])
+  const projectsQuery = useQuery({
+    queryKey: ["projects", "gantt-filter-options"],
+    queryFn: () => projectsService.list({ page: 1, pageSize: 100 }),
+  })
+  const projectOptions = projectsQuery.data?.items ?? []
+  const selectedProject = projectOptions.find((project) => project.id === projectId)
+  const filters = useMemo(() => ({
+    projectCode: selectedProject?.projectCode,
+    from: from || undefined,
+    until: until || undefined,
+  }), [from, selectedProject?.projectCode, until])
   const invalidRange = Boolean(from && until && until < from)
   const ganttQuery = useQuery({ queryKey: ["service-orders", "gantt", filters], queryFn: () => serviceOrdersService.gantt(filters), enabled: !invalidRange })
   const scheduled = ganttQuery.data?.serviceOrders.filter((item) => item.plannedStartDate || item.plannedEndDate) ?? []
@@ -93,7 +105,7 @@ export function ServiceOrdersGanttPage() {
     return { start: today, end: addDays(today, 30) }
   }, [ganttQuery.data])
   const ticks = Array.from({ length: 7 }, (_, index) => addDays(range.start, Math.round((differenceInDays(range.start, range.end) * index) / 6)))
-  const clearFilters = () => { setProjectCode(""); setFrom(""); setUntil("") }
+  const clearFilters = () => { setProjectId(""); setFrom(""); setUntil("") }
 
   return (
     <div className="space-y-6">
@@ -102,14 +114,23 @@ export function ServiceOrdersGanttPage() {
         <Button variant="outline" onClick={() => ganttQuery.refetch()} disabled={ganttQuery.isFetching}><RefreshCw className={ganttQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>
       </div>
 
-      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-4 md:grid-cols-[200px_1fr_1fr_auto]">
-        <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" type="number" min="1" placeholder="Código do projeto" value={projectCode} onChange={(event) => setProjectCode(event.target.value)} aria-label="Código do projeto" /></div>
+      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-4 md:grid-cols-[minmax(280px,1fr)_1fr_1fr_auto]">
+        <ProjectSelect
+          projects={projectOptions}
+          value={projectId}
+          onValueChange={setProjectId}
+          allowAll
+          loading={projectsQuery.isLoading}
+          error={projectsQuery.isError}
+          ariaLabel="Filtrar Gantt por projeto"
+        />
         <Input type="date" aria-label="Data inicial" value={from} onChange={(event) => setFrom(event.target.value)} />
         <Input type="date" aria-label="Data final" value={until} onChange={(event) => setUntil(event.target.value)} />
-        <Button variant="ghost" onClick={clearFilters} disabled={!projectCode && !from && !until}>Limpar</Button>
+        <Button variant="ghost" onClick={clearFilters} disabled={!projectId && !from && !until}>Limpar</Button>
       </CardContent></Card>
 
       {invalidRange && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Período inválido</AlertTitle><AlertDescription>A data final deve ser igual ou posterior à data inicial.</AlertDescription></Alert>}
+      {projectsQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar os projetos</AlertTitle><AlertDescription>{projectsQuery.error.message}</AlertDescription></Alert>}
 
       {indicators && <Card className="sagep-signal-hero overflow-hidden text-white"><CardContent className="flex flex-col justify-between gap-6 p-6 lg:flex-row lg:items-center"><div className="max-w-xl"><Badge>Controle de execução</Badge><h2 className="mt-3 text-2xl font-semibold">Prazos, avanço e risco do cronograma</h2><p className="mt-2 text-sm text-muted-foreground">Síntese das Ordens de Serviço planejadas para priorização de atrasos e correção de lacunas no cronograma.</p></div><dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[540px]"><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Cobertura</dt><dd className="mt-1 text-2xl font-semibold">{indicators.planningCoverage.toFixed(1)}%</dd></div><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Progresso médio</dt><dd className="mt-1 text-2xl font-semibold text-primary">{indicators.averageProgress}%</dd></div><div className="sagep-metric-tile p-3"><dt className="text-xs text-muted-foreground uppercase">Taxa de atraso</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.delayedRate.toFixed(1)}%</dd></div><div className="sagep-metric-tile p-3"><dt className="flex items-center gap-1 text-xs text-muted-foreground uppercase"><Target className="size-3" />No prazo</dt><dd className="mt-1 text-2xl font-semibold">{indicators.onTrack}</dd></div></dl></CardContent></Card>}
 
