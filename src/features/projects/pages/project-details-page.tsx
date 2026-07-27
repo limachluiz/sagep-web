@@ -411,8 +411,8 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {canViewTasks && <Button asChild variant="secondary" className="gap-2"><Link to={`/tasks?projectCode=${details.project.projectCode}`}><ListChecks className="size-4" />Tarefas</Link></Button>}
-              {canCreateTasks && <Button asChild variant="secondary" className="gap-2"><Link to={`/tasks?projectCode=${details.project.projectCode}&new=true`}><ListChecks className="size-4" />Nova tarefa</Link></Button>}
+              {canViewTasks && <Button asChild variant="secondary" className="gap-2"><Link to={`/tasks?projectId=${details.project.id}&projectCode=${details.project.projectCode}`}><ListChecks className="size-4" />Tarefas</Link></Button>}
+              {canCreateTasks && <Button asChild variant="secondary" className="gap-2"><Link to={`/tasks?projectId=${details.project.id}&projectCode=${details.project.projectCode}&new=true`}><ListChecks className="size-4" />Nova tarefa</Link></Button>}
               {canManage && !details.project.archivedAt && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               {canArchive && <Button variant="secondary" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
               {canRestore && <Button variant="secondary" className="gap-2" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}

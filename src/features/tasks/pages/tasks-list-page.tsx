@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { projectsService } from "@/features/projects/projects.service"
 import { TaskFormSheet } from "@/features/tasks/components/task-form-sheet"
 import {
   isTaskOverdue,
@@ -53,11 +54,12 @@ export function TasksListPage() {
   const canAssign = hasPermission("tasks.assign")
   const canViewArchived = hasPermission("tasks.restore") || hasPermission("tasks.delete")
   const initialProjectCode = positiveNumber(searchParams.get("projectCode"))
+  const initialProjectId = searchParams.get("projectId") ?? ""
   const shouldOpenCreate = searchParams.get("new") === "true" && canCreate
 
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
-  const [projectCode, setProjectCode] = useState(initialProjectCode ? String(initialProjectCode) : "")
+  const [projectId, setProjectId] = useState(initialProjectId)
   const [status, setStatus] = useState<TaskStatus | "all">("all")
   const [visibility, setVisibility] = useState<"active" | "archived">("active")
   const [page, setPage] = useState(1)
@@ -71,14 +73,22 @@ export function TasksListPage() {
     return () => window.clearTimeout(timeout)
   }, [search])
 
+  const projectsQuery = useQuery({
+    queryKey: ["projects", "task-filter-options"],
+    queryFn: () => projectsService.list({ page: 1, pageSize: 100 }),
+  })
+  const projectOptions = projectsQuery.data?.items ?? []
+  const selectedProject = projectOptions.find((project) => project.id === projectId)
+  const selectedProjectId = selectedProject?.id ?? projectId
+
   const filters = useMemo(() => ({
     page,
     pageSize: 10,
     search: debouncedSearch || undefined,
-    projectCode: positiveNumber(projectCode),
+    projectCode: selectedProject?.projectCode,
     status: status === "all" ? undefined : status,
     onlyArchived: visibility === "archived" || undefined,
-  }), [debouncedSearch, page, projectCode, status, visibility])
+  }), [debouncedSearch, page, selectedProject?.projectCode, status, visibility])
 
   const query = useQuery({
     queryKey: ["tasks", "list", filters],
@@ -100,11 +110,11 @@ export function TasksListPage() {
     onError: (error) => toast.error(error.message),
   })
 
-  const hasActiveFilters = Boolean(search || projectCode || status !== "all" || visibility !== "active")
+  const hasActiveFilters = Boolean(search || selectedProjectId || status !== "all" || visibility !== "active")
   const clearFilters = () => {
     setSearch("")
     setDebouncedSearch("")
-    setProjectCode("")
+    setProjectId("")
     setStatus("all")
     setVisibility("active")
     setPage(1)
@@ -136,14 +146,19 @@ export function TasksListPage() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input className="pl-9" placeholder="Buscar por título ou descrição..." value={search} onChange={(event) => setSearch(event.target.value)} />
           </div>
-          <Input
-            type="number"
-            min="1"
-            aria-label="Filtrar pelo código do projeto"
-            placeholder="Código do projeto"
-            value={projectCode}
-            onChange={(event) => { setProjectCode(event.target.value); setPage(1) }}
-          />
+          <Select value={selectedProjectId || "__all"} onValueChange={(value) => { setProjectId(value === "__all" ? "" : value); setPage(1) }}>
+            <SelectTrigger className="w-full" aria-label="Filtrar por projeto">
+              <SelectValue placeholder={projectsQuery.isLoading ? "Carregando projetos..." : "Todos os projetos"} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__all">Todos os projetos</SelectItem>
+              {projectOptions.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  PRJ-{project.projectCode} · {project.title}{project.om ? ` · ${project.om.sigla}` : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           <Select value={status} onValueChange={(value) => { setStatus(value as TaskStatus | "all"); setPage(1) }}>
             <SelectTrigger className="w-full" aria-label="Filtrar por status"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -253,6 +268,7 @@ export function TasksListPage() {
           }
         }}
         initialProjectCode={initialProjectCode}
+        initialProjectId={selectedProjectId}
         canAssign={canAssign}
         pending={createMutation.isPending}
         onSubmit={async (payload) => { await createMutation.mutateAsync(payload) }}

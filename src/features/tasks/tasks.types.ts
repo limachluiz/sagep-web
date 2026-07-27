@@ -67,7 +67,7 @@ export type TasksListFilters = {
 }
 
 export type CreateTaskPayload = {
-  projectCode: number
+  projectId: string
   title: string
   description?: string
   status?: TaskStatus

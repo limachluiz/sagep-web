@@ -18,6 +18,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
+import { projectsService } from "@/features/projects/projects.service"
 import { taskPriorityLabels, taskStatusLabels } from "@/features/tasks/tasks.constants"
 import type {
   CreateTaskPayload,
@@ -28,10 +29,7 @@ import type {
 import { usersService } from "@/features/users/users.service"
 
 const schema = z.object({
-  projectCode: z.string().trim().refine(
-    (value) => /^\d+$/.test(value) && Number(value) > 0,
-    "Informe um código de projeto válido.",
-  ),
+  projectId: z.string().min(1, "Selecione um projeto."),
   title: z.string().trim().min(3, "Informe um título com pelo menos 3 caracteres."),
   description: z.string(),
   status: z.enum(["PENDENTE", "EM_ANDAMENTO", "REVISAO", "CONCLUIDA", "CANCELADA"]),
@@ -46,6 +44,7 @@ type TaskFormSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   task?: Task
+  initialProjectId?: string
   initialProjectCode?: number
   canAssign: boolean
   pending?: boolean
@@ -60,6 +59,7 @@ export function TaskFormSheet({
   open,
   onOpenChange,
   task,
+  initialProjectId,
   initialProjectCode,
   canAssign,
   pending = false,
@@ -69,7 +69,7 @@ export function TaskFormSheet({
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      projectCode: initialProjectCode ? String(initialProjectCode) : "",
+      projectId: initialProjectId ?? "",
       title: "",
       description: "",
       status: "PENDENTE",
@@ -80,15 +80,22 @@ export function TaskFormSheet({
   })
   const status = useWatch({ control: form.control, name: "status" })
   const priority = useWatch({ control: form.control, name: "priority" })
-  const projectCode = useWatch({ control: form.control, name: "projectCode" })
+  const projectId = useWatch({ control: form.control, name: "projectId" })
   const assigneeId = useWatch({ control: form.control, name: "assigneeId" })
-  const numericProjectCode = /^\d+$/.test(projectCode) && Number(projectCode) > 0
-    ? Number(projectCode)
-    : undefined
+  const projectsQuery = useQuery({
+    queryKey: ["projects", "task-options"],
+    queryFn: () => projectsService.list({ page: 1, pageSize: 100 }),
+    enabled: open && !isEditing,
+  })
+  const projectOptions = projectsQuery.data?.items ?? []
+  const initialProject = initialProjectId
+    ? projectOptions.find((project) => project.id === initialProjectId)
+    : projectOptions.find((project) => project.projectCode === initialProjectCode)
+  const selectedProjectId = projectId || initialProject?.id || ""
   const assigneeOptionsQuery = useQuery({
-    queryKey: ["users", "options", "project", numericProjectCode],
-    queryFn: () => usersService.options({ projectCode: numericProjectCode }),
-    enabled: open && canAssign && Boolean(numericProjectCode),
+    queryKey: ["users", "options", "project", selectedProjectId],
+    queryFn: () => usersService.options({ projectId: selectedProjectId }),
+    enabled: open && canAssign && Boolean(selectedProjectId),
   })
   const assigneeOptions = assigneeOptionsQuery.data?.items ?? []
   const visibleAssigneeOptions = task?.assignee && !assigneeOptions.some((user) => user.id === task.assignee?.id)
@@ -98,7 +105,7 @@ export function TaskFormSheet({
   useEffect(() => {
     if (!open) return
     form.reset({
-      projectCode: String(task?.project.projectCode ?? initialProjectCode ?? ""),
+      projectId: task?.project.id ?? initialProjectId ?? initialProject?.id ?? "",
       title: task?.title ?? "",
       description: task?.description ?? "",
       status: task?.status ?? "PENDENTE",
@@ -106,7 +113,7 @@ export function TaskFormSheet({
       assigneeId: task?.assignee?.id ?? "",
       dueDate: dateInputValue(task?.dueDate),
     })
-  }, [form, initialProjectCode, open, task])
+  }, [form, initialProject, initialProjectId, open, task])
 
   const submit = form.handleSubmit(async (values) => {
     const common = {
@@ -130,7 +137,7 @@ export function TaskFormSheet({
 
     const payload: CreateTaskPayload = {
       ...common,
-      projectCode: Number(values.projectCode),
+      projectId: values.projectId,
     }
     if (canAssign && values.assigneeId) {
       payload.assigneeId = values.assigneeId
@@ -152,16 +159,33 @@ export function TaskFormSheet({
 
         <form id="task-form" className="space-y-5 px-6 py-2" onSubmit={submit}>
           <div className="space-y-2">
-            <Label htmlFor="task-project-code">Código do projeto</Label>
-            <Input
-              id="task-project-code"
-              type="number"
-              min="1"
-              placeholder="Ex.: 12"
-              disabled={isEditing}
-              {...form.register("projectCode")}
-            />
-            {form.formState.errors.projectCode && <p className="text-xs text-destructive">{form.formState.errors.projectCode.message}</p>}
+            <Label>Projeto</Label>
+            <Select
+              value={projectId}
+              onValueChange={(value) => {
+                form.setValue("projectId", value, { shouldDirty: true, shouldValidate: true })
+                form.setValue("assigneeId", "", { shouldDirty: true })
+              }}
+              disabled={isEditing || projectsQuery.isLoading || projectsQuery.isError}
+            >
+              <SelectTrigger className="w-full" aria-label="Projeto da tarefa">
+                <SelectValue placeholder={projectsQuery.isLoading ? "Carregando projetos..." : "Selecione o projeto"} />
+              </SelectTrigger>
+              <SelectContent>
+                {task && (
+                  <SelectItem value={task.project.id}>
+                    PRJ-{task.project.projectCode} · {task.project.title}
+                  </SelectItem>
+                )}
+                {!task && projectOptions.map((project) => (
+                  <SelectItem key={project.id} value={project.id}>
+                    PRJ-{project.projectCode} · {project.title}{project.om ? ` · ${project.om.sigla}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
+            {projectsQuery.isError && <p className="text-xs text-destructive">{projectsQuery.error.message}</p>}
           </div>
 
           <div className="space-y-2">
@@ -209,10 +233,10 @@ export function TaskFormSheet({
                 <Select
                   value={assigneeId || "__unassigned"}
                   onValueChange={(value) => form.setValue("assigneeId", value === "__unassigned" ? "" : value, { shouldDirty: true })}
-                  disabled={!numericProjectCode || assigneeOptionsQuery.isLoading || assigneeOptionsQuery.isError}
+                  disabled={!selectedProjectId || assigneeOptionsQuery.isLoading || assigneeOptionsQuery.isError}
                 >
                   <SelectTrigger className="w-full" aria-label="Responsável pela tarefa">
-                    <SelectValue placeholder={numericProjectCode ? "Selecione um responsável" : "Informe primeiro o projeto"} />
+                    <SelectValue placeholder={selectedProjectId ? "Selecione um responsável" : "Selecione primeiro o projeto"} />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__unassigned">Não atribuído</SelectItem>
