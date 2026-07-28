@@ -4,27 +4,25 @@ import {
   AlertTriangle,
   Archive,
   ArrowUpRight,
-  ChevronLeft,
-  ChevronRight,
   ClipboardList,
   FileSpreadsheet,
   ListChecks,
   Plus,
   RefreshCw,
-  Search,
   Users,
   X,
 } from "lucide-react"
 import { Link, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
+import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
+import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
+import { ListPagination } from "@/components/list-pagination"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Table,
   TableBody,
@@ -185,18 +183,13 @@ export function ProjectsListPage() {
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_260px_190px_auto]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              aria-label="Buscar projetos"
-              placeholder="Buscar por título ou descrição..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
+      <FilterToolbar className="xl:grid-cols-[minmax(280px,1fr)_220px_260px_190px_auto]">
+          <SearchField
+            aria-label="Buscar projetos"
+            placeholder="Buscar por título ou descrição..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
 
           <Select value={status} onValueChange={(value) => { setStatus(value as ProjectStatus | "all"); setPage(1) }}>
             <SelectTrigger className="w-full" aria-label="Filtrar por status"><SelectValue placeholder="Todos os status" /></SelectTrigger>
@@ -229,8 +222,7 @@ export function ProjectsListPage() {
               <X className="size-4" /> Limpar
             </Button>
           )}
-        </CardContent>
-      </Card>
+      </FilterToolbar>
 
       {projectsQuery.isError && (
         <Alert variant="destructive">
@@ -250,9 +242,7 @@ export function ProjectsListPage() {
         </CardHeader>
         <CardContent>
           {projectsQuery.isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-16" />)}
-            </div>
+            <DataTableSkeleton />
           ) : projectsQuery.data?.items.length ? (
             <>
             <div className="space-y-3 md:hidden" aria-label="Projetos encontrados">
@@ -334,37 +324,26 @@ export function ProjectsListPage() {
             </div>
             </>
           ) : (
-            <div className="flex flex-col items-center py-16 text-center">
-              {visibility === "archived" ? <Archive className="size-10 text-muted-foreground" /> : <ClipboardList className="size-10 text-muted-foreground" />}
-              <p className="mt-4 font-medium">Nenhum projeto encontrado</p>
-              <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou cadastre um novo projeto.</p>
-            </div>
+            <EmptyState
+              icon={visibility === "archived" ? Archive : ClipboardList}
+              title="Nenhum projeto encontrado"
+              description="Ajuste os filtros ou cadastre um novo projeto."
+            />
           )}
 
           {meta && meta.totalItems > 0 && (
-            <div className="mt-6 flex flex-col gap-4 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Exibir</span>
-                <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1) }}>
-                  <SelectTrigger className="w-20" aria-label="Projetos por página"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="10">10</SelectItem>
-                    <SelectItem value="25">25</SelectItem>
-                    <SelectItem value="50">50</SelectItem>
-                  </SelectContent>
-                </Select>
-                <span>por página</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span>
-                <Button variant="outline" size="icon" disabled={!meta.hasPreviousPage} onClick={() => setPage((current) => current - 1)} title="Página anterior" aria-label="Página anterior">
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <Button variant="outline" size="icon" disabled={!meta.hasNextPage} onClick={() => setPage((current) => current + 1)} title="Próxima página" aria-label="Próxima página">
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              hasPreviousPage={meta.hasPreviousPage}
+              hasNextPage={meta.hasNextPage}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 25, 50]}
+              itemLabel="Projetos"
+              onPageSizeChange={(value) => { setPageSize(value); setPage(1) }}
+              onPrevious={() => setPage((current) => current - 1)}
+              onNext={() => setPage((current) => current + 1)}
+            />
           )}
         </CardContent>
       </Card>

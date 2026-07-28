@@ -2,23 +2,21 @@ import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import {
   AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
   FileSpreadsheet,
   Plus,
   RefreshCw,
-  Search,
   X,
 } from "lucide-react"
 import { Link } from "react-router"
 
+import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
+import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
+import { ListPagination } from "@/components/list-pagination"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { estimatesService } from "@/features/estimates/estimates.service"
 import type { EstimateStatus } from "@/features/estimates/estimates.types"
@@ -134,17 +132,13 @@ export function EstimatesListPage() {
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_200px_200px_180px_auto]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Buscar projeto, ATA, OM ou observação..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </div>
+      <FilterToolbar className="xl:grid-cols-[minmax(280px,1fr)_200px_200px_180px_auto]">
+          <SearchField
+            aria-label="Buscar estimativas"
+            placeholder="Buscar projeto, ATA, OM ou observação..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
 
           <Select value={status} onValueChange={(value) => { setStatus(value as EstimateStatus | "all"); setPage(1) }}>
             <SelectTrigger><SelectValue placeholder="Todos os status" /></SelectTrigger>
@@ -181,8 +175,7 @@ export function EstimatesListPage() {
               <X className="size-4" /> Limpar
             </Button>
           )}
-        </CardContent>
-      </Card>
+      </FilterToolbar>
 
       {estimatesQuery.isError && (
         <Alert variant="destructive">
@@ -202,9 +195,7 @@ export function EstimatesListPage() {
         </CardHeader>
         <CardContent>
           {estimatesQuery.isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-16" />)}
-            </div>
+            <DataTableSkeleton />
           ) : estimatesQuery.data?.items.length ? (
             <Table>
               <TableHeader>
@@ -251,34 +242,26 @@ export function EstimatesListPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="py-14 text-center">
-              <FileSpreadsheet className="mx-auto size-10 text-muted-foreground/50" />
-              <p className="mt-4 font-medium">Nenhuma estimativa encontrada</p>
-              <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde o cadastro da primeira estimativa.</p>
-            </div>
+            <EmptyState
+              icon={FileSpreadsheet}
+              title="Nenhuma estimativa encontrada"
+              description="Ajuste os filtros ou aguarde o cadastro da primeira estimativa."
+            />
           )}
 
           {meta && meta.totalItems > 0 && (
-            <div className="mt-5 flex flex-col items-center justify-between gap-3 border-t pt-4 sm:flex-row">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span>Itens por página</span>
-                <Select value={String(pageSize)} onValueChange={(value) => { setPageSize(Number(value)); setPage(1) }}>
-                  <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {[10, 20, 50].map((value) => <SelectItem key={value} value={String(value)}>{value}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span>
-                <Button size="icon" variant="outline" disabled={!meta.hasPreviousPage} onClick={() => setPage((value) => value - 1)}>
-                  <ChevronLeft className="size-4" />
-                </Button>
-                <Button size="icon" variant="outline" disabled={!meta.hasNextPage} onClick={() => setPage((value) => value + 1)}>
-                  <ChevronRight className="size-4" />
-                </Button>
-              </div>
-            </div>
+            <ListPagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              hasPreviousPage={meta.hasPreviousPage}
+              hasNextPage={meta.hasNextPage}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 50]}
+              itemLabel="Estimativas"
+              onPageSizeChange={(value) => { setPageSize(value); setPage(1) }}
+              onPrevious={() => setPage((value) => value - 1)}
+              onNext={() => setPage((value) => value + 1)}
+            />
           )}
         </CardContent>
       </Card>

@@ -6,7 +6,7 @@ function Table({ className, ...props }: React.ComponentProps<"table">) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-sm border border-primary/10 bg-card/45"
+      className="relative w-full overflow-x-auto rounded-lg border border-primary/10 bg-card/45 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--foreground)_3%,transparent)]"
     >
       <table
         data-slot="table"
@@ -21,7 +21,7 @@ function TableHeader({ className, ...props }: React.ComponentProps<"thead">) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("bg-background/55 [&_tr]:border-b [&_tr]:border-primary/10", className)}
+      className={cn("sticky top-0 z-10 bg-card/95 backdrop-blur-sm [&_tr]:border-b [&_tr]:border-primary/10", className)}
       {...props}
     />
   )
@@ -55,7 +55,7 @@ function TableRow({ className, ...props }: React.ComponentProps<"tr">) {
     <tr
       data-slot="table-row"
       className={cn(
-        "border-b border-border/65 transition-colors hover:bg-primary/[.035] has-aria-expanded:bg-primary/[.055] data-[state=selected]:bg-primary/[.07]",
+        "border-b border-border/65 transition-colors even:bg-muted/[.08] hover:bg-primary/[.045] has-aria-expanded:bg-primary/[.055] data-[state=selected]:bg-primary/[.07]",
         className
       )}
       {...props}

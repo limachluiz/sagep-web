@@ -3,24 +3,22 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   AlertTriangle,
   CalendarClock,
-  ChevronLeft,
-  ChevronRight,
   ListTodo,
   Plus,
   RefreshCw,
-  Search,
   X,
 } from "lucide-react"
 import { Link, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
+import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
+import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
+import { ListPagination } from "@/components/list-pagination"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { ProjectSelect } from "@/features/projects/components/project-select"
@@ -141,12 +139,8 @@ export function TasksListPage() {
         </div>
       </div>
 
-      <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(260px,1fr)_160px_200px_180px_auto]">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Buscar por título ou descrição..." value={search} onChange={(event) => setSearch(event.target.value)} />
-          </div>
+      <FilterToolbar className="xl:grid-cols-[minmax(260px,1fr)_160px_200px_180px_auto]">
+          <SearchField aria-label="Buscar tarefas" placeholder="Buscar por título ou descrição..." value={search} onChange={(event) => setSearch(event.target.value)} />
           <ProjectSelect
             projects={projectOptions}
             value={selectedProjectId}
@@ -173,8 +167,7 @@ export function TasksListPage() {
             </Select>
           ) : <div />}
           {hasActiveFilters && <Button variant="ghost" onClick={clearFilters}><X className="size-4" />Limpar</Button>}
-        </CardContent>
-      </Card>
+      </FilterToolbar>
 
       {query.isError && (
         <Alert variant="destructive">
@@ -191,7 +184,7 @@ export function TasksListPage() {
         </CardHeader>
         <CardContent>
           {query.isLoading ? (
-            <div className="space-y-3">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-16" />)}</div>
+            <DataTableSkeleton />
           ) : query.data?.items.length ? (
             <Table>
               <TableHeader>
@@ -237,19 +230,22 @@ export function TasksListPage() {
               </TableBody>
             </Table>
           ) : (
-            <div className="py-14 text-center">
-              <ListTodo className="mx-auto size-10 text-muted-foreground/50" />
-              <p className="mt-4 font-medium">Nenhuma tarefa encontrada</p>
-              <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou cadastre uma nova atividade.</p>
-            </div>
+            <EmptyState
+              icon={ListTodo}
+              title="Nenhuma tarefa encontrada"
+              description="Ajuste os filtros ou cadastre uma nova atividade."
+            />
           )}
 
           {meta && meta.totalItems > 0 && (
-            <div className="mt-5 flex items-center justify-end gap-3 border-t pt-4">
-              <span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span>
-              <Button size="icon" variant="outline" disabled={!meta.hasPreviousPage} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="size-4" /></Button>
-              <Button size="icon" variant="outline" disabled={!meta.hasNextPage} onClick={() => setPage((value) => value + 1)}><ChevronRight className="size-4" /></Button>
-            </div>
+            <ListPagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              hasPreviousPage={meta.hasPreviousPage}
+              hasNextPage={meta.hasNextPage}
+              onPrevious={() => setPage((value) => value - 1)}
+              onNext={() => setPage((value) => value + 1)}
+            />
           )}
         </CardContent>
       </Card>

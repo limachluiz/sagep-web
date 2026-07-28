@@ -1,10 +1,11 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { Loader2 } from "lucide-react"
+import { CalendarClock, FileText, Link2, Loader2 } from "lucide-react"
 import { useEffect } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
+import { FormSection } from "@/components/form-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -179,89 +180,92 @@ export function TaskFormSheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form id="task-form" className="space-y-5 px-6 py-2" onSubmit={submit}>
-          <div className="space-y-2">
-            <Label>Projeto</Label>
-            <ProjectSelect
-              projects={visibleProjectOptions}
-              value={projectId}
-              onValueChange={(value) => {
-                form.setValue("projectId", value, { shouldDirty: true, shouldValidate: true })
-                form.setValue("assigneeId", "", { shouldDirty: true })
-              }}
-              disabled={isEditing || lockProject}
-              loading={projectsQuery.isLoading}
-              error={projectsQuery.isError}
-              ariaLabel="Projeto da tarefa"
-            />
-            {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
-            {projectsQuery.isError && <p className="text-xs text-destructive">{projectsQuery.error.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="task-title">Título</Label>
-            <Input id="task-title" placeholder="Ex.: Conferir certificações da fibra" {...form.register("title")} />
-            {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="task-description">Descrição</Label>
-            <Textarea id="task-description" rows={5} placeholder="Detalhes, critérios de aceite e observações..." {...form.register("description")} />
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
+        <form id="task-form" className="space-y-4 px-6 py-2" onSubmit={submit}>
+          <FormSection icon={Link2} title="Vínculo do projeto" description="Toda tarefa integra o histórico e a equipe de um projeto.">
             <div className="space-y-2">
-              <Label>Status</Label>
-              <Select value={status} onValueChange={(value) => form.setValue("status", value as TaskStatus, { shouldValidate: true })}>
-                <SelectTrigger className="w-full" aria-label="Status da tarefa"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(taskStatusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label>Projeto</Label>
+              <ProjectSelect
+                projects={visibleProjectOptions}
+                value={projectId}
+                onValueChange={(value) => {
+                  form.setValue("projectId", value, { shouldDirty: true, shouldValidate: true })
+                  form.setValue("assigneeId", "", { shouldDirty: true })
+                }}
+                disabled={isEditing || lockProject}
+                loading={projectsQuery.isLoading}
+                error={projectsQuery.isError}
+                ariaLabel="Projeto da tarefa"
+              />
+              {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
+              {projectsQuery.isError && <p className="text-xs text-destructive">{projectsQuery.error.message}</p>}
             </div>
+          </FormSection>
 
+          <FormSection icon={FileText} title="Descrição da atividade" description="Registre uma entrega objetiva e os critérios necessários para concluí-la.">
             <div className="space-y-2">
-              <Label>Prioridade</Label>
-              <Select value={priority} onValueChange={(value) => form.setValue("priority", value as FormValues["priority"], { shouldValidate: true })}>
-                <SelectTrigger className="w-full" aria-label="Prioridade da tarefa"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {Object.entries(taskPriorityLabels).map(([value, label]) => <SelectItem key={value} value={value}>{value} · {label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+              <Label htmlFor="task-title">Título</Label>
+              <Input id="task-title" placeholder="Ex.: Conferir certificações da fibra" {...form.register("title")} />
+              {form.formState.errors.title && <p className="text-xs text-destructive">{form.formState.errors.title.message}</p>}
             </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="task-due-date">Prazo</Label>
-              <Input id="task-due-date" type="date" {...form.register("dueDate")} />
+              <Label htmlFor="task-description">Descrição</Label>
+              <Textarea id="task-description" rows={5} placeholder="Detalhes, critérios de aceite e observações..." {...form.register("description")} />
             </div>
+          </FormSection>
 
-            {canAssign && (
+          <FormSection icon={CalendarClock} title="Execução e prazo" description="Classifique a prioridade, acompanhe o status e defina o responsável.">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Responsável</Label>
-                <Select
-                  value={assigneeId || "__unassigned"}
-                  onValueChange={(value) => form.setValue("assigneeId", value === "__unassigned" ? "" : value, { shouldDirty: true })}
-                  disabled={!selectedProjectId || assigneeOptionsQuery.isLoading || assigneeOptionsQuery.isError}
-                >
-                  <SelectTrigger className="w-full" aria-label="Responsável pela tarefa">
-                    <SelectValue placeholder={selectedProjectId ? "Selecione um responsável" : "Selecione primeiro o projeto"} />
-                  </SelectTrigger>
+                <Label>Status</Label>
+                <Select value={status} onValueChange={(value) => form.setValue("status", value as TaskStatus, { shouldValidate: true })}>
+                  <SelectTrigger className="w-full" aria-label="Status da tarefa"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="__unassigned">Não atribuído</SelectItem>
-                    {visibleAssigneeOptions.map((user) => (
-                      <SelectItem key={user.id} value={user.id}>
-                        {user.name} · USR-{user.userCode}{"rank" in user && user.rank ? ` · ${user.rank}` : ""}{user.active === false ? " · inativo" : ""}
-                      </SelectItem>
-                    ))}
+                    {Object.entries(taskStatusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-muted-foreground">Disponíveis: responsável e membros ativos do projeto.</p>
-                {assigneeOptionsQuery.isError && <p className="text-xs text-destructive">{assigneeOptionsQuery.error.message}</p>}
               </div>
-            )}
-          </div>
+
+              <div className="space-y-2">
+                <Label>Prioridade</Label>
+                <Select value={priority} onValueChange={(value) => form.setValue("priority", value as FormValues["priority"], { shouldValidate: true })}>
+                  <SelectTrigger className="w-full" aria-label="Prioridade da tarefa"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(taskPriorityLabels).map(([value, label]) => <SelectItem key={value} value={value}>{value} · {label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="task-due-date">Prazo</Label>
+                <Input id="task-due-date" type="date" {...form.register("dueDate")} />
+              </div>
+
+              {canAssign && (
+                <div className="space-y-2">
+                  <Label>Responsável</Label>
+                  <Select
+                    value={assigneeId || "__unassigned"}
+                    onValueChange={(value) => form.setValue("assigneeId", value === "__unassigned" ? "" : value, { shouldDirty: true })}
+                    disabled={!selectedProjectId || assigneeOptionsQuery.isLoading || assigneeOptionsQuery.isError}
+                  >
+                    <SelectTrigger className="w-full" aria-label="Responsável pela tarefa">
+                      <SelectValue placeholder={selectedProjectId ? "Selecione um responsável" : "Selecione primeiro o projeto"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__unassigned">Não atribuído</SelectItem>
+                      {visibleAssigneeOptions.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.name} · USR-{user.userCode}{"rank" in user && user.rank ? ` · ${user.rank}` : ""}{user.active === false ? " · inativo" : ""}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">Disponíveis: responsável e membros ativos do projeto.</p>
+                  {assigneeOptionsQuery.isError && <p className="text-xs text-destructive">{assigneeOptionsQuery.error.message}</p>}
+                </div>
+              )}
+            </div>
+          </FormSection>
         </form>
 
         <SheetFooter className="border-t px-6 py-5 sm:flex-row sm:justify-end">

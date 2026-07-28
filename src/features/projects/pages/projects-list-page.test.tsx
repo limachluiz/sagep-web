@@ -57,7 +57,7 @@ describe("ProjectsListPage", () => {
     render(<QueryClientProvider client={queryClient}><MemoryRouter><ProjectsListPage /></MemoryRouter></QueryClientProvider>)
 
     expect(await screen.findByRole("heading", { name: "Projetos" })).toBeInTheDocument()
-    expect(screen.getByRole("textbox", { name: "Buscar projetos" })).toBeInTheDocument()
+    expect(screen.getByRole("searchbox", { name: "Buscar projetos" })).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Filtrar por status" })).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Filtrar por etapa" })).toBeInTheDocument()
     expect(await screen.findAllByRole("link", { name: "Abrir projeto PRJ-42" })).toHaveLength(2)
