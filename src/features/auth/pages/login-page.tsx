@@ -1,22 +1,39 @@
 import { useState } from "react"
-import { Navigate, useNavigate } from "react-router"
+import { Navigate, useLocation, useNavigate } from "react-router"
 import { useMutation } from "@tanstack/react-query"
-import { ArrowRight, BadgeCheck, Loader2, Lock, ShieldCheck } from "lucide-react"
+import {
+  ArrowRight,
+  CheckCircle2,
+  Eye,
+  EyeOff,
+  Fingerprint,
+  Loader2,
+  LockKeyhole,
+  Network,
+  ShieldCheck,
+} from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ThemeToggle } from "@/components/theme-toggle"
 import { authService } from "@/features/auth/auth.service"
 import { useAuthStore } from "@/features/auth/auth.store"
 
+const platformMetrics = [
+  { value: "09", label: "etapas rastreáveis" },
+  { value: "04", label: "perfis de acesso" },
+  { value: "24/7", label: "auditoria ativa" },
+]
+
 export function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { isAuthenticated, setAuth } = useAuthStore()
   const [email, setEmail] = useState("admin@sagep.com")
-  const [password, setPassword] = useState("123456")
+  const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -28,7 +45,8 @@ export function LoginPage() {
       })
 
       toast.success("Login realizado com sucesso.")
-      navigate("/dashboard", { replace: true })
+      const destination = location.state?.from?.pathname ?? "/dashboard"
+      navigate(destination, { replace: true })
     },
     onError: (error) => {
       toast.error(error.message || "Não foi possível realizar o login.")
@@ -37,11 +55,7 @@ export function LoginPage() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
-    loginMutation.mutate({
-      email,
-      password,
-    })
+    loginMutation.mutate({ email, password })
   }
 
   if (isAuthenticated) {
@@ -49,129 +63,140 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid min-h-screen bg-slate-950 text-white lg:grid-cols-[1.1fr_0.9fr]">
-      <section className="relative hidden overflow-hidden p-10 lg:block">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.32),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.20),transparent_32%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-size-[48px_48px]" />
+    <main className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
+      <div className="sagep-signal-grid absolute inset-0" aria-hidden="true" />
+      <div className="absolute left-[14%] top-[-22rem] size-[38rem] rounded-full bg-primary/8 blur-[130px]" aria-hidden="true" />
+      <div className="absolute bottom-[-25rem] right-[-8rem] size-[45rem] rounded-full bg-gold/8 blur-[150px]" aria-hidden="true" />
+      <div className="absolute right-5 top-5 z-20 rounded-lg border border-border/70 bg-card/75 shadow-sm backdrop-blur-md">
+        <ThemeToggle />
+      </div>
 
-        <div className="relative z-10 flex h-full flex-col justify-between">
-          <div>
-            <Badge className="bg-emerald-500/15 text-emerald-200 hover:bg-emerald-500/15">
-              4º Centro de Telemática de Área
-            </Badge>
+      <div className="relative z-10 grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(430px,.92fr)]">
+        <section className="relative hidden min-h-screen flex-col justify-between border-r border-sidebar-border bg-sidebar p-10 text-sidebar-foreground lg:flex xl:p-14">
+          <header className="flex items-center gap-4">
+            <div className="relative flex size-11 items-center justify-center rounded-lg border border-sidebar-primary/30 bg-sidebar-primary/10 text-sidebar-primary">
+              <Network className="size-5" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="font-heading text-xl font-bold tracking-[.16em]">SAGEP</p>
+              <p className="text-[9px] uppercase tracking-[.2em] text-sidebar-foreground/70">4º Centro de Telemática de Área</p>
+            </div>
+          </header>
 
-            <h1 className="mt-8 max-w-2xl text-5xl font-semibold tracking-tight">
-              Gestão técnica de projetos com rastreabilidade documental.
+          <div className="max-w-2xl py-12">
+            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-sidebar-primary/20 bg-sidebar-primary/[.07] px-3 py-2 text-[10px] font-semibold uppercase tracking-[.18em] text-sidebar-primary">
+              <ShieldCheck className="size-3.5" />
+              Gestão institucional
+            </div>
+            <h1 className="font-heading text-5xl font-semibold leading-[.96] tracking-[-.02em] xl:text-7xl">
+              Projetos com
+              <span className="block text-sidebar-primary">visão completa.</span>
             </h1>
-
-            <p className="mt-5 max-w-xl text-base leading-7 text-slate-300">
-              Controle integrado de estimativas, Notas de Crédito, DIEx
-              requisitório, Notas de Empenho, Ordens de Serviço, execução,
-              auditoria e saldo de itens da ATA.
+            <p className="mt-7 max-w-xl text-base leading-7 text-sidebar-foreground/78 xl:text-lg">
+              Planejamento, execução e rastreabilidade em uma plataforma integrada para a gestão técnica do 4º CTA.
             </p>
+
+            <div className="mt-10 grid max-w-xl grid-cols-3 border-y border-sidebar-border">
+              {platformMetrics.map((metric) => (
+                <div className="border-r border-sidebar-border px-4 py-5 first:pl-0 last:border-r-0" key={metric.label}>
+                  <p className="font-heading text-xl font-semibold text-sidebar-foreground">{metric.value}</p>
+                  <p className="mt-1 text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/65">{metric.label}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid max-w-3xl grid-cols-3 gap-4">
-            {[
-              ["Workflow", "Fluxo documental rígido"],
-              ["Auditoria", "Histórico rastreável"],
-              ["Dashboards", "Visão operacional e executiva"],
-            ].map(([title, description]) => (
-              <div
-                key={title}
-                className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur"
-              >
-                <BadgeCheck className="mb-3 size-5 text-emerald-300" />
-                <p className="text-sm font-semibold">{title}</p>
-                <p className="mt-1 text-xs leading-5 text-slate-400">
-                  {description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          <footer className="flex items-center justify-between text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/60">
+            <span>Divisão Técnica · Seção de Projetos</span>
+            <span className="flex items-center gap-2 text-sidebar-foreground/70"><CheckCircle2 className="size-3 text-sidebar-primary" /> ambiente monitorado</span>
+          </footer>
+        </section>
 
-      <section className="flex items-center justify-center bg-[#f5f7f4] p-6 text-slate-950">
-        <Card className="w-full max-w-md border-none shadow-2xl">
-          <CardContent className="p-8">
-            <div className="mb-8 flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-2xl bg-slate-950 text-emerald-300">
-                <ShieldCheck className="size-6" />
+        <section className="flex min-h-screen items-center justify-center p-5 sm:p-10 lg:p-12">
+          <div className="w-full max-w-md">
+            <div className="mb-10 flex items-center gap-3 lg:hidden">
+              <div className="flex size-10 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+                <Network className="size-5" />
               </div>
               <div>
-                <p className="text-sm font-semibold tracking-[0.28em] text-emerald-700">
-                  SAGEP
-                </p>
-                <p className="text-sm text-slate-500">
-                  Sistema de Apoio à Gestão de Projetos
-                </p>
+                <p className="font-heading text-lg font-bold tracking-[.16em]">SAGEP</p>
+                <p className="text-[8px] uppercase tracking-[.2em] text-muted-foreground">4º CTA</p>
               </div>
             </div>
 
-            <h2 className="text-2xl font-semibold tracking-tight">
-              Acesse sua conta
-            </h2>
-            <p className="mt-2 text-sm text-slate-500">
-              Entre com suas credenciais institucionais para acessar o painel.
-            </p>
+            <div className="mb-8">
+              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[.2em] text-primary">Acesso institucional</p>
+              <h2 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Acesso ao sistema</h2>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">Use suas credenciais institucionais para iniciar uma sessão.</p>
+            </div>
 
-            <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+            <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="admin@sagep.com"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={loginMutation.isPending}
-                  required
-                />
+                <Label htmlFor="email" className="text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">E-mail institucional</Label>
+                <div className="group relative">
+                  <Fingerprint className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70 transition-colors group-focus-within:text-primary" />
+                  <Input
+                    id="email"
+                    type="email"
+                    autoComplete="username"
+                    placeholder="nome@4cta.eb.mil.br"
+                    className="h-13 rounded-lg border-border/80 bg-card/70 pl-11 shadow-sm focus-visible:bg-card"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    disabled={loginMutation.isPending}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  disabled={loginMutation.isPending}
-                  required
-                />
+                <Label htmlFor="password" className="text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">Senha</Label>
+                <div className="group relative">
+                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70 transition-colors group-focus-within:text-primary" />
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    placeholder="••••••••"
+                    className="h-13 rounded-lg border-border/80 bg-card/70 pl-11 pr-12 shadow-sm focus-visible:bg-card"
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
+                    disabled={loginMutation.isPending}
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    onClick={() => setShowPassword((value) => !value)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
               </div>
 
               <Button
-                className="h-11 w-full gap-2"
+                className="group h-13 w-full rounded-lg text-xs font-bold uppercase tracking-[.14em]"
                 type="submit"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? (
-                  <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Entrando...
-                  </>
+                  <><Loader2 className="size-4 animate-spin" />Autenticando...</>
                 ) : (
-                  <>
-                    Entrar no sistema
-                    <ArrowRight className="size-4" />
-                  </>
+                  <>Entrar no sistema<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></>
                 )}
               </Button>
             </form>
 
-            <div className="mt-6 flex items-start gap-3 rounded-2xl bg-slate-100 p-4 text-sm text-slate-600">
-              <Lock className="mt-0.5 size-4 text-slate-500" />
-              <p>
-                O acesso usa autenticação JWT com refresh token e permissões
-                efetivas carregadas pelo backend.
-              </p>
+            <div className="mt-7 flex gap-3 rounded-lg border border-border/70 bg-muted/45 p-4 text-xs leading-5 text-muted-foreground">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+              <p>Acesso restrito a usuários autorizados. Sessões e operações são registradas para fins de segurança e auditoria.</p>
             </div>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
+
+            <p className="mt-8 text-center text-[9px] uppercase tracking-[.16em] text-muted-foreground/60">SAGEP v1.0 · Exército Brasileiro</p>
+          </div>
+        </section>
+      </div>
+    </main>
   )
 }

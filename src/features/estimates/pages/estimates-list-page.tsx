@@ -1,0 +1,270 @@
+import { useEffect, useMemo, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
+import {
+  AlertTriangle,
+  FileSpreadsheet,
+  Plus,
+  RefreshCw,
+  X,
+} from "lucide-react"
+import { Link } from "react-router"
+
+import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
+import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
+import { ListPagination } from "@/components/list-pagination"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { estimatesService } from "@/features/estimates/estimates.service"
+import type { EstimateStatus } from "@/features/estimates/estimates.types"
+import { useAuthStore } from "@/features/auth/auth.store"
+import type { FederativeUnit } from "@/features/projects/projects.types"
+
+const statusLabels: Record<EstimateStatus, string> = {
+  RASCUNHO: "Rascunho",
+  FINALIZADA: "Finalizada",
+  CANCELADA: "Cancelada",
+}
+
+const statusVariants: Record<EstimateStatus, "default" | "secondary" | "destructive"> = {
+  RASCUNHO: "secondary",
+  FINALIZADA: "default",
+  CANCELADA: "destructive",
+}
+
+const stateLabels: Record<FederativeUnit, string> = {
+  AM: "Amazonas",
+  RO: "Rondônia",
+  RR: "Roraima",
+  AC: "Acre",
+}
+
+function formatCurrency(value: string) {
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(Number(value))
+}
+
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(value))
+}
+
+export function EstimatesListPage() {
+  const canCreate = useAuthStore((state) => state.hasPermission("estimates.create"))
+  const canViewArchived = useAuthStore(
+    (state) => state.hasPermission("estimates.restore") || state.hasPermission("estimates.delete"),
+  )
+  const [search, setSearch] = useState("")
+  const [debouncedSearch, setDebouncedSearch] = useState("")
+  const [status, setStatus] = useState<EstimateStatus | "all">("all")
+  const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
+  const [visibility, setVisibility] = useState<"active" | "archived">("active")
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearch(search.trim())
+      setPage(1)
+    }, 400)
+
+    return () => window.clearTimeout(timeout)
+  }, [search])
+
+  const filters = useMemo(
+    () => ({
+      page,
+      pageSize,
+      search: debouncedSearch || undefined,
+      status: status === "all" ? undefined : status,
+      stateUf: stateUf === "all" ? undefined : stateUf,
+      onlyArchived: visibility === "archived" || undefined,
+    }),
+    [debouncedSearch, page, pageSize, stateUf, status, visibility],
+  )
+
+  const estimatesQuery = useQuery({
+    queryKey: ["estimates", "list", filters],
+    queryFn: () => estimatesService.list(filters),
+    placeholderData: (previousData) => previousData,
+  })
+
+  const hasActiveFilters = Boolean(search || status !== "all" || stateUf !== "all")
+  const clearFilters = () => {
+    setSearch("")
+    setDebouncedSearch("")
+    setStatus("all")
+    setStateUf("all")
+    setPage(1)
+  }
+
+  const meta = estimatesQuery.data?.meta
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div>
+          <Badge className="mb-3">Fluxo documental</Badge>
+          <h1 className="text-3xl font-semibold tracking-tight">Estimativas</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+            Consulte valores, itens de ATA, destino e situação das estimativas vinculadas aos projetos.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="gap-2"
+            onClick={() => estimatesQuery.refetch()}
+            disabled={estimatesQuery.isFetching}
+          >
+            <RefreshCw className={estimatesQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
+            Atualizar
+          </Button>
+          {canCreate && (
+            <Button asChild className="gap-2">
+              <Link to="/estimates/new"><Plus className="size-4" />Nova estimativa</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <FilterToolbar className="xl:grid-cols-[minmax(280px,1fr)_200px_200px_180px_auto]">
+          <SearchField
+            aria-label="Buscar estimativas"
+            placeholder="Buscar projeto, ATA, OM ou observação..."
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+          />
+
+          <Select value={status} onValueChange={(value) => { setStatus(value as EstimateStatus | "all"); setPage(1) }}>
+            <SelectTrigger><SelectValue placeholder="Todos os status" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os status</SelectItem>
+              {Object.entries(statusLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={stateUf} onValueChange={(value) => { setStateUf(value as FederativeUnit | "all"); setPage(1) }}>
+            <SelectTrigger><SelectValue placeholder="Todos os estados" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos os estados</SelectItem>
+              {Object.entries(stateLabels).map(([value, label]) => (
+                <SelectItem key={value} value={value}>{label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {canViewArchived && (
+            <Select value={visibility} onValueChange={(value) => { setVisibility(value as "active" | "archived"); setPage(1) }}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="active">Ativas</SelectItem>
+                <SelectItem value="archived">Arquivadas</SelectItem>
+              </SelectContent>
+            </Select>
+          )}
+
+          {hasActiveFilters && (
+            <Button variant="ghost" className="gap-2" onClick={clearFilters}>
+              <X className="size-4" /> Limpar
+            </Button>
+          )}
+      </FilterToolbar>
+
+      {estimatesQuery.isError && (
+        <Alert variant="destructive">
+          <AlertTriangle />
+          <AlertTitle>Não foi possível carregar as estimativas</AlertTitle>
+          <AlertDescription>{estimatesQuery.error.message}</AlertDescription>
+        </Alert>
+      )}
+
+      <Card className="border-none shadow-sm">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="size-5 text-primary" />
+            {visibility === "archived" ? "Estimativas arquivadas" : "Estimativas cadastradas"}
+          </CardTitle>
+          {meta && <Badge variant="outline">{meta.totalItems} estimativa(s)</Badge>}
+        </CardHeader>
+        <CardContent>
+          {estimatesQuery.isLoading ? (
+            <DataTableSkeleton />
+          ) : estimatesQuery.data?.items.length ? (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Estimativa</TableHead>
+                  <TableHead>Projeto</TableHead>
+                  <TableHead>ATA</TableHead>
+                  <TableHead>Destino</TableHead>
+                  <TableHead>Itens</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Ação</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {estimatesQuery.data.items.map((estimate) => (
+                  <TableRow key={estimate.id}>
+                    <TableCell>
+                      <p className="font-medium">EST-{estimate.estimateCode}</p>
+                      <p className="text-xs text-muted-foreground">{formatDate(estimate.createdAt)}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="max-w-56 truncate font-medium">PRJ-{estimate.project.projectCode}</p>
+                      <p className="max-w-56 truncate text-xs text-muted-foreground">{estimate.project.title}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium">{estimate.ata.number}</p>
+                      <p className="max-w-44 truncate text-xs text-muted-foreground">{estimate.ata.vendorName}</p>
+                    </TableCell>
+                    <TableCell>
+                      <p className="font-medium">{estimate.om?.sigla ?? estimate.omName ?? "OM não informada"}</p>
+                      <p className="text-xs text-muted-foreground">{estimate.destinationCityName}/{estimate.destinationStateUf}</p>
+                    </TableCell>
+                    <TableCell>{estimate.items.length}</TableCell>
+                    <TableCell className="font-semibold">{formatCurrency(estimate.totalAmount)}</TableCell>
+                    <TableCell><div className="flex flex-wrap gap-1"><Badge variant={statusVariants[estimate.status]}>{statusLabels[estimate.status]}</Badge>{estimate.archivedAt && <Badge variant="outline">Arquivada</Badge>}</div></TableCell>
+                    <TableCell className="text-right">
+                      <Button asChild size="sm" variant="outline">
+                        <Link to={`/estimates/${estimate.id}${visibility === "archived" ? "?includeArchived=true" : ""}`}>Detalhes</Link>
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          ) : (
+            <EmptyState
+              icon={FileSpreadsheet}
+              title="Nenhuma estimativa encontrada"
+              description="Ajuste os filtros ou aguarde o cadastro da primeira estimativa."
+            />
+          )}
+
+          {meta && meta.totalItems > 0 && (
+            <ListPagination
+              page={meta.page}
+              totalPages={meta.totalPages}
+              hasPreviousPage={meta.hasPreviousPage}
+              hasNextPage={meta.hasNextPage}
+              pageSize={pageSize}
+              pageSizeOptions={[10, 20, 50]}
+              itemLabel="Estimativas"
+              onPageSizeChange={(value) => { setPageSize(value); setPage(1) }}
+              onPrevious={() => setPage((value) => value - 1)}
+              onNext={() => setPage((value) => value + 1)}
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

@@ -1,6 +1,6 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { AuthUser } from "./auth.types"
+import type { AuthUser, Permission } from "./auth.types"
 
 type TokenPayload = {
   accessToken: string
@@ -16,7 +16,8 @@ type AuthState = {
   setUser: (user: AuthUser | null) => void
   setTokens: (tokens: TokenPayload) => void
   logout: () => void
-  hasPermission: (permission: string) => boolean
+  hasPermission: (permission: Permission) => boolean
+  hasAnyPermission: (permissions: Permission[]) => boolean
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -60,10 +61,11 @@ export const useAuthStore = create<AuthState>()(
         const user = get().user
 
         if (!user) return false
-        if (user.role === "ADMIN") return true
-
         return user.permissions?.includes(permission) ?? false
       },
+
+      hasAnyPermission: (permissions) =>
+        permissions.some((permission) => get().hasPermission(permission)),
     }),
     {
       name: "sagep-auth",

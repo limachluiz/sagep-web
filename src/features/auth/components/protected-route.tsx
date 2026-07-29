@@ -7,12 +7,13 @@ import { useAuthStore } from "@/features/auth/auth.store"
 
 export function ProtectedRoute() {
   const location = useLocation()
-  const { accessToken, isAuthenticated, setUser, logout } = useAuthStore()
+  const { accessToken, refreshToken, isAuthenticated, setUser, logout } =
+    useAuthStore()
 
   const meQuery = useQuery({
     queryKey: ["auth", "me"],
     queryFn: authService.me,
-    enabled: Boolean(accessToken && isAuthenticated),
+    enabled: Boolean(accessToken && refreshToken && isAuthenticated),
     retry: false,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
@@ -30,7 +31,7 @@ export function ProtectedRoute() {
     }
   }, [meQuery.isError, logout])
 
-  if (!accessToken || !isAuthenticated) {
+  if (!accessToken || !refreshToken || !isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
