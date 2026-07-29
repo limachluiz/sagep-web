@@ -206,9 +206,10 @@ function pendingFlowTotal(data?: DashboardOperationalResponse) {
 
 function HomeMetricSkeletons() {
   return (
-    <div className="space-y-7" role="status" aria-live="polite">
+    <div className="space-y-6" role="status" aria-live="polite">
       <span className="sr-only">Carregando página inicial</span>
-      <Skeleton className="h-48 rounded-xl sm:h-44" />
+      <Skeleton className="h-40 rounded-xl" />
+      <Skeleton className="h-44 rounded-xl" />
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {Array.from({ length: 4 }).map((_, index) => (
           <Skeleton className="h-28 rounded-lg" key={index} />
@@ -305,23 +306,23 @@ function HomeContent({
   }, [hasAnyPermission])
 
   return (
-    <div className="space-y-7">
-      <section className="sagep-signal-hero relative overflow-hidden rounded-xl px-5 py-6 sm:px-7 sm:py-7">
+    <div className="space-y-6">
+      <section className="sagep-signal-hero relative overflow-hidden rounded-xl px-5 py-5 sm:px-7 sm:py-6">
         <div className="sagep-signal-grid pointer-events-none absolute inset-0 opacity-60" aria-hidden="true" />
-        <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+        <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
           <div className="max-w-3xl">
-            <Badge className="mb-4">
+            <Badge className="mb-3">
               <House data-icon="inline-start" />
               Início
             </Badge>
-            <h1 className="font-heading text-3xl font-semibold tracking-tight sm:text-4xl">
+            <h1 className="font-heading text-3xl font-semibold tracking-tight">
               {getGreeting(now)}, {firstName}.
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
               {formatLongDate(now)} · {user?.rank ? `${user.rank} · ` : ""}
               {role} · 4º CTA
             </p>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-foreground/80">
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-foreground/80">
               Acompanhe as prioridades do fluxo documental e acesse rapidamente
               as rotinas da Seção de Projetos.
             </p>
@@ -337,16 +338,16 @@ function HomeContent({
 
       <section aria-labelledby="home-my-tasks-title">
         <Card className="overflow-hidden border-primary/20">
-          <CardHeader className="border-b bg-primary/[.035]">
+          <CardHeader className="border-b bg-primary/[.035] py-4">
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-primary">
                 Sua fila de trabalho
               </p>
-              <CardTitle id="home-my-tasks-title" className="mt-1 flex items-center gap-2 text-xl">
-                <ListTodo className="size-5 text-primary" />
+              <CardTitle id="home-my-tasks-title" className="mt-1 flex items-center gap-2 text-lg">
+                <ListTodo className="size-4 text-primary" />
                 Minhas tarefas pendentes
               </CardTitle>
-              <CardDescription className="mt-1">
+              <CardDescription className="mt-0.5">
                 Atividades atribuídas diretamente a você, priorizadas por atraso,
                 criticidade e prazo.
               </CardDescription>
@@ -362,9 +363,9 @@ function HomeContent({
           </CardHeader>
           <CardContent className="px-0">
             {tasksLoading ? (
-              <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="space-y-2 p-4">
                 {Array.from({ length: 3 }).map((_, index) => (
-                  <Skeleton className="h-24 rounded-lg" key={index} />
+                  <Skeleton className="h-16 rounded-lg" key={index} />
                 ))}
               </div>
             ) : tasksError ? (
@@ -385,27 +386,27 @@ function HomeContent({
                 </p>
               </div>
             ) : (
-              <div className="grid gap-px bg-border/70 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="divide-y divide-border/70">
                 {pendingTasks.map((task) => {
                   const overdue = isTaskOverdue(task)
                   return (
                     <Link
-                      className="group min-w-0 bg-card px-5 py-4 transition hover:bg-muted/45 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/35"
+                      className="group grid min-w-0 gap-3 bg-card px-5 py-4 transition hover:bg-muted/45 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/35 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center lg:grid-cols-[minmax(280px,1.35fr)_minmax(180px,.7fr)_minmax(180px,.65fr)_auto]"
                       key={task.id}
                       to={`/tasks/${task.id}`}
                     >
-                      <span className="flex items-start justify-between gap-3">
-                        <span className="min-w-0">
-                          <span className="block text-[10px] font-semibold uppercase tracking-[.13em] text-primary">
-                            TSK-{task.taskCode} · PRJ-{task.project.projectCode}
-                          </span>
-                          <span className="mt-1 line-clamp-2 block text-sm font-semibold leading-5">
-                            {task.title}
-                          </span>
+                      <span className="min-w-0">
+                        <span className="block text-[10px] font-semibold uppercase tracking-[.13em] text-primary">
+                          TSK-{task.taskCode} · PRJ-{task.project.projectCode}
                         </span>
-                        <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
+                        <span className="mt-1 block truncate text-sm font-semibold leading-5">
+                          {task.title}
+                        </span>
+                        <span className="mt-0.5 block truncate text-xs text-muted-foreground">
+                          {task.project.title}
+                        </span>
                       </span>
-                      <span className="mt-3 flex flex-wrap items-center gap-2">
+                      <span className="flex flex-wrap items-center gap-2 sm:justify-end lg:justify-start">
                         <Badge variant={taskStatusVariants[task.status]}>
                           {taskStatusLabels[task.status]}
                         </Badge>
@@ -414,13 +415,17 @@ function HomeContent({
                         </Badge>
                       </span>
                       <span
-                        className={`mt-3 flex items-center gap-1.5 text-xs ${
+                        className={`flex items-center gap-1.5 text-xs sm:col-span-2 lg:col-span-1 ${
                           overdue ? "font-medium text-destructive" : "text-muted-foreground"
                         }`}
                       >
                         <CalendarClock className="size-3.5" />
                         {overdue ? "Em atraso · " : "Prazo · "}
                         {formatTaskDueDate(task.dueDate)}
+                      </span>
+                      <span className="hidden size-8 items-center justify-center rounded-md border border-border/75 text-muted-foreground transition group-hover:border-primary/30 group-hover:bg-primary/[.07] group-hover:text-primary lg:flex">
+                        <ArrowUpRight className="size-4" />
+                        <span className="sr-only">Abrir tarefa {task.taskCode}</span>
                       </span>
                     </Link>
                   )
