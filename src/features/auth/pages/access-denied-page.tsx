@@ -21,9 +21,9 @@ export function AccessDeniedPage() {
             {requestedPath ? ` Rota solicitada: ${requestedPath}.` : ""}
           </p>
           <Button asChild className="mt-6 gap-2">
-            <Link to="/dashboard">
+            <Link to="/inicio">
               <ArrowLeft className="size-4" />
-              Voltar ao dashboard
+              Voltar ao início
             </Link>
           </Button>
         </CardContent>

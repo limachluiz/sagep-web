@@ -45,7 +45,7 @@ export function LoginPage() {
       })
 
       toast.success("Login realizado com sucesso.")
-      const destination = location.state?.from?.pathname ?? "/dashboard"
+      const destination = location.state?.from?.pathname ?? "/inicio"
       navigate(destination, { replace: true })
     },
     onError: (error) => {
@@ -59,7 +59,7 @@ export function LoginPage() {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to="/inicio" replace />
   }
 
   return (

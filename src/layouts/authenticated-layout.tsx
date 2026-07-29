@@ -18,6 +18,7 @@ import {
   PanelLeftOpen,
   FileChartColumn,
   History,
+  House,
   Settings,
   ShieldCheck,
   Users,
@@ -49,6 +50,12 @@ type NavigationGroup = {
 
 const navigation: NavigationGroup[] = [
   { label: "Principal", items: [
+  {
+    label: "Início",
+    href: "/inicio",
+    icon: House,
+    anyOf: [],
+  },
   {
     label: "Dashboard",
     href: "/dashboard",
@@ -181,7 +188,7 @@ export function AuthenticatedLayout() {
   const visibleNavigation = navigation
     .map((group) => ({
       ...group,
-      items: group.items.filter((item) => hasAnyPermission(item.anyOf)),
+      items: group.items.filter((item) => item.anyOf.length === 0 || hasAnyPermission(item.anyOf)),
     }))
     .filter((group) => group.items.length > 0)
 
@@ -235,7 +242,7 @@ export function AuthenticatedLayout() {
             <SheetContent side="left" className="w-[min(88vw,320px)] gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
               <SheetHeader className="border-b border-sidebar-border px-5 py-5"><SheetTitle className="flex items-center gap-3 text-sidebar-foreground"><span className="flex size-10 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary"><Gauge className="size-5" /></span><span><span className="block font-heading text-lg tracking-[0.16em] text-sidebar-primary">SAGEP</span><span className="block text-[10px] font-normal uppercase tracking-wider text-sidebar-foreground/70">4º CTA · Gestão de Projetos</span></span></SheetTitle></SheetHeader>
               <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4" aria-label="Navegação móvel">
-                {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
+                {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard" || item.href === "/inicio"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
               </nav>
               <div className="border-t border-sidebar-border p-4"><div className="flex items-center gap-3"><Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div><Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button></div></div>
             </SheetContent>
@@ -267,7 +274,7 @@ export function AuthenticatedLayout() {
           {visibleNavigation.map((group) => (
             <div key={group.label}>
               <p className={`mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60 ${sidebarCollapsed ? "sr-only" : ""}`}>{group.label}</p>
-              <div className="space-y-0.5">{group.items.map((item) => { const Icon = item.icon; return <NavLink key={item.href} to={item.href} end={item.href === "/dashboard"} title={sidebarCollapsed ? item.label : undefined} aria-label={sidebarCollapsed ? item.label : undefined} className={({ isActive }) => ["group flex items-center rounded-md border-l-2 py-2.5 text-[13px] font-medium transition", sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4 shrink-0 transition" /><span className={sidebarCollapsed ? "sr-only" : ""}>{item.label}</span></NavLink> })}</div>
+              <div className="space-y-0.5">{group.items.map((item) => { const Icon = item.icon; return <NavLink key={item.href} to={item.href} end={item.href === "/dashboard" || item.href === "/inicio"} title={sidebarCollapsed ? item.label : undefined} aria-label={sidebarCollapsed ? item.label : undefined} className={({ isActive }) => ["group flex items-center rounded-md border-l-2 py-2.5 text-[13px] font-medium transition", sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4 shrink-0 transition" /><span className={sidebarCollapsed ? "sr-only" : ""}>{item.label}</span></NavLink> })}</div>
             </div>
           ))}
         </nav>

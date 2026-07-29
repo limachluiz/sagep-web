@@ -46,7 +46,7 @@ describe("LoginPage", () => {
     vi.restoreAllMocks()
   })
 
-  it("autentica, valida o usuário e abre o dashboard", async () => {
+  it("autentica, valida o usuário e abre a página inicial", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
 
@@ -149,8 +149,9 @@ describe("LoginPage", () => {
     await user.type(await screen.findByLabelText("Senha"), "123456")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
-    expect(await screen.findByText("Centro de controle do SAGEP")).toBeInTheDocument()
-    expect(await screen.findByText("Perspectiva operacional")).toBeInTheDocument()
+    expect(await screen.findByText(/Bom (dia|tarde|noite), Administrador\./)).toBeInTheDocument()
+    expect(await screen.findByRole("heading", { name: "Resumo operacional" })).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: /Abrir Dashboard/i })).toHaveAttribute("href", "/dashboard")
     expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,

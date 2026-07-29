@@ -72,4 +72,12 @@ describe("ProjectsListPage", () => {
       status: "CONCLUIDO",
     })))
   })
+
+  it("abre diretamente o cadastro ao receber o atalho da página inicial", async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(<QueryClientProvider client={queryClient}><MemoryRouter initialEntries={["/projects?new=1"]}><ProjectsListPage /></MemoryRouter></QueryClientProvider>)
+
+    expect(await screen.findByRole("heading", { name: "Novo projeto" })).toBeInTheDocument()
+    expect(screen.getByLabelText("Título")).toBeInTheDocument()
+  })
 })

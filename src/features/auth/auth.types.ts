@@ -26,11 +26,13 @@ export type Permission =
 
 export type AuthUser = {
   id: string
+  userCode?: number
   name?: string
   email: string
   rank?: string | null
   cpf?: string | null
   role: UserRole
+  active?: boolean
   permissions: Permission[]
   access?: {
     role: UserRole

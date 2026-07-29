@@ -11,6 +11,7 @@ const AtasPage = lazy(() => import("@/features/atas/pages/atas-page").then((modu
 const AccessDeniedPage = lazy(() => import("@/features/auth/pages/access-denied-page").then((module) => ({ default: module.AccessDeniedPage })))
 const SessionsPage = lazy(() => import("@/features/auth/pages/sessions-page").then((module) => ({ default: module.SessionsPage })))
 const LoginPage = lazy(() => import("@/features/auth/pages/login-page").then((module) => ({ default: module.LoginPage })))
+const HomePage = lazy(() => import("@/features/home/pages/home-page").then((module) => ({ default: module.HomePage })))
 const DashboardPage = lazy(() => import("@/features/dashboard/pages/dashboard-page").then((module) => ({ default: module.DashboardPage })))
 const DiexDetailsPage = lazy(() => import("@/features/diex/pages/diex-details-page").then((module) => ({ default: module.DiexDetailsPage })))
 const DiexListPage = lazy(() => import("@/features/diex/pages/diex-list-page").then((module) => ({ default: module.DiexListPage })))
@@ -38,11 +39,12 @@ function PageFallback() {
 export default function App() {
   return (
     <Suspense fallback={<PageFallback />}><Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/inicio" replace />} />
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedLayout />}>
+          <Route path="/inicio" element={<HomePage />} />
           <Route
             path="/dashboard"
             element={
@@ -239,7 +241,7 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/inicio" replace />} />
     </Routes></Suspense>
   )
 }
