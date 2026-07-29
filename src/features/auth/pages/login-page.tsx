@@ -79,7 +79,7 @@ export function LoginPage() {
             </div>
             <div>
               <p className="font-heading text-xl font-bold tracking-[.16em]">SAGEP</p>
-              <p className="text-[9px] uppercase tracking-[.2em] text-sidebar-foreground/50">4º Centro de Telemática de Área</p>
+              <p className="text-[9px] uppercase tracking-[.2em] text-sidebar-foreground/70">4º Centro de Telemática de Área</p>
             </div>
           </header>
 
@@ -92,7 +92,7 @@ export function LoginPage() {
               Projetos com
               <span className="block text-sidebar-primary">visão completa.</span>
             </h1>
-            <p className="mt-7 max-w-xl text-base leading-7 text-sidebar-foreground/62 xl:text-lg">
+            <p className="mt-7 max-w-xl text-base leading-7 text-sidebar-foreground/78 xl:text-lg">
               Planejamento, execução e rastreabilidade em uma plataforma integrada para a gestão técnica do 4º CTA.
             </p>
 
@@ -100,15 +100,15 @@ export function LoginPage() {
               {platformMetrics.map((metric) => (
                 <div className="border-r border-sidebar-border px-4 py-5 first:pl-0 last:border-r-0" key={metric.label}>
                   <p className="font-heading text-xl font-semibold text-sidebar-foreground">{metric.value}</p>
-                  <p className="mt-1 text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/42">{metric.label}</p>
+                  <p className="mt-1 text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/65">{metric.label}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          <footer className="flex items-center justify-between text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/35">
+          <footer className="flex items-center justify-between text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/60">
             <span>Divisão Técnica · Seção de Projetos</span>
-            <span className="flex items-center gap-2 text-sidebar-foreground/52"><CheckCircle2 className="size-3 text-sidebar-primary" /> ambiente monitorado</span>
+            <span className="flex items-center gap-2 text-sidebar-foreground/70"><CheckCircle2 className="size-3 text-sidebar-primary" /> ambiente monitorado</span>
           </footer>
         </section>
 

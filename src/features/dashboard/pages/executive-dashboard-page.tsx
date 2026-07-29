@@ -144,7 +144,7 @@ function ComparisonStrip({ metrics }: { metrics: ComparisonMetric[] }) {
             <div key={metric.label} className="rounded-xl border bg-card/60 p-4">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-xs text-muted-foreground">{metric.label}</p>
-                <span className={`flex items-center gap-1 text-xs font-semibold ${increased ? "text-emerald-500" : decreased ? "text-amber-500" : "text-muted-foreground"}`}>
+                <span className={`flex items-center gap-1 text-xs font-semibold ${increased ? "text-status-success" : decreased ? "text-status-warning" : "text-muted-foreground"}`}>
                   <Icon className="size-3.5" />
                   {delta === null ? "Novo" : `${Math.abs(delta).toFixed(1)}%`}
                 </span>
@@ -229,10 +229,10 @@ function ExecutiveContent({
 
   return (
     <>
-      <Card className="sagep-signal-hero overflow-hidden text-white">
+      <Card className="sagep-signal-hero overflow-hidden">
         <CardContent className="p-6 lg:p-8">
           <div className="flex flex-col justify-between gap-7 xl:flex-row xl:items-center">
-            <div className="max-w-2xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Síntese para decisão</Badge><h2 className="mt-3 text-2xl font-semibold lg:text-3xl">Portfólio, execução financeira e resultado</h2><p className="mt-2 text-sm leading-6 text-slate-300">Leitura executiva para acompanhamento da carteira, eficiência documental e riscos que demandam direcionamento da chefia.</p></div>
+            <div className="max-w-2xl"><Badge className="bg-status-success/10 text-status-success hover:bg-status-success/10">Síntese para decisão</Badge><h2 className="mt-3 text-2xl font-semibold lg:text-3xl">Portfólio, execução financeira e resultado</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Leitura executiva para acompanhamento da carteira, eficiência documental e riscos que demandam direcionamento da chefia.</p></div>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 xl:min-w-[600px]">
               <div className="sagep-metric-tile p-4"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Carteira estimada</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalEstimatedAmount)}</dd></div>
               <div className="sagep-metric-tile p-4"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Valor com OS</dt><dd className="mt-1 text-lg font-semibold">{formatCurrency(data.financial.totalWithServiceOrder)}</dd></div>
@@ -273,7 +273,7 @@ function ExecutiveContent({
         <Card className="border-none shadow-sm"><CardContent className="p-5"><BriefcaseBusiness className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Carteira de projetos</p><p className="mt-1 text-2xl font-semibold">{data.summary.projectsTotal}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsOpen} em aberto · {indicators.completionRate.toFixed(1)}% concluídos</p></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="p-5"><Activity className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Carteira em aberto</p><p className="mt-1 text-2xl font-semibold">{indicators.openRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.projectsOpen} projetos ativos</p></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="p-5"><TrendingUp className="size-5 text-primary" /><p className="mt-4 text-sm text-muted-foreground">Conversão financeira</p><p className="mt-1 text-2xl font-semibold">{indicators.serviceOrderConversionRate.toFixed(1)}%</p><p className="mt-2 text-xs text-muted-foreground">Valor estimado convertido em OS</p></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardContent className="p-5"><PackageSearch className="size-5 text-amber-600" /><p className="mt-4 text-sm text-muted-foreground">Risco de abastecimento</p><p className="mt-1 text-2xl font-semibold">{data.summary.ataItemsAtRisk + data.summary.ataItemsInsufficient}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.ataItemsInsufficient} itens insuficientes</p></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><PackageSearch className="size-5 text-status-warning" /><p className="mt-4 text-sm text-muted-foreground">Risco de abastecimento</p><p className="mt-1 text-2xl font-semibold">{data.summary.ataItemsAtRisk + data.summary.ataItemsInsufficient}</p><p className="mt-2 text-xs text-muted-foreground">{data.summary.ataItemsInsufficient} itens insuficientes</p></CardContent></Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">
@@ -362,11 +362,11 @@ function ExecutiveContent({
               </div>
             ))}
             <div className="grid grid-cols-2 gap-3 pt-2">
-              <div className="rounded-xl bg-amber-50 p-4 text-amber-900">
+              <div className="rounded-xl border border-status-warning/20 bg-status-warning/10 p-4 text-status-warning">
                 <p className="text-xs">Itens em risco</p>
                 <p className="mt-1 text-2xl font-semibold">{data.summary.ataItemsAtRisk}</p>
               </div>
-              <div className="rounded-xl bg-red-50 p-4 text-red-900">
+              <div className="rounded-xl border border-status-danger/20 bg-status-danger/10 p-4 text-status-danger">
                 <p className="text-xs">Insuficientes</p>
                 <p className="mt-1 text-2xl font-semibold">{data.summary.ataItemsInsufficient}</p>
               </div>

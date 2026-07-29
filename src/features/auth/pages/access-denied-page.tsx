@@ -12,7 +12,7 @@ export function AccessDeniedPage() {
     <div className="flex min-h-[calc(100vh-10rem)] items-center justify-center">
       <Card className="w-full max-w-lg border-none shadow-sm">
         <CardContent className="p-8 text-center">
-          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-amber-100 text-amber-800">
+          <div className="mx-auto flex size-16 items-center justify-center rounded-3xl bg-status-warning/10 text-status-warning">
             <ShieldX className="size-8" />
           </div>
           <h1 className="mt-6 text-2xl font-semibold">Acesso não autorizado</h1>

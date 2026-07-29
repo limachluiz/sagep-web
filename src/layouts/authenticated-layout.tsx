@@ -221,7 +221,7 @@ export function AuthenticatedLayout() {
           </div>
           <div className={sidebarCollapsed ? "hidden" : "min-w-0"}>
             <p className="font-heading text-lg font-extrabold tracking-[0.16em] text-sidebar-primary">SAGEP</p>
-            <p className="truncate text-[9px] uppercase tracking-[0.13em] text-sidebar-foreground/55">4º CTA · Gestão de Projetos</p>
+            <p className="truncate text-[9px] uppercase tracking-[0.13em] text-sidebar-foreground/70">4º CTA · Gestão de Projetos</p>
           </div>
         </div>
 
@@ -240,11 +240,11 @@ export function AuthenticatedLayout() {
           <Sheet>
             <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent hover:text-accent-foreground lg:hidden" aria-label="Abrir menu principal"><Menu className="size-5" /></Button></SheetTrigger>
             <SheetContent side="left" className="w-[min(88vw,320px)] gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
-              <SheetHeader className="border-b border-sidebar-border px-5 py-5"><SheetTitle className="flex items-center gap-3 text-sidebar-foreground"><span className="flex size-10 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary"><Gauge className="size-5" /></span><span><span className="block font-heading text-lg tracking-[0.16em] text-sidebar-primary">SAGEP</span><span className="block text-[10px] font-normal uppercase tracking-wider text-sidebar-foreground/55">4º CTA · Gestão de Projetos</span></span></SheetTitle></SheetHeader>
+              <SheetHeader className="border-b border-sidebar-border px-5 py-5"><SheetTitle className="flex items-center gap-3 text-sidebar-foreground"><span className="flex size-10 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary"><Gauge className="size-5" /></span><span><span className="block font-heading text-lg tracking-[0.16em] text-sidebar-primary">SAGEP</span><span className="block text-[10px] font-normal uppercase tracking-wider text-sidebar-foreground/70">4º CTA · Gestão de Projetos</span></span></SheetTitle></SheetHeader>
               <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4" aria-label="Navegação móvel">
-                {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/40">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/65 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
+                {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
               </nav>
-              <div className="border-t border-sidebar-border p-4"><div className="flex items-center gap-3"><Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/55">{userRole}</p></div><Button size="icon" variant="ghost" className="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button></div></div>
+              <div className="border-t border-sidebar-border p-4"><div className="flex items-center gap-3"><Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div><Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button></div></div>
             </SheetContent>
           </Sheet>
 
@@ -273,8 +273,8 @@ export function AuthenticatedLayout() {
         <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="Navegação principal">
           {visibleNavigation.map((group) => (
             <div key={group.label}>
-              <p className={`mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/40 ${sidebarCollapsed ? "sr-only" : ""}`}>{group.label}</p>
-              <div className="space-y-0.5">{group.items.map((item) => { const Icon = item.icon; return <NavLink key={item.href} to={item.href} end={item.href === "/dashboard"} title={sidebarCollapsed ? item.label : undefined} aria-label={sidebarCollapsed ? item.label : undefined} className={({ isActive }) => ["group flex items-center rounded-md border-l-2 py-2.5 text-[13px] font-medium transition", sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/65 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4 shrink-0 transition" /><span className={sidebarCollapsed ? "sr-only" : ""}>{item.label}</span></NavLink> })}</div>
+              <p className={`mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60 ${sidebarCollapsed ? "sr-only" : ""}`}>{group.label}</p>
+              <div className="space-y-0.5">{group.items.map((item) => { const Icon = item.icon; return <NavLink key={item.href} to={item.href} end={item.href === "/dashboard"} title={sidebarCollapsed ? item.label : undefined} aria-label={sidebarCollapsed ? item.label : undefined} className={({ isActive }) => ["group flex items-center rounded-md border-l-2 py-2.5 text-[13px] font-medium transition", sidebarCollapsed ? "justify-center px-2" : "gap-3 px-3", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4 shrink-0 transition" /><span className={sidebarCollapsed ? "sr-only" : ""}>{item.label}</span></NavLink> })}</div>
             </div>
           ))}
         </nav>
@@ -283,8 +283,8 @@ export function AuthenticatedLayout() {
           <Separator className="mb-3 bg-sidebar-border" />
           <div className={`flex items-center border border-sidebar-border bg-sidebar-accent/35 p-3 ${sidebarCollapsed ? "justify-center" : "gap-3"}`}>
             <Avatar className="size-9"><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">{initials}</AvatarFallback></Avatar>
-            <div className={sidebarCollapsed ? "sr-only" : "min-w-0 flex-1"}><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-sidebar-foreground/55">{userRole}</p></div>
-            {!sidebarCollapsed && <Button size="icon" variant="ghost" className="text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} title="Sair" aria-label="Sair do sistema"><LogOut className="size-4" /></Button>}
+            <div className={sidebarCollapsed ? "sr-only" : "min-w-0 flex-1"}><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div>
+            {!sidebarCollapsed && <Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} title="Sair" aria-label="Sair do sistema"><LogOut className="size-4" /></Button>}
           </div>
         </div>
       </aside>

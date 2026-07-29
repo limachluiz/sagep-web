@@ -163,15 +163,15 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
 
   return (
     <>
-      <Card className="sagep-signal-hero overflow-hidden text-white">
+      <Card className="sagep-signal-hero overflow-hidden">
         <CardContent className="p-6 lg:p-7">
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-center">
-            <div className="max-w-xl"><Badge className="bg-emerald-400/15 text-emerald-200 hover:bg-emerald-400/15">Situação operacional</Badge><h2 className="mt-3 text-2xl font-semibold">Prioridades que exigem atuação</h2><p className="mt-2 text-sm leading-6 text-slate-300">Visão consolidada dos gargalos documentais, projetos sem avanço e riscos de saldo que podem comprometer a execução.</p></div>
+            <div className="max-w-xl"><Badge className="bg-status-success/10 text-status-success hover:bg-status-success/10">Situação operacional</Badge><h2 className="mt-3 text-2xl font-semibold">Prioridades que exigem atuação</h2><p className="mt-2 text-sm leading-6 text-muted-foreground">Visão consolidada dos gargalos documentais, projetos sem avanço e riscos de saldo que podem comprometer a execução.</p></div>
             <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:min-w-[520px]">
               <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Pendências</dt><dd className="mt-1 text-2xl font-semibold">{indicators.totalPending}</dd></div>
-              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Alertas urgentes</dt><dd className="mt-1 text-2xl font-semibold text-amber-300">{indicators.urgentAlerts}</dd></div>
+              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Alertas urgentes</dt><dd className="mt-1 text-2xl font-semibold text-status-warning">{indicators.urgentAlerts}</dd></div>
               <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Sem avanço</dt><dd className="mt-1 text-2xl font-semibold">{indicators.staleProjects}</dd></div>
-              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Itens em risco</dt><dd className="mt-1 text-2xl font-semibold text-red-300">{indicators.inventoryAtRisk}</dd></div>
+              <div className="sagep-metric-tile p-3"><dt className="text-xs tracking-wide text-muted-foreground uppercase">Itens em risco</dt><dd className="mt-1 text-2xl font-semibold text-status-danger">{indicators.inventoryAtRisk}</dd></div>
             </dl>
           </div>
         </CardContent>
@@ -187,9 +187,9 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                 <div className="flex items-center justify-between">
                   <div className={`flex size-11 items-center justify-center rounded-sm border ${
                     metric.tone === "danger"
-                      ? "border-red-400/20 bg-red-400/10 text-red-300"
+                      ? "border-status-danger/20 bg-status-danger/10 text-status-danger"
                       : metric.tone === "warning"
-                        ? "border-amber-400/20 bg-amber-400/10 text-amber-300"
+                        ? "border-status-warning/20 bg-status-warning/10 text-status-warning"
                         : "border-primary/20 bg-primary/10 text-primary"
                   }`}>
                     <Icon className="size-5" />

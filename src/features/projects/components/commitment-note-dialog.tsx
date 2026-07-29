@@ -72,7 +72,7 @@ export function CommitmentNoteDialog({ projectId, projectCode, open, onOpenChang
             <Label htmlFor="commitment-note-received-at">Data de recebimento</Label>
             <Input id="commitment-note-received-at" type="date" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} />
           </div>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
+          <div className="rounded-xl border border-status-warning/20 bg-status-warning/10 p-4 text-sm leading-6 text-status-warning">
             Esta ação converte a reserva do DIEx em consumo efetivo dos itens da ATA. O projeto avançará para <strong>OS liberada</strong>.
           </div>
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm">

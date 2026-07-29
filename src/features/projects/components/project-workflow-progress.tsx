@@ -65,7 +65,7 @@ export function ProjectWorkflowProgress({ stage, status, stageLabel, nextAction,
           <div className="m-5 flex flex-col justify-between gap-4 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:m-6 sm:flex-row sm:items-center">
             <div className="flex min-w-0 items-start gap-3">
               <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"><Route className="size-4" /></div>
-              <div><p className="text-xs font-medium uppercase tracking-wide text-primary">Próxima ação</p><p className="mt-1 font-semibold">{nextAction.label}</p><p className="mt-1 text-sm leading-5 text-muted-foreground">{nextAction.description}</p>{archived && <p className="mt-2 text-xs text-amber-700">Projeto arquivado: as ações operacionais estão bloqueadas.</p>}</div>
+              <div><p className="text-xs font-medium uppercase tracking-wide text-primary">Próxima ação</p><p className="mt-1 font-semibold">{nextAction.label}</p><p className="mt-1 text-sm leading-5 text-muted-foreground">{nextAction.description}</p>{archived && <p className="mt-2 text-xs text-status-warning">Projeto arquivado: as ações operacionais estão bloqueadas.</p>}</div>
             </div>
             {action && <div className="shrink-0 sm:self-center">{action}</div>}
           </div>

@@ -198,7 +198,7 @@ function ProjectOverview({
             {details.pendingActions.length ? details.pendingActions.map((action) => (
               <div key={action.code} className="flex items-center justify-between gap-4 rounded-xl border p-4">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className={action.severity === "BLOCKER" ? "size-5 text-destructive" : "size-5 text-amber-600"} />
+                  <AlertTriangle className={action.severity === "BLOCKER" ? "size-5 text-destructive" : "size-5 text-status-warning"} />
                   <div>
                     <p className="font-medium">{action.label}</p>
                     {action.targetStage && <p className="mt-1 text-xs text-muted-foreground">Próxima etapa: {stageLabels[action.targetStage]}</p>}
