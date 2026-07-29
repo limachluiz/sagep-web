@@ -336,6 +336,51 @@ function HomeContent({
         </div>
       </section>
 
+      <section aria-labelledby="home-summary-title">
+        <div className="mb-3 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-primary">
+              Situação atual
+            </p>
+            <h2 id="home-summary-title" className="mt-1 text-xl font-semibold">
+              Resumo operacional
+            </h2>
+          </div>
+          <span className="hidden text-xs text-muted-foreground sm:block">
+            Atualizado às {formatActivityDate(data.generatedAt).split(" ")[1]}
+          </span>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            label="Projetos sob responsabilidade"
+            value={ownerQueue.length}
+            description={`${data.operationalQueue.length} projeto(s) na fila operacional`}
+            icon={ClipboardList}
+          />
+          <MetricCard
+            label="Pendências no fluxo"
+            value={pendingFlowTotal(data)}
+            description="Documentos e etapas aguardando ação"
+            icon={Clock3}
+            tone="warning"
+          />
+          <MetricCard
+            label="Alertas críticos"
+            value={data.alerts.summary.bySeverity.CRITICAL}
+            description={`${data.alerts.summary.bySeverity.WARNING} alerta(s) em atenção`}
+            icon={AlertTriangle}
+            tone="danger"
+          />
+          <MetricCard
+            label="Itens de ATA em risco"
+            value={inventoryRisk}
+            description={`${data.inventory.summary.insufficientItems} item(ns) com saldo insuficiente`}
+            icon={Boxes}
+            tone="warning"
+          />
+        </div>
+      </section>
+
       <section aria-labelledby="home-my-tasks-title">
         <Card className="overflow-hidden border-primary/20">
           <CardHeader className="border-b bg-primary/[.035] py-4">
@@ -434,51 +479,6 @@ function HomeContent({
             )}
           </CardContent>
         </Card>
-      </section>
-
-      <section aria-labelledby="home-summary-title">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-primary">
-              Situação atual
-            </p>
-            <h2 id="home-summary-title" className="mt-1 text-xl font-semibold">
-              Resumo operacional
-            </h2>
-          </div>
-          <span className="hidden text-xs text-muted-foreground sm:block">
-            Atualizado às {formatActivityDate(data.generatedAt).split(" ")[1]}
-          </span>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard
-            label="Projetos sob responsabilidade"
-            value={ownerQueue.length}
-            description={`${data.operationalQueue.length} projeto(s) na fila operacional`}
-            icon={ClipboardList}
-          />
-          <MetricCard
-            label="Pendências no fluxo"
-            value={pendingFlowTotal(data)}
-            description="Documentos e etapas aguardando ação"
-            icon={Clock3}
-            tone="warning"
-          />
-          <MetricCard
-            label="Alertas críticos"
-            value={data.alerts.summary.bySeverity.CRITICAL}
-            description={`${data.alerts.summary.bySeverity.WARNING} alerta(s) em atenção`}
-            icon={AlertTriangle}
-            tone="danger"
-          />
-          <MetricCard
-            label="Itens de ATA em risco"
-            value={inventoryRisk}
-            description={`${data.inventory.summary.insufficientItems} item(ns) com saldo insuficiente`}
-            icon={Boxes}
-            tone="warning"
-          />
-        </div>
       </section>
 
       {quickActions.length > 0 && (
