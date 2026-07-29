@@ -6,6 +6,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Boxes,
+  CalendarClock,
   ClipboardList,
   Clock3,
   FilePlus2,
@@ -41,6 +42,15 @@ import type {
   DashboardOperationalResponse,
   ProjectStage,
 } from "@/features/dashboard/dashboard.types"
+import { getGreeting, selectPendingTasks } from "@/features/home/home.utils"
+import {
+  isTaskOverdue,
+  taskPriorityLabels,
+  taskStatusLabels,
+  taskStatusVariants,
+} from "@/features/tasks/tasks.constants"
+import { tasksService } from "@/features/tasks/tasks.service"
+import type { Task } from "@/features/tasks/tasks.types"
 
 const MANAUS_TIME_ZONE = "America/Manaus"
 
@@ -156,23 +166,6 @@ function titleCase(value: string) {
   return value.charAt(0).toUpperCase() + value.slice(1)
 }
 
-function getManausHour(date: Date) {
-  return Number(
-    new Intl.DateTimeFormat("pt-BR", {
-      hour: "2-digit",
-      hourCycle: "h23",
-      timeZone: MANAUS_TIME_ZONE,
-    }).format(date),
-  )
-}
-
-function getGreeting(date: Date) {
-  const hour = getManausHour(date)
-  if (hour < 12) return "Bom dia"
-  if (hour < 18) return "Boa tarde"
-  return "Boa noite"
-}
-
 function formatLongDate(date: Date) {
   return titleCase(
     new Intl.DateTimeFormat("pt-BR", {
@@ -191,6 +184,17 @@ function formatActivityDate(value: string) {
     month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: MANAUS_TIME_ZONE,
+  }).format(new Date(value))
+}
+
+function formatTaskDueDate(value: string | null) {
+  if (!value) return "Sem prazo definido"
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
     timeZone: MANAUS_TIME_ZONE,
   }).format(new Date(value))
 }
@@ -256,7 +260,19 @@ function MetricCard({
   )
 }
 
-function HomeContent({ data }: { data: DashboardOperationalResponse }) {
+function HomeContent({
+  data,
+  tasks,
+  tasksLoading,
+  tasksError,
+  onRetryTasks,
+}: {
+  data: DashboardOperationalResponse
+  tasks: Task[]
+  tasksLoading: boolean
+  tasksError: boolean
+  onRetryTasks: () => void
+}) {
   const user = useAuthStore((state) => state.user)
   const hasAnyPermission = useAuthStore((state) => state.hasAnyPermission)
   const now = new Date()
@@ -268,6 +284,10 @@ function HomeContent({ data }: { data: DashboardOperationalResponse }) {
   const queue = ownerQueue.length > 0 ? ownerQueue : data.operationalQueue
   const priorities = queue.slice(0, 5)
   const activities = data.latestMovements.slice(0, 5)
+  const pendingTasks = selectPendingTasks(tasks)
+  const pendingTaskCount = tasks.filter(
+    (task) => task.status !== "CONCLUIDA" && task.status !== "CANCELADA",
+  ).length
   const inventoryRisk =
     data.inventory.summary.lowStockItems +
     data.inventory.summary.insufficientItems
@@ -313,6 +333,102 @@ function HomeContent({ data }: { data: DashboardOperationalResponse }) {
             </Link>
           </Button>
         </div>
+      </section>
+
+      <section aria-labelledby="home-my-tasks-title">
+        <Card className="overflow-hidden border-primary/20">
+          <CardHeader className="border-b bg-primary/[.035]">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[.16em] text-primary">
+                Sua fila de trabalho
+              </p>
+              <CardTitle id="home-my-tasks-title" className="mt-1 flex items-center gap-2 text-xl">
+                <ListTodo className="size-5 text-primary" />
+                Minhas tarefas pendentes
+              </CardTitle>
+              <CardDescription className="mt-1">
+                Atividades atribuídas diretamente a você, priorizadas por atraso,
+                criticidade e prazo.
+              </CardDescription>
+            </div>
+            <CardAction className="flex items-center gap-2">
+              {!tasksLoading && !tasksError && (
+                <Badge variant="secondary">{pendingTaskCount} pendente(s)</Badge>
+              )}
+              <Button asChild variant="ghost" size="sm">
+                <Link to="/tasks">Ver tarefas</Link>
+              </Button>
+            </CardAction>
+          </CardHeader>
+          <CardContent className="px-0">
+            {tasksLoading ? (
+              <div className="grid gap-3 p-5 sm:grid-cols-2 xl:grid-cols-3">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <Skeleton className="h-24 rounded-lg" key={index} />
+                ))}
+              </div>
+            ) : tasksError ? (
+              <div className="flex flex-col items-center px-5 py-8 text-center">
+                <AlertTriangle className="size-7 text-status-warning" />
+                <p className="mt-3 text-sm font-medium">Não foi possível carregar suas tarefas</p>
+                <Button className="mt-3" size="sm" variant="outline" onClick={onRetryTasks}>
+                  <RefreshCw className="size-4" />
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : pendingTasks.length === 0 ? (
+              <div className="px-5 py-8 text-center">
+                <ShieldCheck className="mx-auto size-8 text-primary" />
+                <p className="mt-3 text-sm font-medium">Você não possui tarefas pendentes</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  As atividades atribuídas a você estão em dia.
+                </p>
+              </div>
+            ) : (
+              <div className="grid gap-px bg-border/70 sm:grid-cols-2 xl:grid-cols-3">
+                {pendingTasks.map((task) => {
+                  const overdue = isTaskOverdue(task)
+                  return (
+                    <Link
+                      className="group min-w-0 bg-card px-5 py-4 transition hover:bg-muted/45 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring/35"
+                      key={task.id}
+                      to={`/tasks/${task.id}`}
+                    >
+                      <span className="flex items-start justify-between gap-3">
+                        <span className="min-w-0">
+                          <span className="block text-[10px] font-semibold uppercase tracking-[.13em] text-primary">
+                            TSK-{task.taskCode} · PRJ-{task.project.projectCode}
+                          </span>
+                          <span className="mt-1 line-clamp-2 block text-sm font-semibold leading-5">
+                            {task.title}
+                          </span>
+                        </span>
+                        <ArrowUpRight className="size-4 shrink-0 text-muted-foreground transition group-hover:text-primary" />
+                      </span>
+                      <span className="mt-3 flex flex-wrap items-center gap-2">
+                        <Badge variant={taskStatusVariants[task.status]}>
+                          {taskStatusLabels[task.status]}
+                        </Badge>
+                        <Badge variant={task.priority >= 5 ? "destructive" : "outline"}>
+                          {taskPriorityLabels[task.priority] ?? `Prioridade ${task.priority}`}
+                        </Badge>
+                      </span>
+                      <span
+                        className={`mt-3 flex items-center gap-1.5 text-xs ${
+                          overdue ? "font-medium text-destructive" : "text-muted-foreground"
+                        }`}
+                      >
+                        <CalendarClock className="size-3.5" />
+                        {overdue ? "Em atraso · " : "Prazo · "}
+                        {formatTaskDueDate(task.dueDate)}
+                      </span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </section>
 
       <section aria-labelledby="home-summary-title">
@@ -493,11 +609,23 @@ function HomeContent({ data }: { data: DashboardOperationalResponse }) {
 
 export function HomePage() {
   const hasPermission = useAuthStore((state) => state.hasPermission)
+  const user = useAuthStore((state) => state.user)
   const canViewOperational = hasPermission("dashboard.view_operational")
-  const query = useQuery({
+  const dashboardQuery = useQuery({
     queryKey: ["dashboard", "operational", 15],
     queryFn: () => dashboardService.operational(15),
     enabled: canViewOperational,
+    staleTime: 30_000,
+  })
+  const tasksQuery = useQuery({
+    queryKey: ["tasks", "home", "mine", user?.userCode],
+    queryFn: () =>
+      tasksService.list({
+        page: 1,
+        pageSize: 100,
+        assigneeCode: user?.userCode,
+      }),
+    enabled: canViewOperational && Boolean(user?.userCode),
     staleTime: 30_000,
   })
 
@@ -514,17 +642,17 @@ export function HomePage() {
     )
   }
 
-  if (query.isLoading) return <HomeMetricSkeletons />
+  if (dashboardQuery.isLoading) return <HomeMetricSkeletons />
 
-  if (query.isError) {
+  if (dashboardQuery.isError) {
     return (
       <div className="space-y-4">
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>Não foi possível carregar a página inicial</AlertTitle>
-          <AlertDescription>{query.error.message}</AlertDescription>
+          <AlertDescription>{dashboardQuery.error.message}</AlertDescription>
         </Alert>
-        <Button variant="outline" className="gap-2" onClick={() => query.refetch()}>
+        <Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()}>
           <RefreshCw className="size-4" />
           Tentar novamente
         </Button>
@@ -532,5 +660,13 @@ export function HomePage() {
     )
   }
 
-  return query.data ? <HomeContent data={query.data} /> : null
+  return dashboardQuery.data ? (
+    <HomeContent
+      data={dashboardQuery.data}
+      tasks={tasksQuery.data?.items ?? []}
+      tasksLoading={tasksQuery.isLoading}
+      tasksError={tasksQuery.isError}
+      onRetryTasks={() => tasksQuery.refetch()}
+    />
+  ) : null
 }
