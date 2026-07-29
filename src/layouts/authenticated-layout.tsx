@@ -108,7 +108,7 @@ const navigation: NavigationGroup[] = [
     label: "ATAs e Saldos",
     href: "/atas",
     icon: Files,
-    anyOf: ["atas.manage"],
+    anyOf: ["atas.manage", "projects.view_all", "estimates.view_all"],
   },
   {
     label: "Organizações Militares",

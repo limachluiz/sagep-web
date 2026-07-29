@@ -83,6 +83,20 @@ export type AtaItem = {
   isActive: boolean
   deletedAt: string | null
   balance: AtaBalance
+  latestExternalBalanceSnapshot?: {
+    source: string
+    status: string
+    externalBalance: {
+      externalItemNumber?: string
+      registeredQuantity?: string
+      committedQuantity?: string
+      availableQuantity?: string
+      lastUpdatedAt?: string | null
+    } | null
+    difference: string | null
+    lastSyncAt: string
+    warnings: string[] | null
+  } | null
   createdAt: string
   updatedAt: string
   ata: Pick<Ata, "id" | "ataCode" | "number" | "type" | "vendorName" | "isActive" | "externalUasg">

@@ -167,7 +167,7 @@ export default function App() {
           <Route
             path="/atas"
             element={
-              <PermissionRoute anyOf={["atas.manage"]}>
+              <PermissionRoute anyOf={["atas.manage", "projects.view_all", "estimates.view_all"]}>
                 <AtasPage />
               </PermissionRoute>
             }
@@ -175,7 +175,7 @@ export default function App() {
           <Route
             path="/atas/:ataId"
             element={
-              <PermissionRoute anyOf={["atas.manage"]}>
+              <PermissionRoute anyOf={["atas.manage", "projects.view_all", "estimates.view_all"]}>
                 <AtaDetailsPage />
               </PermissionRoute>
             }
