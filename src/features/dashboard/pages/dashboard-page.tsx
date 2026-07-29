@@ -75,8 +75,25 @@ export function DashboardPage() {
       />
 
       <Tabs value={activeView} onValueChange={handleViewChange} className="gap-6">
-        <div className="overflow-x-auto border-b border-border/80">
-          <TabsList variant="line" className="h-auto min-w-max gap-1 p-0">
+        <section
+          className="rounded-xl border border-primary/15 bg-card/80 p-2 shadow-sm"
+          aria-label="Perspectivas do dashboard"
+        >
+          <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                Perspectiva
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Escolha o nível de informação que deseja acompanhar.
+              </p>
+            </div>
+            <span className="hidden rounded-full border border-primary/15 bg-primary/[.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary sm:inline-flex">
+              {availableViews.length} {availableViews.length === 1 ? "visão disponível" : "visões disponíveis"}
+            </span>
+          </div>
+
+          <TabsList className="grid h-auto w-full grid-cols-1 gap-1.5 bg-muted/60 p-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
             {availableViews.map((view) => {
               const item = viewMetadata[view]
               const Icon = item.icon
@@ -84,20 +101,22 @@ export function DashboardPage() {
                 <TabsTrigger
                   key={view}
                   value={view}
-                  className="h-auto min-w-44 justify-start gap-3 rounded-none px-4 py-3 text-left"
+                  className="group/dashboard-view h-auto min-w-0 justify-start gap-3 rounded-lg border px-3 py-3 text-left whitespace-normal shadow-none hover:border-primary/25 hover:bg-background/75 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm sm:px-4"
                 >
-                  <span className="flex size-9 items-center justify-center rounded-sm border border-primary/15 bg-primary/[.06] text-primary">
-                    <Icon className="size-4" />
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/[.07] text-primary transition-colors group-data-active/dashboard-view:border-primary-foreground/20 group-data-active/dashboard-view:bg-primary-foreground/15 group-data-active/dashboard-view:text-primary-foreground">
+                    <Icon className="size-4" aria-hidden="true" />
                   </span>
-                  <span>
-                    <span className="block text-sm font-semibold">{item.label}</span>
-                    <span className="mt-0.5 block text-[10px] font-normal tracking-wide text-muted-foreground">{item.description}</span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold leading-5">{item.label}</span>
+                    <span className="block text-xs font-normal leading-4 text-muted-foreground group-data-active/dashboard-view:text-primary-foreground/75">
+                      {item.description}
+                    </span>
                   </span>
                 </TabsTrigger>
               )
             })}
           </TabsList>
-        </div>
+        </section>
 
         {availableViews.includes("overview") && (
           <TabsContent value="overview"><Suspense fallback={<DashboardPanelFallback />}><DashboardOverviewPage /></Suspense></TabsContent>
