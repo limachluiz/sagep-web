@@ -4,6 +4,8 @@ import { useMemo, useState } from "react"
 import { Link } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { FilterToolbar } from "@/components/filter-toolbar"
+import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -38,7 +40,19 @@ function differenceInDays(start: Date, end: Date) {
   return Math.max(0, Math.round((startOfDay(end).getTime() - startOfDay(start).getTime()) / dayMs))
 }
 
-function GanttRow({ item, rangeStart, rangeEnd }: { item: GanttServiceOrder; rangeStart: Date; rangeEnd: Date }) {
+function GanttRow({
+  item,
+  rangeStart,
+  rangeEnd,
+  labelWidth,
+  todayPosition,
+}: {
+  item: GanttServiceOrder
+  rangeStart: Date
+  rangeEnd: Date
+  labelWidth: number
+  todayPosition: number | null
+}) {
   const totalDays = Math.max(1, differenceInDays(rangeStart, rangeEnd) + 1)
   const itemStart = item.plannedStartDate ? startOfDay(item.plannedStartDate) : rangeStart
   const itemEnd = item.plannedEndDate ? startOfDay(item.plannedEndDate) : itemStart
@@ -48,7 +62,10 @@ function GanttRow({ item, rangeStart, rangeEnd }: { item: GanttServiceOrder; ran
   const width = Math.max(1.5, Math.min(100 - left, (duration / totalDays) * 100))
 
   return (
-    <div className="grid min-w-[1180px] grid-cols-[320px_minmax(820px,1fr)] border-t">
+    <div
+      className="grid min-w-[1100px] border-t"
+      style={{ gridTemplateColumns: `${labelWidth}px minmax(820px, 1fr)` }}
+    >
       <div className="border-r bg-background p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -64,6 +81,13 @@ function GanttRow({ item, rangeStart, rangeEnd }: { item: GanttServiceOrder; ran
         <p className="mt-3 text-xs text-muted-foreground">{formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)}</p>
       </div>
       <div className="relative min-h-32 bg-[linear-gradient(to_right,var(--border)_1px,transparent_1px)] bg-[size:calc(100%/12)_100%] p-4">
+        {todayPosition !== null && (
+          <div
+            className="pointer-events-none absolute inset-y-0 z-10 w-px bg-amber-500/80"
+            style={{ left: `${todayPosition}%` }}
+            aria-hidden="true"
+          />
+        )}
         <div
           className={`absolute top-1/2 h-11 -translate-y-1/2 overflow-hidden rounded-lg shadow-sm ${item.isDelayed ? "bg-destructive/20 ring-1 ring-destructive/40" : "bg-primary/15 ring-1 ring-primary/30"}`}
           style={{ left: `${left}%`, width: `${width}%` }}
@@ -85,6 +109,7 @@ export function ServiceOrdersGanttPage() {
   const [projectType, setProjectType] = useState<ProjectType | "all">("all")
   const [ownerId, setOwnerId] = useState("all")
   const [scheduleView, setScheduleView] = useState<"all" | "delayed" | "on_track" | "unscheduled">("all")
+  const [labelWidth, setLabelWidth] = useState(320)
   const projectsQuery = useQuery({
     queryKey: ["projects", "gantt-filter-options"],
     queryFn: () => projectsService.list({ page: 1, pageSize: 100 }),
@@ -127,16 +152,26 @@ export function ServiceOrdersGanttPage() {
     return { start: today, end: addDays(today, 30) }
   }, [ganttQuery.data])
   const ticks = Array.from({ length: 7 }, (_, index) => addDays(range.start, Math.round((differenceInDays(range.start, range.end) * index) / 6)))
+  const todayPosition = useMemo(() => {
+    const current = startOfDay(new Date())
+    if (current < range.start || current > range.end) return null
+    const totalDays = Math.max(1, differenceInDays(range.start, range.end))
+    return (differenceInDays(range.start, current) / totalDays) * 100
+  }, [range])
   const clearFilters = () => { setProjectId(""); setFrom(""); setUntil(""); setStateUf("all"); setProjectType("all"); setOwnerId("all"); setScheduleView("all") }
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-        <div><Badge className="mb-3">Planejamento temporal</Badge><h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight"><CalendarRange className="size-7 text-primary" />Gantt de Ordens de Serviço</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Visualize prazos, progresso e atrasos a partir do cronograma planejado de cada Ordem de Serviço.</p></div>
-        <Button variant="outline" onClick={() => ganttQuery.refetch()} disabled={ganttQuery.isFetching}><RefreshCw className={ganttQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>
-      </div>
+      <PageHeader
+        eyebrow="Planejamento temporal"
+        title="Gantt de Ordens de Serviço"
+        description="Visualize prazos, progresso e atrasos a partir do cronograma planejado de cada Ordem de Serviço."
+        icon={CalendarRange}
+        meta={ganttQuery.data ? `Janela exibida: ${formatDate(range.start)} a ${formatDate(range.end)}` : undefined}
+        actions={<Button variant="outline" onClick={() => ganttQuery.refetch()} disabled={ganttQuery.isFetching}><RefreshCw className={ganttQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>}
+      />
 
-      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
+      <FilterToolbar className="xl:grid-cols-4">
         <ProjectSelect
           projects={projectOptions}
           value={projectId}
@@ -164,8 +199,22 @@ export function ServiceOrdersGanttPage() {
           <SelectTrigger aria-label="Filtrar Gantt por situação do cronograma"><SelectValue /></SelectTrigger>
           <SelectContent><SelectItem value="all">Todas as situações</SelectItem><SelectItem value="delayed">Somente atrasadas</SelectItem><SelectItem value="on_track">No prazo</SelectItem><SelectItem value="unscheduled">Sem cronograma</SelectItem></SelectContent>
         </Select>
+        <label className="hidden items-center gap-3 rounded-md border px-3 text-xs text-muted-foreground lg:flex">
+          <span className="whitespace-nowrap">Painel lateral</span>
+          <input
+            type="range"
+            min="260"
+            max="440"
+            step="20"
+            value={labelWidth}
+            onChange={(event) => setLabelWidth(Number(event.target.value))}
+            className="h-2 w-full cursor-ew-resize accent-primary"
+            aria-label="Largura do painel lateral do Gantt"
+          />
+          <span className="w-12 text-right tabular-nums">{labelWidth}px</span>
+        </label>
         <Button variant="ghost" onClick={clearFilters} disabled={!projectId && !from && !until && stateUf === "all" && projectType === "all" && ownerId === "all" && scheduleView === "all"}>Limpar filtros</Button>
-      </CardContent></Card>
+      </FilterToolbar>
 
       {invalidRange && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Período inválido</AlertTitle><AlertDescription>A data final deve ser igual ou posterior à data inicial.</AlertDescription></Alert>}
       {projectsQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar os projetos</AlertTitle><AlertDescription>{projectsQuery.error.message}</AlertDescription></Alert>}
@@ -183,8 +232,24 @@ export function ServiceOrdersGanttPage() {
       {ganttQuery.isLoading ? <Skeleton className="h-[460px]" /> : scheduled.length ? (<>
         <div className="grid gap-3 lg:hidden" aria-label="Resumo móvel do cronograma">{scheduled.map((item) => <Link key={item.id} to={`/service-orders/${item.id}`} className="rounded-xl border bg-card p-4 shadow-sm"><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-semibold text-primary">OS-{item.serviceOrderCode} · PRJ-{item.project.projectCode}</p><p className="mt-1 font-medium">{item.project.title}</p></div><Badge variant={item.isDelayed ? "destructive" : "outline"}>{item.isDelayed ? "Atrasada" : `${item.progressPercent}%`}</Badge></div><div className="mt-4 h-2 overflow-hidden rounded-full bg-muted"><div className={item.isDelayed ? "h-full bg-destructive" : "h-full bg-primary"} style={{ width: `${item.progressPercent}%` }} /></div><p className="mt-3 text-xs text-muted-foreground">{formatDate(item.plannedStartDate)} → {formatDate(item.plannedEndDate)} · {item.tasks.length} etapa(s)</p></Link>)}</div>
         <Card className="hidden overflow-hidden border-none shadow-sm lg:block"><div className="overflow-x-auto" tabIndex={0} aria-label="Cronograma detalhado das Ordens de Serviço">
-          <div className="grid min-w-[1180px] grid-cols-[320px_minmax(820px,1fr)] bg-sidebar text-sidebar-foreground"><div className="border-r border-white/10 p-4"><p className="text-sm font-semibold">Ordem de Serviço / Projeto</p><p className="mt-1 text-xs text-sidebar-foreground/60">{formatDate(range.start)} a {formatDate(range.end)}</p></div><div className="flex items-end justify-between px-4 py-4">{ticks.map((tick, index) => <span key={`${tick.toISOString()}-${index}`} className="text-xs text-sidebar-foreground/70">{formatDate(tick)}</span>)}</div></div>
-          {scheduled.map((item) => <GanttRow key={item.id} item={item} rangeStart={range.start} rangeEnd={range.end} />)}
+          <div
+            className="grid min-w-[1100px] bg-sidebar text-sidebar-foreground"
+            style={{ gridTemplateColumns: `${labelWidth}px minmax(820px, 1fr)` }}
+          >
+            <div className="border-r border-white/10 p-4"><p className="text-sm font-semibold">Ordem de Serviço / Projeto</p><p className="mt-1 text-xs text-sidebar-foreground/60">{formatDate(range.start)} a {formatDate(range.end)}</p></div>
+            <div className="relative flex items-end justify-between px-4 py-4">
+              {ticks.map((tick, index) => <span key={`${tick.toISOString()}-${index}`} className="text-xs text-sidebar-foreground/70">{formatDate(tick)}</span>)}
+              {todayPosition !== null && (
+                <span
+                  className="absolute bottom-0 z-10 -translate-x-1/2 rounded-t bg-amber-500 px-1.5 py-0.5 text-[10px] font-semibold text-amber-950"
+                  style={{ left: `${todayPosition}%` }}
+                >
+                  Hoje
+                </span>
+              )}
+            </div>
+          </div>
+          {scheduled.map((item) => <GanttRow key={item.id} item={item} rangeStart={range.start} rangeEnd={range.end} labelWidth={labelWidth} todayPosition={todayPosition} />)}
         </div></Card>
       </>) : <Card className="border-none shadow-sm"><CardContent className="flex flex-col items-center py-16 text-center"><CalendarRange className="size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhuma OS planejada no período</p><p className="mt-1 text-sm text-muted-foreground">Cadastre o início e o término planejados na Ordem de Serviço.</p></CardContent></Card>}
 

@@ -1,14 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
+  closestCenter,
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core"
+import { sortableKeyboardCoordinates } from "@dnd-kit/sortable"
+import { CSS } from "@dnd-kit/utilities"
+import {
   AlertTriangle,
   ArrowRight,
   CalendarClock,
   CheckCircle2,
   CircleDot,
   Columns3,
+  GripVertical,
   Loader2,
   RefreshCw,
-  Search,
   UserRound,
   Target,
 } from "lucide-react"
@@ -17,10 +33,11 @@ import { Link } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
+import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/features/auth/auth.store"
@@ -58,23 +75,38 @@ function KanbanCard({
   canMove,
   moving,
   onMove,
-  onDragStart,
+  overlay = false,
 }: {
   card: ProjectKanbanCard
   stageLabels: Partial<Record<ProjectStage, string>>
   canMove: boolean
   moving: boolean
   onMove: (stage: ProjectStage) => void
-  onDragStart: () => void
+  overlay?: boolean
 }) {
   const targetStage = nextStage[card.stage]
+  const {
+    attributes,
+    isDragging,
+    listeners,
+    setNodeRef,
+    transform,
+  } = useDraggable({
+    id: `project:${card.id}`,
+    data: { card },
+    disabled: !canMove || !targetStage || moving || overlay,
+  })
+  const style = transform
+    ? { transform: CSS.Translate.toString(transform) }
+    : undefined
 
   return (
     <Card
-      draggable={canMove && Boolean(targetStage)}
-      onDragStart={onDragStart}
-      className="cursor-default border bg-card shadow-xs transition hover:-translate-y-0.5 hover:shadow-md data-[draggable=true]:cursor-grab"
-      data-draggable={canMove && Boolean(targetStage)}
+      ref={setNodeRef}
+      style={style}
+      className="cursor-default border bg-card shadow-xs transition hover:-translate-y-0.5 hover:shadow-md data-[dragging=true]:opacity-35 data-[overlay=true]:rotate-1 data-[overlay=true]:border-primary/40 data-[overlay=true]:shadow-xl"
+      data-dragging={isDragging}
+      data-overlay={overlay}
     >
       <CardContent className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">
@@ -84,7 +116,19 @@ function KanbanCard({
               {card.title}
             </Link>
           </div>
-          <CircleDot className="mt-1 size-4 shrink-0 text-primary" />
+          {canMove && targetStage && !overlay ? (
+            <button
+              type="button"
+              className="mt-0.5 flex size-8 shrink-0 touch-none items-center justify-center rounded-md border border-transparent text-muted-foreground outline-none transition hover:border-border hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
+              aria-label={`Mover PRJ-${card.projectCode}: ${card.title}`}
+              {...listeners}
+              {...attributes}
+            >
+              <GripVertical className="size-4" aria-hidden="true" />
+            </button>
+          ) : (
+            <CircleDot className="mt-1 size-4 shrink-0 text-primary" />
+          )}
         </div>
 
         <div className="flex flex-wrap gap-1.5">
@@ -108,6 +152,48 @@ function KanbanCard({
   )
 }
 
+function KanbanColumn({
+  column,
+  activeCard,
+  children,
+}: {
+  column: {
+    stage: ProjectStage
+    label: string
+    count: number
+  }
+  activeCard: ProjectKanbanCard | null
+  children: React.ReactNode
+}) {
+  const expectedStage = activeCard ? nextStage[activeCard.stage] : null
+  const isEligible = expectedStage === column.stage
+  const { isOver, setNodeRef } = useDroppable({
+    id: `stage:${column.stage}`,
+    data: { stage: column.stage, label: column.label },
+    disabled: Boolean(activeCard) && !isEligible,
+  })
+
+  return (
+    <section
+      ref={setNodeRef}
+      className="min-h-64 w-[min(86vw,340px)] shrink-0 snap-start rounded-2xl border bg-muted/35 p-3 transition-colors data-[eligible=true]:border-primary/35 data-[eligible=true]:bg-primary/5 data-[over=true]:border-primary data-[over=true]:bg-primary/10 data-[over=true]:ring-2 data-[over=true]:ring-primary/20"
+      data-eligible={isEligible}
+      data-over={isOver}
+    >
+      <header className="mb-3 flex items-center justify-between gap-2 px-1 py-2">
+        <div>
+          <h2 className="text-sm font-semibold">{column.label}</h2>
+          {isEligible && activeCard && (
+            <p className="mt-1 text-[11px] font-medium text-primary">Solte aqui para avançar</p>
+          )}
+        </div>
+        <Badge variant="outline" className="bg-background">{column.count}</Badge>
+      </header>
+      <div className="space-y-3">{children}</div>
+    </section>
+  )
+}
+
 export function ProjectsKanbanPage() {
   const queryClient = useQueryClient()
   const user = useAuthStore((state) => state.user)
@@ -121,7 +207,12 @@ export function ProjectsKanbanPage() {
   const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
   const [omId, setOmId] = useState("all")
   const [ownerId, setOwnerId] = useState("all")
-  const [draggedCard, setDraggedCard] = useState<ProjectKanbanCard | null>(null)
+  const [activeCard, setActiveCard] = useState<ProjectKanbanCard | null>(null)
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 180, tolerance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350)
@@ -186,27 +277,33 @@ export function ProjectsKanbanPage() {
     moveMutation.mutate({ projectId: card.id, stage: target })
   }
 
+  const handleDragStart = ({ active }: DragStartEvent) => {
+    setActiveCard(active.data.current?.card as ProjectKanbanCard | null)
+  }
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    const card = active.data.current?.card as ProjectKanbanCard | undefined
+    const target = over?.data.current?.stage as ProjectStage | undefined
+    setActiveCard(null)
+
+    if (card && target) moveCard(card, target)
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-        <div>
-          <Badge className="mb-3">Fluxo operacional</Badge>
-          <h1 className="flex items-center gap-3 text-3xl font-semibold tracking-tight"><Columns3 className="size-7 text-primary" />Kanban de projetos</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Acompanhe o portfólio por etapa e avance projetos conforme os requisitos documentais do workflow.
-          </p>
-        </div>
-        <Button variant="outline" onClick={() => kanbanQuery.refetch()} disabled={kanbanQuery.isFetching}>
+      <PageHeader
+        eyebrow="Fluxo operacional"
+        title="Kanban de projetos"
+        description="Acompanhe o portfólio por etapa e avance projetos conforme os requisitos documentais do workflow."
+        icon={Columns3}
+        meta={kanbanQuery.data ? `Posição atualizada em ${formatDate(kanbanQuery.data.generatedAt)}` : undefined}
+        actions={<Button variant="outline" onClick={() => kanbanQuery.refetch()} disabled={kanbanQuery.isFetching}>
           <RefreshCw className={kanbanQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar
-        </Button>
-      </div>
+        </Button>}
+      />
 
-      <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input value={search} onChange={(event) => setSearch(event.target.value)} className="pl-9" placeholder="Buscar projeto..." aria-label="Buscar no Kanban" />
-          </div>
+      <FilterToolbar className="xl:grid-cols-4">
+          <SearchField value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar projeto..." aria-label="Buscar no Kanban" />
           <Select value={scope} onValueChange={(value) => setScope(value as "accessible" | "mine")}>
             <SelectTrigger className="w-full" aria-label="Escopo do Kanban"><SelectValue /></SelectTrigger>
             <SelectContent><SelectItem value="accessible">Todos acessíveis</SelectItem><SelectItem value="mine">Sob minha responsabilidade</SelectItem></SelectContent>
@@ -238,8 +335,7 @@ export function ProjectsKanbanPage() {
           {(search || scope !== "accessible" || emptyColumns !== "show" || stage !== "all" || projectType !== "all" || stateUf !== "all" || omId !== "all" || ownerId !== "all") && (
             <Button variant="ghost" onClick={() => { setSearch(""); setDebouncedSearch(""); setScope("accessible"); setEmptyColumns("show"); setStage("all"); setProjectType("all"); setStateUf("all"); setOmId("all"); setOwnerId("all") }}>Limpar filtros</Button>
           )}
-        </CardContent>
-      </Card>
+      </FilterToolbar>
 
       {kanbanQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar o Kanban</AlertTitle><AlertDescription>{kanbanQuery.error.message}</AlertDescription></Alert>}
 
@@ -248,22 +344,39 @@ export function ProjectsKanbanPage() {
       {kanbanQuery.isLoading ? (
         <div className="flex gap-4 overflow-hidden">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-[480px] min-w-80" />)}</div>
       ) : (
-        <div className="flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-5" aria-label="Quadro Kanban por etapa" tabIndex={0}>
-          {columns.map((column) => (
-            <section
-              key={column.stage}
-              className="min-h-64 w-[min(86vw,340px)] shrink-0 snap-start rounded-2xl border bg-muted/35 p-3"
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={() => {
-                if (draggedCard) moveCard(draggedCard, column.stage)
-                setDraggedCard(null)
-              }}
-            >
-              <header className="mb-3 flex items-center justify-between gap-2 px-1 py-2">
-                <h2 className="text-sm font-semibold">{column.label}</h2>
-                <Badge variant="outline" className="bg-background">{column.count}</Badge>
-              </header>
-              <div className="space-y-3">
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragCancel={() => setActiveCard(null)}
+          onDragEnd={handleDragEnd}
+          accessibility={{
+            screenReaderInstructions: {
+              draggable: "Para mover um projeto, pressione Espaço. Use as setas para escolher a próxima etapa e pressione Espaço novamente para confirmar. Pressione Escape para cancelar.",
+            },
+            announcements: {
+              onDragStart: ({ active }) => {
+                const card = active.data.current?.card as ProjectKanbanCard | undefined
+                return card ? `Projeto PRJ-${card.projectCode}, ${card.title}, selecionado.` : "Projeto selecionado."
+              },
+              onDragOver: ({ over }) => {
+                const label = over?.data.current?.label as string | undefined
+                return label ? `Destino selecionado: ${label}.` : "Fora de uma etapa permitida."
+              },
+              onDragEnd: ({ active, over }) => {
+                const card = active.data.current?.card as ProjectKanbanCard | undefined
+                const label = over?.data.current?.label as string | undefined
+                return card && label
+                  ? `Projeto PRJ-${card.projectCode} movido para ${label}.`
+                  : "Movimentação cancelada."
+              },
+              onDragCancel: () => "Movimentação cancelada.",
+            },
+          }}
+        >
+          <div className="flex snap-x snap-mandatory items-start gap-4 overflow-x-auto pb-5" aria-label="Quadro Kanban por etapa" tabIndex={0}>
+            {columns.map((column) => (
+              <KanbanColumn key={column.stage} column={column} activeCard={activeCard}>
                 {column.cards.map((card) => (
                   <KanbanCard
                     key={card.id}
@@ -272,14 +385,27 @@ export function ProjectsKanbanPage() {
                     canMove={canMoveCard(card)}
                     moving={moveMutation.isPending && moveMutation.variables?.projectId === card.id}
                     onMove={(stage) => moveCard(card, stage)}
-                    onDragStart={() => setDraggedCard(card)}
                   />
                 ))}
                 {!column.cards.length && <div className="flex min-h-28 flex-col items-center justify-center rounded-xl border border-dashed bg-background/60 text-center"><CheckCircle2 className="size-6 text-muted-foreground" /><p className="mt-2 text-xs text-muted-foreground">Nenhum projeto nesta etapa</p></div>}
+              </KanbanColumn>
+            ))}
+          </div>
+          <DragOverlay>
+            {activeCard ? (
+              <div className="w-[min(86vw,340px)]">
+                <KanbanCard
+                  card={activeCard}
+                  stageLabels={stageLabels}
+                  canMove={false}
+                  moving={false}
+                  onMove={() => undefined}
+                  overlay
+                />
               </div>
-            </section>
-          ))}
-        </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
     </div>
   )

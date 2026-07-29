@@ -12,6 +12,7 @@ import {
   ListTodo,
   Loader2,
   PackageSearch,
+  Radar,
   RefreshCw,
   ShieldAlert,
   Sparkles,
@@ -37,6 +38,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ItemDescription } from "@/components/item-description"
+import { PageHeader } from "@/components/page-header"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { dashboardService } from "@/features/dashboard/dashboard.service"
@@ -445,18 +447,13 @@ export function OperationalDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-        <div>
-          <Badge className="mb-3">Dashboard operacional</Badge>
-          <h1 className="text-3xl font-semibold tracking-tight">Visão geral da operação</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Projetos, pendências documentais, alertas e posição atual dos itens da ATA com dados da API.
-          </p>
-          {dashboardQuery.data && (
-            <p className="mt-2 text-xs text-muted-foreground">Atualizado em {formatDate(dashboardQuery.data.generatedAt)}</p>
-          )}
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row">
+      <PageHeader
+        eyebrow="Dashboard operacional"
+        title="Visão geral da operação"
+        description="Projetos, pendências documentais, alertas e posição atual dos itens da ATA com dados da API."
+        icon={Radar}
+        meta={dashboardQuery.data ? `Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}` : undefined}
+        actions={<>
           <Select value={String(staleDays)} onValueChange={(value) => setStaleDays(Number(value))}>
             <SelectTrigger className="w-full sm:w-52" aria-label="Período sem avanço"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -470,8 +467,8 @@ export function OperationalDashboardPage() {
             {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
             Atualizar
           </Button>
-        </div>
-      </div>
+        </>}
+      />
 
       {dashboardQuery.isError && (
         <Alert variant="destructive">

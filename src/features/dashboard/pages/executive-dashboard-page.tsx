@@ -34,6 +34,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { FilterToolbar } from "@/components/filter-toolbar"
+import { PageHeader } from "@/components/page-header"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -452,27 +454,19 @@ export function ExecutiveDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-end">
-        <div>
-          <Badge className="mb-3">Dashboard executivo</Badge>
-          <h1 className="text-3xl font-semibold tracking-tight">Visão gerencial do portfólio</h1>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
-            Indicadores consolidados de projetos, documentos, investimentos e saldos das ATAs.
-          </p>
-          {dashboardQuery.data && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {dashboardQuery.data.filter.label} · Atualizado em {formatDate(dashboardQuery.data.generatedAt)}
-            </p>
-          )}
-        </div>
-        <Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()} disabled={dashboardQuery.isFetching || isInvalidInterval}>
+      <PageHeader
+        eyebrow="Dashboard executivo"
+        title="Visão gerencial do portfólio"
+        description="Indicadores consolidados de projetos, documentos, investimentos e saldos das ATAs."
+        icon={BarChart3}
+        meta={dashboardQuery.data ? `${dashboardQuery.data.filter.label} · Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}` : undefined}
+        actions={<Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()} disabled={dashboardQuery.isFetching || isInvalidInterval}>
           {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
           Atualizar
-        </Button>
-      </div>
+        </Button>}
+      />
 
-      <Card className="border-none shadow-sm">
-        <CardContent className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-4">
+      <FilterToolbar className="gap-4 xl:grid-cols-4">
           <div className="space-y-2">
             <Label>Período de análise</Label>
             <Select value={mode} onValueChange={(value) => setMode(value as ExecutiveFilterMode)}>
@@ -555,8 +549,7 @@ export function ExecutiveDashboardPage() {
               <Button variant="ghost" size="sm" className="ml-auto" onClick={() => { setStateUf("all"); setOmId("all"); setProjectType("all"); setOwnerId("all") }}>Limpar filtros da carteira</Button>
             )}
           </div>
-        </CardContent>
-      </Card>
+      </FilterToolbar>
 
       {isInvalidInterval && (
         <Alert variant="destructive">
