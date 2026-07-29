@@ -63,6 +63,11 @@ de CORS no ambiente local. O proxy remove o cabeçalho `Origin` antes de chamar
 a API, caracterizando corretamente a segunda etapa como comunicação
 servidor-a-servidor. Reinicie `npm run dev` após alterar essas variáveis.
 
+Se o Vite registrar `ECONNREFUSED`, confirme primeiro se
+`http://localhost:3000/api/health` responde. Ao executar o backend por Docker,
+mantenha `API_PORT=3000` no `.env` do backend e recrie o serviço da API após
+alterar a porta.
+
 Se optar por acessar a API diretamente pelo navegador, inclua a origem do Vite
 na configuração do backend:
 
