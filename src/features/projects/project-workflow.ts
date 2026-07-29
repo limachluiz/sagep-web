@@ -7,6 +7,8 @@ export const orderedWorkflowStages: Array<{ stage: ProjectStage; shortLabel: str
   { stage: "DIEX_REQUISITORIO", shortLabel: "DIEx" },
   { stage: "AGUARDANDO_NOTA_EMPENHO", shortLabel: "Empenho" },
   { stage: "OS_LIBERADA", shortLabel: "OS" },
+  { stage: "AGUARDANDO_OS_ASSINADA", shortLabel: "Assinatura" },
+  { stage: "AGUARDANDO_INICIO_EXECUCAO", shortLabel: "Início" },
   { stage: "SERVICO_EM_EXECUCAO", shortLabel: "Execução" },
   { stage: "ANALISANDO_AS_BUILT", shortLabel: "As-Built" },
   { stage: "ATESTAR_NF", shortLabel: "Atesto NF" },

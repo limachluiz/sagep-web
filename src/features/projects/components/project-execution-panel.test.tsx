@@ -14,6 +14,13 @@ function details(
     workflow: {
       stage,
       milestones,
+      serviceOrderSignature: {
+        required: true,
+        link: null,
+        receivedAt: null,
+        notes: null,
+        registeredBy: null,
+      },
       nextAction: {
         code: "TEST",
         label: "Próxima ação de teste",
@@ -44,6 +51,23 @@ describe("painel de execução do projeto", () => {
       }),
     )
     expect(receiveAsBuilt).toHaveBeenCalledOnce()
+  })
+
+  it("oferece o registro da OS assinada antes da execução", async () => {
+    const user = userEvent.setup()
+    const registerSignedServiceOrder = vi.fn()
+
+    render(
+      <ProjectExecutionPanel
+        details={details("AGUARDANDO_OS_ASSINADA", {
+          serviceOrderIssuedAt: "2026-07-20T00:00:00.000Z",
+        })}
+        actions={{ registerSignedServiceOrder }}
+      />,
+    )
+
+    await user.click(screen.getByRole("button", { name: "Registrar OS assinada" }))
+    expect(registerSignedServiceOrder).toHaveBeenCalledOnce()
   })
 
   it("destaca correção do As-Built e tarefas abertas", () => {

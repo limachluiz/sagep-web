@@ -81,7 +81,9 @@ export function buildProjectExecutionFlow(
   ]
 
   const currentKey: ProjectExecutionStepKey | null =
-    details.workflow.stage === "OS_LIBERADA"
+    details.workflow.stage === "OS_LIBERADA" ||
+    details.workflow.stage === "AGUARDANDO_OS_ASSINADA" ||
+    details.workflow.stage === "AGUARDANDO_INICIO_EXECUCAO"
       ? "execution"
       : details.workflow.stage === "SERVICO_EM_EXECUCAO"
         ? "as-built-receipt"

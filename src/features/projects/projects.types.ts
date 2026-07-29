@@ -164,6 +164,12 @@ export type AsBuiltReviewPayload =
   | { approved: true; reviewedAt: string; asBuiltLink: string }
   | { approved: false; reviewedAt: string; rejectionReason: string }
 
+export type SignedServiceOrderPayload = {
+  signedServiceOrderLink: string
+  signedServiceOrderReceivedAt: string
+  signedServiceOrderNotes?: string
+}
+
 export type AddProjectMemberPayload = {
   userId: string
   role?: string
@@ -247,6 +253,13 @@ export type ProjectDetailsResponse = {
       targetStage?: ProjectStage
     }
     milestones: Record<string, string | null>
+    serviceOrderSignature: {
+      required: boolean
+      link: string | null
+      receivedAt: string | null
+      notes: string | null
+      registeredBy: ProjectPerson | null
+    }
   }
   pendingActions: Array<{
     code: string

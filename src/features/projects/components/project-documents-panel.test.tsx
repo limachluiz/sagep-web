@@ -14,6 +14,13 @@ const details = {
       commitmentNoteReceivedAt: "2026-07-21T12:00:00.000Z",
       asBuiltLink: "https://example.com/as-built",
     },
+    serviceOrderSignature: {
+      required: true,
+      link: "https://example.com/os-assinada",
+      receivedAt: "2026-07-21T12:00:00.000Z",
+      notes: null,
+      registeredBy: null,
+    },
   },
   documents: {
     estimates: [{
@@ -62,10 +69,11 @@ describe("documentos do projeto", () => {
       </MemoryRouter>,
     )
 
-    expect(screen.getByRole("link", { name: /Abrir arquivo/ })).toHaveAttribute(
-      "href",
-      "https://example.com/as-built",
-    )
+    expect(
+      screen.getAllByRole("link", { name: /Abrir arquivo/ }).map((link) =>
+        link.getAttribute("href"),
+      ),
+    ).toEqual(["https://example.com/as-built", "https://example.com/os-assinada"])
 
     const links = screen.getAllByRole("link", { name: /Abrir documento/ })
     expect(links.map((link) => link.getAttribute("href"))).toEqual([

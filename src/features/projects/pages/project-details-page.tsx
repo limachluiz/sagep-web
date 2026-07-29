@@ -10,6 +10,7 @@ import {
   Clock3,
   Edit3,
   FileCheck2,
+  FileSignature,
   FileSpreadsheet,
   Landmark,
   ListChecks,
@@ -58,6 +59,7 @@ import { DateFlowDialog, ReviewAsBuiltDialog } from "@/features/projects/compone
 import { CreateDiexDialog } from "@/features/diex/components/create-diex-dialog"
 import { CreateServiceOrderDialog } from "@/features/service-orders/components/create-service-order-dialog"
 import { StartExecutionDialog } from "@/features/service-orders/components/start-execution-dialog"
+import { RegisterSignedServiceOrderDialog } from "@/features/service-orders/components/register-signed-service-order-dialog"
 import { projectsService } from "@/features/projects/projects.service"
 import { invalidateProjectFlow } from "@/features/projects/project-flow-cache"
 import {
@@ -94,6 +96,8 @@ const stageLabels: Record<ProjectStage, string> = {
   DIEX_REQUISITORIO: "DIEx requisitório",
   AGUARDANDO_NOTA_EMPENHO: "Aguardando Nota de Empenho",
   OS_LIBERADA: "OS liberada",
+  AGUARDANDO_OS_ASSINADA: "Aguardando OS assinada",
+  AGUARDANDO_INICIO_EXECUCAO: "Aguardando início da execução",
   SERVICO_EM_EXECUCAO: "Serviço em execução",
   ANALISANDO_AS_BUILT: "Analisando As-Built",
   ATESTAR_NF: "Atestar NF",
@@ -110,6 +114,8 @@ const milestoneLabels: Record<string, string> = {
   commitmentNoteReceivedAt: "Recebimento da Nota de Empenho",
   serviceOrderNumber: "Número da Ordem de Serviço",
   serviceOrderIssuedAt: "Emissão da Ordem de Serviço",
+  signedServiceOrderLink: "Link da OS assinada",
+  signedServiceOrderReceivedAt: "Recebimento da OS assinada",
   executionStartedAt: "Início da execução",
   asBuiltReceivedAt: "Recebimento do As-Built",
   asBuiltReviewedAt: "Análise do As-Built",
@@ -303,6 +309,7 @@ export function ProjectDetailsPage() {
   const [commitmentNoteOpen, setCommitmentNoteOpen] = useState(false)
   const [cancelCommitmentNoteOpen, setCancelCommitmentNoteOpen] = useState(false)
   const [createServiceOrderOpen, setCreateServiceOrderOpen] = useState(false)
+  const [registerSignedServiceOrderOpen, setRegisterSignedServiceOrderOpen] = useState(false)
   const [startExecutionOpen, setStartExecutionOpen] = useState(false)
   const [receiveAsBuiltOpen, setReceiveAsBuiltOpen] = useState(false)
   const [reviewAsBuiltOpen, setReviewAsBuiltOpen] = useState(false)
@@ -423,6 +430,8 @@ export function ProjectDetailsPage() {
     "DIEX_REQUISITORIO",
     "AGUARDANDO_NOTA_EMPENHO",
     "OS_LIBERADA",
+    "AGUARDANDO_OS_ASSINADA",
+    "AGUARDANDO_INICIO_EXECUCAO",
   ].includes(details.workflow.stage)
   const canRestore = Boolean(details.project.archivedAt) && hasPermission("projects.restore")
   const canDelete = Boolean(details.project.archivedAt) && hasPermission("projects.delete")
@@ -442,12 +451,20 @@ export function ProjectDetailsPage() {
   const canCancelCommitmentNote = canManage && !details.project.archivedAt
     && Boolean(details.workflow.milestones.commitmentNoteNumber || details.workflow.milestones.commitmentNoteReceivedAt)
   const canIssueServiceOrder = hasPermission("service_orders.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA"
-  const canStartExecution = canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA" && details.documents.serviceOrders.some((order) => !order.archivedAt)
+  const canRegisterSignedServiceOrder = canManage && !details.project.archivedAt
+    && details.workflow.stage === "AGUARDANDO_OS_ASSINADA"
+    && details.documents.serviceOrders.some((order) => !order.archivedAt)
+  const canStartExecution = canManage && !details.project.archivedAt
+    && (details.workflow.stage === "AGUARDANDO_INICIO_EXECUCAO"
+      || (details.workflow.stage === "OS_LIBERADA"
+        && !details.workflow.serviceOrderSignature.required))
+    && details.documents.serviceOrders.some((order) => !order.archivedAt)
   const canReceiveAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "SERVICO_EM_EXECUCAO"
   const canReviewAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "ANALISANDO_AS_BUILT"
   const canAttestInvoice = canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && !details.workflow.milestones.invoiceAttestedAt
   const canCompleteService = hasPermission("projects.complete") && canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && Boolean(details.workflow.milestones.invoiceAttestedAt)
   const executionActions = {
+    ...(canRegisterSignedServiceOrder ? { registerSignedServiceOrder: () => setRegisterSignedServiceOrderOpen(true) } : {}),
     ...(canStartExecution ? { startExecution: () => setStartExecutionOpen(true) } : {}),
     ...(canReceiveAsBuilt ? { receiveAsBuilt: () => setReceiveAsBuiltOpen(true) } : {}),
     ...(canReviewAsBuilt ? { reviewAsBuilt: () => setReviewAsBuiltOpen(true) } : {}),
@@ -464,6 +481,8 @@ export function ProjectDetailsPage() {
           ? { label: "Receber As-Built", icon: PackageCheck, run: () => setReceiveAsBuiltOpen(true) }
           : canStartExecution
             ? { label: "Iniciar execução", icon: Play, run: () => setStartExecutionOpen(true) }
+            : canRegisterSignedServiceOrder
+              ? { label: "Registrar OS assinada", icon: FileSignature, run: () => setRegisterSignedServiceOrderOpen(true) }
             : canIssueServiceOrder
               ? { label: "Emitir OS", icon: FileCheck2, run: () => setCreateServiceOrderOpen(true) }
               : canRegisterCommitmentNote
@@ -668,6 +687,8 @@ export function ProjectDetailsPage() {
       )}
 
       {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { invalidateProjectFlow(queryClient); navigate(`/service-orders/${order.id}`) }} />}
+
+      {registerSignedServiceOrderOpen && <RegisterSignedServiceOrderDialog projectId={details.project.id} projectCode={details.project.projectCode} serviceOrderIssuedAt={activeDocuments.serviceOrder?.issuedAt ?? undefined} open={registerSignedServiceOrderOpen} onOpenChange={setRegisterSignedServiceOrderOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
       {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} serviceOrderIssuedAt={activeDocuments.serviceOrder?.issuedAt ?? undefined} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 

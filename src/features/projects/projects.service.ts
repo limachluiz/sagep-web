@@ -12,6 +12,7 @@ import type {
   ProjectsListFilters,
   ProjectsListResponse,
   FederativeUnit,
+  SignedServiceOrderPayload,
   ProjectType,
 } from "./projects.types"
 
@@ -90,6 +91,13 @@ export const projectsService = {
 
   reviewAsBuilt(projectId: string, payload: AsBuiltReviewPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}/as-built/review`, payload)
+  },
+
+  registerSignedServiceOrder(projectId: string, payload: SignedServiceOrderPayload) {
+    return api.patch<ProjectMutationResponse>(
+      `/projects/${projectId}/service-order/signature`,
+      payload,
+    )
   },
 
   moveKanban(projectId: string, stage: string) {

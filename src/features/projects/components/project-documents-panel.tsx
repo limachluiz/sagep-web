@@ -2,6 +2,7 @@ import {
   ClipboardCheck,
   ExternalLink,
   FileCheck2,
+  FileSignature,
   FileSpreadsheet,
   FolderOpen,
 } from "lucide-react"
@@ -84,6 +85,7 @@ export function ProjectDocumentsPanel({
   ]
 
   const asBuiltLink = details.workflow.milestones.asBuiltLink
+  const signedServiceOrderLink = details.workflow.serviceOrderSignature?.link
 
   return (
     <div className="space-y-6">
@@ -93,6 +95,7 @@ export function ProjectDocumentsPanel({
         onCancelCommitmentNote={onCancelCommitmentNote}
       />
 
+      <div className="grid gap-4 md:grid-cols-2">
       <Card className="border-none shadow-sm">
         <CardContent className="flex items-start gap-4 p-5">
           <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
@@ -112,6 +115,28 @@ export function ProjectDocumentsPanel({
           </div>
         </CardContent>
       </Card>
+      <Card className="border-none shadow-sm">
+        <CardContent className="flex items-start gap-4 p-5">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <FileSignature className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground">OS assinada</p>
+            <p className="mt-1 font-semibold">
+              {signedServiceOrderLink ? "Documento vinculado" : "Pendente"}
+            </p>
+            {signedServiceOrderLink && (
+              <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs">
+                <a href={signedServiceOrderLink} target="_blank" rel="noreferrer">
+                  Abrir arquivo
+                  <ExternalLink className="size-3" />
+                </a>
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+      </div>
 
       <div className="grid gap-6 xl:grid-cols-3">
         {groups.map((group) => {

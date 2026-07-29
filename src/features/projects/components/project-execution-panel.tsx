@@ -3,6 +3,7 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
+  FileSignature,
   FileSearch,
   PackageCheck,
   Play,
@@ -37,6 +38,7 @@ function formatDate(value: string | null) {
 }
 
 export type ProjectExecutionActions = {
+  registerSignedServiceOrder?: () => void
   startExecution?: () => void
   receiveAsBuilt?: () => void
   reviewAsBuilt?: () => void
@@ -61,6 +63,7 @@ export function ProjectExecutionPanel({
     actions.attestInvoice ??
     actions.reviewAsBuilt ??
     actions.receiveAsBuilt ??
+    actions.registerSignedServiceOrder ??
     actions.startExecution
   const currentActionLabel = actions.completeService
     ? "Concluir projeto"
@@ -74,6 +77,8 @@ export function ProjectExecutionPanel({
             : "Receber As-Built"
           : actions.startExecution
             ? "Iniciar execução"
+            : actions.registerSignedServiceOrder
+              ? "Registrar OS assinada"
             : null
 
   return (
@@ -213,6 +218,51 @@ export function ProjectExecutionPanel({
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
+        <Card className="border-none shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileSignature className="size-5 text-primary" />
+              Ordem de Serviço assinada
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {details.workflow.serviceOrderSignature.link ? (
+              <div className="rounded-xl border border-primary/20 bg-primary/5 p-4">
+                <p className="font-medium">Documento recebido e vinculado</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Recebido em {formatDate(details.workflow.serviceOrderSignature.receivedAt)}
+                  {details.workflow.serviceOrderSignature.registeredBy
+                    ? ` · registrado por ${details.workflow.serviceOrderSignature.registeredBy.name}`
+                    : ""}
+                </p>
+                {details.workflow.serviceOrderSignature.notes && (
+                  <p className="mt-3 text-sm">
+                    {details.workflow.serviceOrderSignature.notes}
+                  </p>
+                )}
+                <Button asChild variant="outline" size="sm" className="mt-4">
+                  <a
+                    href={details.workflow.serviceOrderSignature.link}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Abrir OS assinada
+                    <ExternalLink className="size-3.5" />
+                  </a>
+                </Button>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed p-6 text-center">
+                <FileSignature className="mx-auto size-8 text-muted-foreground" />
+                <p className="mt-3 text-sm font-medium">OS assinada pendente</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  O início da execução será liberado após o vínculo da versão assinada.
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">

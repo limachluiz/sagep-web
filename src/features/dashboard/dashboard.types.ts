@@ -4,6 +4,8 @@ export type ProjectStage =
   | "DIEX_REQUISITORIO"
   | "AGUARDANDO_NOTA_EMPENHO"
   | "OS_LIBERADA"
+  | "AGUARDANDO_OS_ASSINADA"
+  | "AGUARDANDO_INICIO_EXECUCAO"
   | "SERVICO_EM_EXECUCAO"
   | "ANALISANDO_AS_BUILT"
   | "ATESTAR_NF"
@@ -102,6 +104,7 @@ export type DashboardOperationalResponse = {
     awaitingDiex: number
     awaitingCommitmentNote: number
     awaitingServiceOrder: number
+    awaitingSignedServiceOrder: number
     awaitingExecutionStart: number
     awaitingAsBuilt: number
     awaitingInvoiceAttestation: number

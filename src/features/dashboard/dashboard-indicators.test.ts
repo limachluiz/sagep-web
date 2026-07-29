@@ -21,13 +21,13 @@ describe("dashboard indicators", () => {
 
   it("consolida a pressão operacional", () => {
     const data = {
-      pendingByStage: { awaitingCreditNote: 1, awaitingDiex: 2, awaitingCommitmentNote: 3, awaitingServiceOrder: 4, awaitingExecutionStart: 5, awaitingAsBuilt: 6, awaitingInvoiceAttestation: 7 },
+      pendingByStage: { awaitingCreditNote: 1, awaitingDiex: 2, awaitingCommitmentNote: 3, awaitingServiceOrder: 4, awaitingSignedServiceOrder: 5, awaitingExecutionStart: 6, awaitingAsBuilt: 7, awaitingInvoiceAttestation: 8 },
       alerts: { summary: { bySeverity: { CRITICAL: 2, WARNING: 3, INFO: 1 } } },
       staleProjects: [{}, {}],
       inventory: { summary: { lowStockItems: 4, insufficientItems: 2 } },
     } as DashboardOperationalResponse
 
-    expect(operationalIndicators(data)).toEqual({ totalPending: 28, inventoryAtRisk: 6, urgentAlerts: 5, staleProjects: 2 })
-    expect(buildOperationalWorkflow(data).map((step) => step.count)).toEqual([1, 2, 3, 4, 5, 6, 7])
+    expect(operationalIndicators(data)).toEqual({ totalPending: 36, inventoryAtRisk: 6, urgentAlerts: 5, staleProjects: 2 })
+    expect(buildOperationalWorkflow(data).map((step) => step.count)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
   })
 })

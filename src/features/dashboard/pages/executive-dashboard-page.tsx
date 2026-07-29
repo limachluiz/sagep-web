@@ -66,6 +66,8 @@ const stageLabels: Record<ProjectStage, string> = {
   DIEX_REQUISITORIO: "DIEx",
   AGUARDANDO_NOTA_EMPENHO: "Aguardando NE",
   OS_LIBERADA: "OS liberada",
+  AGUARDANDO_OS_ASSINADA: "Aguardando OS assinada",
+  AGUARDANDO_INICIO_EXECUCAO: "Aguardando início",
   SERVICO_EM_EXECUCAO: "Em execução",
   ANALISANDO_AS_BUILT: "As-Built",
   ATESTAR_NF: "Atestar NF",

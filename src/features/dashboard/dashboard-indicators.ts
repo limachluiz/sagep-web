@@ -37,7 +37,8 @@ export function buildOperationalWorkflow(data: DashboardOperationalResponse) {
     { label: "Nota de Crédito", shortLabel: "NC", count: pending.awaitingDiex },
     { label: "DIEx", shortLabel: "DIEx", count: pending.awaitingCommitmentNote },
     { label: "Nota de Empenho", shortLabel: "NE", count: pending.awaitingServiceOrder },
-    { label: "Ordem de Serviço", shortLabel: "OS", count: pending.awaitingExecutionStart },
+    { label: "Ordem de Serviço", shortLabel: "OS", count: pending.awaitingSignedServiceOrder },
+    { label: "Início da execução", shortLabel: "Início", count: pending.awaitingExecutionStart },
     { label: "Execução", shortLabel: "EXEC", count: pending.awaitingAsBuilt },
     { label: "As-Built / Atesto", shortLabel: "FINAL", count: pending.awaitingInvoiceAttestation },
   ]

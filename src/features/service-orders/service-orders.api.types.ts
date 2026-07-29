@@ -37,7 +37,24 @@ export type ServiceOrder = {
   deletedAt: string | null
   createdAt: string
   updatedAt: string
-  project: { id: string; projectCode: number; title: string; stage: string; status: string }
+  project: {
+    id: string
+    projectCode: number
+    title: string
+    stage: string
+    status: string
+    serviceOrderSignatureRequired: boolean
+    signedServiceOrderLink: string | null
+    signedServiceOrderReceivedAt: string | null
+    signedServiceOrderNotes: string | null
+    signedServiceOrderRegisteredBy: {
+      id: string
+      userCode: number
+      name: string
+      email: string
+      role: string
+    } | null
+  }
   estimate: {
     id: string
     estimateCode: number

@@ -35,6 +35,7 @@ export function buildProjectDocumentFlow(details: ProjectDetailsResponse): Proje
     milestones.commitmentNoteNumber || milestones.commitmentNoteReceivedAt,
   )
   const serviceOrderReady = Boolean(serviceOrder?.serviceOrderNumber && serviceOrder.issuedAt)
+  const signedServiceOrderReady = Boolean(details.workflow.serviceOrderSignature?.link)
 
   const steps = [
     {
@@ -81,7 +82,13 @@ export function buildProjectDocumentFlow(details: ProjectDetailsResponse): Proje
       key: "service-order" as const,
       label: "Ordem de Serviço",
       code: serviceOrder?.serviceOrderNumber ?? (serviceOrder ? `OS-${serviceOrder.serviceOrderCode}` : null),
-      description: serviceOrderReady ? "Emitida e pronta para execução" : "Aguardando emissão",
+      description: !serviceOrderReady
+        ? "Aguardando emissão"
+        : signedServiceOrderReady
+          ? "Assinada e pronta para início"
+          : details.workflow.serviceOrderSignature?.required
+            ? "Emitida, aguardando assinatura"
+            : "Emitida — registro legado",
       completed: serviceOrderReady,
       href: serviceOrder ? `/service-orders/${serviceOrder.id}` : null,
       amount: serviceOrder?.totalAmount ?? null,
