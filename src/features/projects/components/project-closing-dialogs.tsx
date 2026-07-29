@@ -1,9 +1,10 @@
 import { useMemo, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { CheckCircle2, FileSearch, Loader2, RotateCcw } from "lucide-react"
+import { AlertTriangle, CheckCircle2, FileSearch, Loader2, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,10 @@ type DateFlowDialogProps = {
   successMessage: string
   submitLabel: string
   payload: (date: string) => ProjectFlowPayload
+  minDate?: string
+  minDateLabel?: string
+  warning?: string
+  confirmationLabel?: string
 }
 
 export function DateFlowDialog({
@@ -50,8 +55,22 @@ export function DateFlowDialog({
   successMessage,
   submitLabel,
   payload,
+  minDate,
+  minDateLabel,
+  warning,
+  confirmationLabel,
 }: DateFlowDialogProps) {
   const [date, setDate] = useState(todayInputValue)
+  const [confirmed, setConfirmed] = useState(false)
+  const [today] = useState(todayInputValue)
+  const validationError = useMemo(() => {
+    if (!date) return "Informe a data."
+    if (date > today) return "A data não pode estar no futuro."
+    if (minDate && date < minDate) {
+      return `A data não pode ser anterior a ${minDateLabel ?? "etapa precedente"}.`
+    }
+    return null
+  }, [date, minDate, minDateLabel, today])
   const mutation = useMutation({
     mutationFn: () => projectsService.updateFlow(projectId, payload(date)),
     onSuccess: () => {
@@ -71,11 +90,42 @@ export function DateFlowDialog({
         </DialogHeader>
         <div className="space-y-2">
           <Label htmlFor="workflow-date">{fieldLabel}</Label>
-          <Input id="workflow-date" type="date" value={date} onChange={(event) => setDate(event.target.value)} autoFocus />
+          <Input
+            id="workflow-date"
+            type="date"
+            min={minDate}
+            max={today}
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+            aria-invalid={Boolean(validationError)}
+            autoFocus
+          />
         </div>
+        {validationError && <p className="text-sm font-medium text-destructive">{validationError}</p>}
+        {warning && (
+          <Alert>
+            <AlertTriangle />
+            <AlertTitle>Atenção antes de continuar</AlertTitle>
+            <AlertDescription>{warning}</AlertDescription>
+          </Alert>
+        )}
+        {confirmationLabel && (
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-3 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-primary"
+              checked={confirmed}
+              onChange={(event) => setConfirmed(event.target.checked)}
+            />
+            <span>{confirmationLabel}</span>
+          </label>
+        )}
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>Cancelar</Button>
-          <Button onClick={() => mutation.mutate()} disabled={!date || mutation.isPending}>
+          <Button
+            onClick={() => mutation.mutate()}
+            disabled={Boolean(validationError) || Boolean(confirmationLabel && !confirmed) || mutation.isPending}
+          >
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}{submitLabel}
           </Button>
         </DialogFooter>
@@ -90,15 +140,21 @@ type ReviewAsBuiltDialogProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
+  receivedAt?: string
 }
 
-export function ReviewAsBuiltDialog({ projectId, projectCode, open, onOpenChange, onSaved }: ReviewAsBuiltDialogProps) {
+export function ReviewAsBuiltDialog({ projectId, projectCode, open, onOpenChange, onSaved, receivedAt }: ReviewAsBuiltDialogProps) {
   const [approved, setApproved] = useState(true)
   const [reviewedAt, setReviewedAt] = useState(todayInputValue)
+  const [today] = useState(todayInputValue)
   const [asBuiltLink, setAsBuiltLink] = useState("")
   const [rejectionReason, setRejectionReason] = useState("")
   const validationError = useMemo(() => {
     if (!reviewedAt) return "Informe a data da análise."
+    if (reviewedAt > today) return "A data da análise não pode estar no futuro."
+    if (receivedAt && reviewedAt < receivedAt.slice(0, 10)) {
+      return "A análise não pode ser anterior ao recebimento do As-Built."
+    }
     if (!approved) return rejectionReason.trim().length >= 3 ? null : "Informe o motivo da reprovação."
     try {
       new URL(asBuiltLink.trim())
@@ -106,7 +162,7 @@ export function ReviewAsBuiltDialog({ projectId, projectCode, open, onOpenChange
     } catch {
       return "Informe um link válido para o As-Built."
     }
-  }, [approved, asBuiltLink, rejectionReason, reviewedAt])
+  }, [approved, asBuiltLink, receivedAt, rejectionReason, reviewedAt, today])
 
   const mutation = useMutation({
     mutationFn: () => approved
@@ -134,7 +190,15 @@ export function ReviewAsBuiltDialog({ projectId, projectCode, open, onOpenChange
         </div>
         <div className="space-y-2">
           <Label htmlFor="as-built-reviewed-at">Data da análise</Label>
-          <Input id="as-built-reviewed-at" type="date" value={reviewedAt} onChange={(event) => setReviewedAt(event.target.value)} />
+          <Input
+            id="as-built-reviewed-at"
+            type="date"
+            min={receivedAt?.slice(0, 10)}
+            max={today}
+            value={reviewedAt}
+            onChange={(event) => setReviewedAt(event.target.value)}
+            aria-invalid={Boolean(validationError)}
+          />
         </div>
         {approved ? (
           <div className="space-y-2">

@@ -8,6 +8,7 @@ import {
 describe("abas dos detalhes do projeto", () => {
   it("resolve abas válidas e protege tarefas e auditoria por permissão", () => {
     expect(resolveProjectDetailsTab("documents", true, false)).toBe("documents")
+    expect(resolveProjectDetailsTab("execution", true, false)).toBe("execution")
     expect(resolveProjectDetailsTab("team", true, false)).toBe("team")
     expect(resolveProjectDetailsTab("tasks", true, false)).toBe("tasks")
     expect(resolveProjectDetailsTab("tasks", false, false)).toBe("overview")

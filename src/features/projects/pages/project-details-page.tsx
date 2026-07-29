@@ -39,12 +39,14 @@ import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { ProjectAuditPanel } from "@/features/projects/components/project-audit-panel"
 import { ProjectDocumentsPanel } from "@/features/projects/components/project-documents-panel"
+import { ProjectExecutionPanel } from "@/features/projects/components/project-execution-panel"
 import { CancelCommitmentNoteDialog } from "@/features/projects/components/cancel-commitment-note-dialog"
 import { ProjectFinancialCard } from "@/features/projects/components/project-financial-card"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
 import { ProjectTeamSummary } from "@/features/projects/components/project-team-summary"
 import { ProjectTasksOverview, ProjectTasksPanel } from "@/features/projects/components/project-tasks-panel"
 import { ProjectWorkflowProgress } from "@/features/projects/components/project-workflow-progress"
+import { dateInputValue } from "@/features/projects/project-execution-flow"
 import {
   resolveProjectDetailsTab,
   searchParamsForProjectTab,
@@ -439,6 +441,13 @@ export function ProjectDetailsPage() {
   const canReviewAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "ANALISANDO_AS_BUILT"
   const canAttestInvoice = canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && !details.workflow.milestones.invoiceAttestedAt
   const canCompleteService = hasPermission("projects.complete") && canManage && !details.project.archivedAt && details.workflow.stage === "ATESTAR_NF" && Boolean(details.workflow.milestones.invoiceAttestedAt)
+  const executionActions = {
+    ...(canStartExecution ? { startExecution: () => setStartExecutionOpen(true) } : {}),
+    ...(canReceiveAsBuilt ? { receiveAsBuilt: () => setReceiveAsBuiltOpen(true) } : {}),
+    ...(canReviewAsBuilt ? { reviewAsBuilt: () => setReviewAsBuiltOpen(true) } : {}),
+    ...(canAttestInvoice ? { attestInvoice: () => setInvoiceAttestationOpen(true) } : {}),
+    ...(canCompleteService ? { completeService: () => setCompleteServiceOpen(true) } : {}),
+  }
   const primaryAction = canCompleteService
     ? { label: "Concluir serviço", icon: CheckCircle2, run: () => setCompleteServiceOpen(true) }
     : canAttestInvoice
@@ -510,6 +519,7 @@ export function ProjectDetailsPage() {
       <Tabs value={activeTab} onValueChange={(value) => selectTab(value as ProjectDetailsTab)}>
         <TabsList className="mb-5 max-w-full overflow-x-auto">
           <TabsTrigger value="overview"><UserRound data-icon="inline-start" />Visão geral</TabsTrigger>
+          <TabsTrigger value="execution"><Play data-icon="inline-start" />Execução</TabsTrigger>
           {canViewTasks && <TabsTrigger value="tasks"><ListChecks data-icon="inline-start" />Tarefas <Badge variant="outline" className="ml-1">{details.tasks.length}</Badge></TabsTrigger>}
           <TabsTrigger value="documents"><FileCheck2 data-icon="inline-start" />Documentos</TabsTrigger>
           <TabsTrigger value="team"><Users data-icon="inline-start" />Equipe <Badge variant="outline" className="ml-1">{details.operationalSummary.membersCount + 1}</Badge></TabsTrigger>
@@ -527,6 +537,9 @@ export function ProjectDetailsPage() {
             onShowTeam={() => selectTab("team")}
             onShowTasks={() => selectTab("tasks")}
           />
+        </TabsContent>
+        <TabsContent value="execution">
+          <ProjectExecutionPanel details={details} actions={executionActions} />
         </TabsContent>
         {canViewTasks && (
           <TabsContent value="tasks">
@@ -650,15 +663,15 @@ export function ProjectDetailsPage() {
 
       {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { invalidateProjectFlow(queryClient); navigate(`/service-orders/${order.id}`) }} />}
 
-      {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["service-orders-gantt"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+      {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} serviceOrderIssuedAt={activeDocuments.serviceOrder?.issuedAt ?? undefined} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
-      {receiveAsBuiltOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={receiveAsBuiltOpen} onOpenChange={setReceiveAsBuiltOpen} title="Receber As-Built" description="Registre a data de recebimento para encaminhar o documento à análise técnica." fieldLabel="Data de recebimento" successMessage="Recebimento do As-Built registrado" submitLabel="Registrar recebimento" payload={(date) => ({ stage: "ANALISANDO_AS_BUILT", asBuiltReceivedAt: date })} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+      {receiveAsBuiltOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={receiveAsBuiltOpen} onOpenChange={setReceiveAsBuiltOpen} title="Receber As-Built" description="Registre a data de recebimento para encaminhar o documento à análise técnica." fieldLabel="Data de recebimento" successMessage="Recebimento do As-Built registrado" submitLabel="Registrar recebimento" minDate={dateInputValue(details.workflow.milestones.executionStartedAt)} minDateLabel="data de início da execução" payload={(date) => ({ stage: "ANALISANDO_AS_BUILT", asBuiltReceivedAt: date })} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
-      {reviewAsBuiltOpen && <ReviewAsBuiltDialog projectId={details.project.id} projectCode={details.project.projectCode} open={reviewAsBuiltOpen} onOpenChange={setReviewAsBuiltOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+      {reviewAsBuiltOpen && <ReviewAsBuiltDialog projectId={details.project.id} projectCode={details.project.projectCode} receivedAt={details.workflow.milestones.asBuiltReceivedAt ?? undefined} open={reviewAsBuiltOpen} onOpenChange={setReviewAsBuiltOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
-      {invoiceAttestationOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={invoiceAttestationOpen} onOpenChange={setInvoiceAttestationOpen} title="Atestar Nota Fiscal" description="Confirme a data do atesto da Nota Fiscal após a aprovação do As-Built." fieldLabel="Data do atesto" successMessage="Atesto da Nota Fiscal registrado" submitLabel="Registrar atesto" payload={(date) => ({ stage: "ATESTAR_NF", invoiceAttestedAt: date })} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
+      {invoiceAttestationOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={invoiceAttestationOpen} onOpenChange={setInvoiceAttestationOpen} title="Atestar Nota Fiscal" description="Confirme a data do atesto da Nota Fiscal após a aprovação do As-Built." fieldLabel="Data do atesto" successMessage="Atesto da Nota Fiscal registrado" submitLabel="Registrar atesto" minDate={dateInputValue(details.workflow.milestones.asBuiltApprovedAt)} minDateLabel="data de aprovação do As-Built" payload={(date) => ({ stage: "ATESTAR_NF", invoiceAttestedAt: date })} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
-      {completeServiceOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={completeServiceOpen} onOpenChange={setCompleteServiceOpen} title="Concluir serviço" description="Registre a conclusão definitiva do serviço. Esta ação encerra o workflow do projeto." fieldLabel="Data de conclusão" successMessage="Serviço concluído" submitLabel="Concluir serviço" payload={(date) => ({ stage: "SERVICO_CONCLUIDO", serviceCompletedAt: date })} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["service-orders-gantt"] }) }} />}
+      {completeServiceOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={completeServiceOpen} onOpenChange={setCompleteServiceOpen} title="Concluir serviço" description="Registre a conclusão definitiva do serviço. Esta ação encerra o workflow do projeto." fieldLabel="Data de conclusão" successMessage="Serviço concluído" submitLabel="Concluir serviço" minDate={dateInputValue(details.workflow.milestones.invoiceAttestedAt)} minDateLabel="data de atesto da Nota Fiscal" warning={details.operationalSummary.openTasksCount ? `O projeto ainda possui ${details.operationalSummary.openTasksCount} tarefa(s) aberta(s). Elas permanecerão registradas após o encerramento.` : undefined} confirmationLabel={details.operationalSummary.openTasksCount ? "Confirmo que revisei as tarefas abertas e desejo concluir o projeto mesmo assim." : undefined} payload={(date) => ({ stage: "SERVICO_CONCLUIDO", serviceCompletedAt: date })} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
     </div>
   )
 }
