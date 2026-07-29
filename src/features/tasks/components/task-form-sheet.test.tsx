@@ -83,4 +83,14 @@ describe("TaskFormSheet", () => {
       assigneeId: "user-7",
     })))
   })
+
+  it("usa um painel lateral compacto no desktop e responsivo no celular", () => {
+    renderForm()
+
+    expect(document.querySelector('[data-slot="sheet-content"]')).toHaveClass(
+      "w-full",
+      "sm:w-[30rem]",
+      "sm:max-w-[30rem]",
+    )
+  })
 })

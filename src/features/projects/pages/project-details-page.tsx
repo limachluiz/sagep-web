@@ -72,7 +72,7 @@ import type {
   ProjectMutationPayload,
   ProjectStatus,
 } from "@/features/projects/projects.types"
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { toast } from "sonner"
 
 const statusLabels: Record<ProjectStatus, string> = {
@@ -311,13 +311,19 @@ export function ProjectDetailsPage() {
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [createTaskOpen, setCreateTaskOpen] = useState(false)
+  const tabsSectionRef = useRef<HTMLDivElement>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const includeArchived = searchParams.get("includeArchived") === "true"
   const canViewTasks = hasPermission("tasks.view_all") || hasPermission("tasks.create") || hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete") || hasPermission("tasks.assign") || hasPermission("tasks.archive") || hasPermission("tasks.restore") || hasPermission("tasks.delete")
   const canViewAudit = hasPermission("audit.view")
   const activeTab = resolveProjectDetailsTab(searchParams.get("tab"), canViewTasks, canViewAudit)
-  const selectTab = (tab: ProjectDetailsTab) => {
+  const selectTab = (tab: ProjectDetailsTab, scrollIntoView = false) => {
     setSearchParams(searchParamsForProjectTab(searchParams, tab), { replace: true })
+    if (scrollIntoView) {
+      requestAnimationFrame(() => {
+        tabsSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+      })
+    }
   }
   const detailsQuery = useQuery({
     queryKey: ["projects", "details", projectId, includeArchived],
@@ -347,7 +353,7 @@ export function ProjectDetailsPage() {
     onSuccess: (task) => {
       toast.success(`Tarefa TSK-${task.taskCode} criada com sucesso.`)
       setCreateTaskOpen(false)
-      selectTab("tasks")
+      selectTab("tasks", true)
       invalidateTaskContext()
     },
     onError: (error) => toast.error(error.message),
@@ -489,7 +495,7 @@ export function ProjectDetailsPage() {
               <p className="mt-3 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">{details.project.description || "Projeto sem descrição cadastrada."}</p>
             </div>
             <div className="flex flex-wrap justify-end gap-2">
-              {canViewTasks && <Button variant="secondary" className="gap-2" onClick={() => selectTab("tasks")}><ListChecks className="size-4" />Tarefas</Button>}
+              {canViewTasks && <Button variant="secondary" className="gap-2" onClick={() => selectTab("tasks", true)}><ListChecks className="size-4" />Tarefas</Button>}
               {canCreateTasks && <Button variant="secondary" className="gap-2" onClick={() => setCreateTaskOpen(true)}><ListChecks className="size-4" />Nova tarefa</Button>}
               {canManage && !details.project.archivedAt && <Button variant="secondary" className="gap-2" onClick={() => setEditOpen(true)}><Edit3 className="size-4" />Editar</Button>}
               {canArchive && <Button variant="secondary" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
@@ -516,7 +522,7 @@ export function ProjectDetailsPage() {
         {metricCards.map((metric) => { const Icon = metric.icon; return <Card key={metric.label} className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">{metric.label}</p><p className="mt-2 text-2xl font-semibold">{metric.value}</p></div><div className="flex size-11 items-center justify-center rounded-2xl bg-primary/10 text-primary"><Icon className="size-5" /></div></CardContent></Card> })}
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => selectTab(value as ProjectDetailsTab)}>
+      <Tabs ref={tabsSectionRef} value={activeTab} onValueChange={(value) => selectTab(value as ProjectDetailsTab)} className="scroll-mt-6">
         <TabsList className="mb-5 max-w-full overflow-x-auto">
           <TabsTrigger value="overview"><UserRound data-icon="inline-start" />Visão geral</TabsTrigger>
           <TabsTrigger value="execution"><Play data-icon="inline-start" />Execução</TabsTrigger>
@@ -535,7 +541,7 @@ export function ProjectDetailsPage() {
             onCreateTask={() => setCreateTaskOpen(true)}
             onShowDocuments={() => selectTab("documents")}
             onShowTeam={() => selectTab("team")}
-            onShowTasks={() => selectTab("tasks")}
+            onShowTasks={() => selectTab("tasks", true)}
           />
         </TabsContent>
         <TabsContent value="execution">

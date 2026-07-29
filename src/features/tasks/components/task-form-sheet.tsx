@@ -170,7 +170,7 @@ export function TaskFormSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
+      <SheetContent className="w-full overflow-y-auto sm:w-[30rem] sm:max-w-[30rem]">
         <SheetHeader className="border-b px-6 py-5">
           <SheetTitle className="text-xl">{isEditing ? "Editar tarefa" : "Nova tarefa"}</SheetTitle>
           <SheetDescription>
