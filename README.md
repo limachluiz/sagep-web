@@ -14,6 +14,7 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - controle de sessão com Zustand;
 - rotas públicas e protegidas;
 - layout responsivo autenticado;
+- fundamentos de acessibilidade com navegação por teclado, movimento reduzido e testes Axe;
 - dashboards operacional e executivo com dados reais, filtros por período, UF, OM, tipo e responsável, comparação temporal e cards acionáveis;
 - projetos com timeline, próxima ação e fluxo documental;
 - abas dos detalhes do projeto persistidas na URL para navegação direta;
@@ -23,6 +24,7 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - arquivamento, restauração e exclusão lógica conforme permissões;
 - ATAs e saldos, OMs, usuários, sessões, permissões e relatórios;
 - React Query integrado aos contratos da API.
+- integração contínua no GitHub Actions com lint, testes e build de produção.
 
 ## Tecnologias
 
@@ -73,6 +75,7 @@ CORS_ALLOWED_ORIGINS="http://localhost:4200,http://localhost:5173"
 ```bash
 npm run dev      # servidor de desenvolvimento
 npm run lint     # análise estática
+npm test         # suíte automatizada
 npm run build    # verificação TypeScript e build de produção
 npm run preview  # visualização local do build
 ```

@@ -180,7 +180,15 @@ export function EstimateEditDialog({ estimate, open, onOpenChange, onSaved }: Es
                         </TableCell>
                         <TableCell className="text-right">
                           {selected ? (
-                            <Button size="icon" variant="ghost" title="Remover" onClick={() => removeItem(item.id)}><Trash2 className="size-4" /></Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              title="Remover"
+                              aria-label={`Remover item ${item.referenceCode} da estimativa`}
+                              onClick={() => removeItem(item.id)}
+                            >
+                              <Trash2 className="size-4" />
+                            </Button>
                           ) : (
                             <Button size="sm" variant="outline" disabled={unavailable} onClick={() => addItem(item)}><PackagePlus className="size-4" />Adicionar</Button>
                           )}

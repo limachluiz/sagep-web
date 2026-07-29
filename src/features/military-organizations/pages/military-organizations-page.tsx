@@ -129,7 +129,7 @@ export function MilitaryOrganizationsPage() {
             </TableBody></Table>
           ) : <div className="flex flex-col items-center py-16 text-center"><Building2 className="size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhuma OM encontrada</p><p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou cadastre uma nova Organização Militar.</p></div>}
 
-          {meta && meta.totalItems > 0 && <div className="mt-6 flex items-center justify-end gap-3 border-t pt-4"><span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span><Button variant="outline" size="icon" disabled={!meta.hasPreviousPage} onClick={() => setPage((value) => value - 1)} title="Página anterior"><ChevronLeft className="size-4" /></Button><Button variant="outline" size="icon" disabled={!meta.hasNextPage} onClick={() => setPage((value) => value + 1)} title="Próxima página"><ChevronRight className="size-4" /></Button></div>}
+          {meta && meta.totalItems > 0 && <div className="mt-6 flex flex-wrap items-center justify-end gap-3 border-t pt-4"><span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span><Button variant="outline" size="icon" disabled={!meta.hasPreviousPage} onClick={() => setPage((value) => value - 1)} title="Página anterior" aria-label="Página anterior"><ChevronLeft className="size-4" /></Button><Button variant="outline" size="icon" disabled={!meta.hasNextPage} onClick={() => setPage((value) => value + 1)} title="Próxima página" aria-label="Próxima página"><ChevronRight className="size-4" /></Button></div>}
         </CardContent>
       </Card>
 

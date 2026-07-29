@@ -2,11 +2,22 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-function Table({ className, ...props }: React.ComponentProps<"table">) {
+type TableProps = React.ComponentProps<"table"> & {
+  containerLabel?: string
+}
+
+function Table({
+  className,
+  containerLabel = "Tabela de dados",
+  ...props
+}: TableProps) {
   return (
     <div
       data-slot="table-container"
-      className="relative w-full overflow-x-auto rounded-lg border border-primary/10 bg-card/45 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--foreground)_3%,transparent)]"
+      role="region"
+      aria-label={containerLabel}
+      tabIndex={0}
+      className="relative w-full overflow-x-auto rounded-lg border border-primary/10 bg-card/45 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--foreground)_3%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table
         data-slot="table"

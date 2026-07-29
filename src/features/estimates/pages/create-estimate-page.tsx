@@ -333,7 +333,15 @@ export function CreateEstimatePage() {
                       </TableCell>
                       <TableCell className="text-right">
                         {selected ? (
-                          <Button size="icon" variant="ghost" title="Remover item" onClick={() => removeItem(item.id)}><Trash2 className="size-4" /></Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            title="Remover item"
+                            aria-label={`Remover item ${item.referenceCode} da estimativa`}
+                            onClick={() => removeItem(item.id)}
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
                         ) : (
                           <Button size="sm" variant="outline" className="gap-2" disabled={unavailable} onClick={() => addItem(item)}><PackagePlus className="size-4" />Adicionar</Button>
                         )}

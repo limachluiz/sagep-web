@@ -13,11 +13,11 @@ function FilterToolbar({ children, className }: FilterToolbarProps) {
   return (
     <Card className="border-primary/10 bg-card/80 shadow-sm">
       <CardContent className="p-0">
-        <div className="flex items-center gap-2 border-b border-primary/10 px-5 py-3 text-xs font-medium tracking-wide text-muted-foreground">
+        <div className="flex items-center gap-2 border-b border-primary/10 px-4 py-3 text-xs font-medium tracking-wide text-muted-foreground sm:px-5">
           <SlidersHorizontal className="size-3.5 text-primary" aria-hidden="true" />
           Filtros da consulta
         </div>
-        <div className={cn("grid gap-3 p-5 md:grid-cols-2", className)}>{children}</div>
+        <div className={cn("grid gap-3 p-4 sm:p-5 md:grid-cols-2", className)}>{children}</div>
       </CardContent>
     </Card>
   )

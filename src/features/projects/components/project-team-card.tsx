@@ -109,7 +109,13 @@ export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
                     </div>
                     <Badge variant="outline">{member.role || "Membro"}</Badge>
                     {canManage && (
-                      <Button variant="ghost" size="icon-sm" title="Remover membro" onClick={() => setMemberToRemove(member)}>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        title="Remover membro"
+                        aria-label={`Remover ${member.user.name} da equipe`}
+                        onClick={() => setMemberToRemove(member)}
+                      >
                         <Trash2 className="size-4 text-destructive" />
                       </Button>
                     )}
