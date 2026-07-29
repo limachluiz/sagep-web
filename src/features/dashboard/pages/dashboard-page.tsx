@@ -76,24 +76,24 @@ export function DashboardPage() {
 
       <Tabs value={activeView} onValueChange={handleViewChange} className="gap-6">
         <section
-          className="rounded-xl border border-primary/15 bg-card/80 p-2 shadow-sm"
+          className="overflow-hidden rounded-xl border border-primary/15 bg-card/90 shadow-sm"
           aria-label="Perspectivas do dashboard"
         >
-          <div className="flex items-center justify-between gap-3 px-2 pb-2 pt-1">
+          <div className="flex items-center justify-between gap-3 border-b border-border/70 px-4 py-2.5">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">
                 Perspectiva
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground">
                 Escolha o nível de informação que deseja acompanhar.
               </p>
             </div>
-            <span className="hidden rounded-full border border-primary/15 bg-primary/[.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary sm:inline-flex">
+            <span className="hidden shrink-0 rounded-full border border-primary/15 bg-primary/[.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary sm:inline-flex">
               {availableViews.length} {availableViews.length === 1 ? "visão disponível" : "visões disponíveis"}
             </span>
           </div>
 
-          <TabsList className="grid h-auto w-full grid-cols-1 gap-1.5 bg-muted/60 p-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
+          <TabsList className="grid !h-auto w-full grid-cols-1 gap-1 bg-transparent p-1.5 sm:grid-flow-col sm:auto-cols-fr sm:grid-cols-none">
             {availableViews.map((view) => {
               const item = viewMetadata[view]
               const Icon = item.icon
@@ -101,14 +101,14 @@ export function DashboardPage() {
                 <TabsTrigger
                   key={view}
                   value={view}
-                  className="group/dashboard-view h-auto min-w-0 justify-start gap-3 rounded-lg border px-3 py-3 text-left whitespace-normal shadow-none hover:border-primary/25 hover:bg-background/75 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm sm:px-4"
+                  className="group/dashboard-view !h-auto min-w-0 justify-start gap-2.5 rounded-lg border px-3 py-2 text-left whitespace-normal shadow-none hover:border-primary/25 hover:bg-muted/60 data-active:border-primary data-active:bg-primary data-active:text-primary-foreground data-active:shadow-sm"
                 >
-                  <span className="flex size-9 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/[.07] text-primary transition-colors group-data-active/dashboard-view:border-primary-foreground/20 group-data-active/dashboard-view:bg-primary-foreground/15 group-data-active/dashboard-view:text-primary-foreground">
+                  <span className="flex size-8 shrink-0 items-center justify-center rounded-md border border-primary/15 bg-primary/[.07] text-primary transition-colors group-data-active/dashboard-view:border-primary-foreground/20 group-data-active/dashboard-view:bg-primary-foreground/15 group-data-active/dashboard-view:text-primary-foreground">
                     <Icon className="size-4" aria-hidden="true" />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-sm font-semibold leading-5">{item.label}</span>
-                    <span className="block text-xs font-normal leading-4 text-muted-foreground group-data-active/dashboard-view:text-primary-foreground/75">
+                    <span className="block truncate text-sm font-semibold leading-5">{item.label}</span>
+                    <span className="block truncate text-[11px] font-normal leading-4 text-muted-foreground group-data-active/dashboard-view:text-primary-foreground/75">
                       {item.description}
                     </span>
                   </span>
