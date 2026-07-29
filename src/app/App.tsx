@@ -27,6 +27,7 @@ const ServiceOrderDetailsPage = lazy(() => import("@/features/service-orders/pag
 const ServiceOrdersListPage = lazy(() => import("@/features/service-orders/pages/service-orders-list-page").then((module) => ({ default: module.ServiceOrdersListPage })))
 const TaskDetailsPage = lazy(() => import("@/features/tasks/pages/task-details-page").then((module) => ({ default: module.TaskDetailsPage })))
 const TasksListPage = lazy(() => import("@/features/tasks/pages/tasks-list-page").then((module) => ({ default: module.TasksListPage })))
+const UserProfilePage = lazy(() => import("@/features/users/pages/user-profile-page").then((module) => ({ default: module.UserProfilePage })))
 const UsersPage = lazy(() => import("@/features/users/pages/users-page").then((module) => ({ default: module.UsersPage })))
 const PermissionsSettingsPage = lazy(() => import("@/features/permissions/pages/permissions-settings-page").then((module) => ({ default: module.PermissionsSettingsPage })))
 const ReportsPage = lazy(() => import("@/features/reports/pages/reports-page").then((module) => ({ default: module.ReportsPage })))
@@ -45,6 +46,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedLayout />}>
           <Route path="/inicio" element={<HomePage />} />
+          <Route path="/user" element={<UserProfilePage />} />
           <Route
             path="/dashboard"
             element={

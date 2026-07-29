@@ -3,6 +3,8 @@ import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Building2,
   CalendarRange,
+  ChevronDown,
+  CircleUserRound,
   Columns3,
   ClipboardList,
   FileText,
@@ -27,6 +29,14 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Separator } from "@/components/ui/separator"
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { ThemeToggle } from "@/components/theme-toggle"
@@ -244,7 +254,17 @@ export function AuthenticatedLayout() {
               <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4" aria-label="Navegação móvel">
                 {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard" || item.href === "/inicio"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
               </nav>
-              <div className="border-t border-sidebar-border p-4"><div className="flex items-center gap-3"><Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div><Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button></div></div>
+              <div className="border-t border-sidebar-border p-4">
+                <div className="flex items-center gap-2">
+                  <SheetClose asChild>
+                    <NavLink to="/user" className="flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 transition hover:bg-sidebar-accent">
+                      <Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar>
+                      <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div>
+                    </NavLink>
+                  </SheetClose>
+                  <Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} aria-label="Sair"><LogOut className="size-4" /></Button>
+                </div>
+              </div>
             </SheetContent>
           </Sheet>
 
@@ -263,8 +283,41 @@ export function AuthenticatedLayout() {
             </Badge>
             <NotificationsMenu />
             <ThemeToggle />
-            <div className="hidden text-right sm:block"><p className="max-w-40 truncate text-xs font-medium text-foreground">{userDisplayName}</p><p className="text-[9px] uppercase tracking-wider text-muted-foreground">{userRole}</p></div>
-            <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="flex min-w-0 items-center gap-2 rounded-md p-1 text-left outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={`Abrir menu da conta de ${userDisplayName}`}
+                >
+                  <div className="hidden text-right sm:block"><p className="max-w-40 truncate text-xs font-medium text-foreground">{userDisplayName}</p><p className="text-[9px] uppercase tracking-wider text-muted-foreground">{userRole}</p></div>
+                  <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
+                  <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-72">
+                <DropdownMenuLabel className="flex items-center gap-3 py-2">
+                  <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
+                  <span className="min-w-0">
+                    <span className="block truncate text-sm font-semibold text-foreground">{userDisplayName}</span>
+                    <span className="block truncate text-[10px] uppercase tracking-wider">{userRole}</span>
+                  </span>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onSelect={() => navigate("/user")}>
+                  <CircleUserRound />Meu perfil
+                </DropdownMenuItem>
+                {hasAnyPermission(["sessions.manage_own"]) && (
+                  <DropdownMenuItem onSelect={() => navigate("/sessions")}>
+                    <MonitorSmartphone />Minhas sessões
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuSeparator />
+                <DropdownMenuItem variant="destructive" onSelect={() => void handleLogout()}>
+                  <LogOut />Sair
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
@@ -281,9 +334,16 @@ export function AuthenticatedLayout() {
 
         <div className="p-3">
           <Separator className="mb-3 bg-sidebar-border" />
-          <div className={`flex items-center border border-sidebar-border bg-sidebar-accent/35 p-3 ${sidebarCollapsed ? "justify-center" : "gap-3"}`}>
-            <Avatar className="size-9"><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">{initials}</AvatarFallback></Avatar>
-            <div className={sidebarCollapsed ? "sr-only" : "min-w-0 flex-1"}><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div>
+          <div className={`flex items-center border border-sidebar-border bg-sidebar-accent/35 p-3 ${sidebarCollapsed ? "justify-center" : "gap-2"}`}>
+            <NavLink
+              to="/user"
+              title={sidebarCollapsed ? "Meu perfil" : undefined}
+              aria-label={sidebarCollapsed ? "Meu perfil" : undefined}
+              className={`flex min-w-0 items-center rounded-md transition hover:bg-sidebar-accent ${sidebarCollapsed ? "justify-center" : "flex-1 gap-3 p-1"}`}
+            >
+              <Avatar className="size-9"><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">{initials}</AvatarFallback></Avatar>
+              <div className={sidebarCollapsed ? "sr-only" : "min-w-0 flex-1"}><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div>
+            </NavLink>
             {!sidebarCollapsed && <Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} title="Sair" aria-label="Sair do sistema"><LogOut className="size-4" /></Button>}
           </div>
         </div>

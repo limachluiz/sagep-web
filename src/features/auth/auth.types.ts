@@ -33,12 +33,29 @@ export type AuthUser = {
   cpf?: string | null
   role: UserRole
   active?: boolean
+  createdAt?: string
+  lastLoginAt?: string | null
+  updatedAt?: string
   permissions: Permission[]
   access?: {
     role: UserRole
     permissions: Permission[]
     isAdmin: boolean
+    groups?: AccessPermissionGroup[]
   }
+}
+
+export type EffectivePermission = {
+  code: string
+  module: string
+  action: string
+  description: string
+  critical: boolean
+}
+
+export type AccessPermissionGroup = {
+  name: string
+  permissions: EffectivePermission[]
 }
 
 export type LoginPayload = {
