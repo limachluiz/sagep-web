@@ -174,6 +174,13 @@ function ExecutiveContent({
 
   const metrics = [
     {
+      label: "Projetos concluídos",
+      value: formatCurrency(data.summary.totalCompletedProjectsAmount),
+      helper: `${data.summary.projectsCompleted} projetos finalizados`,
+      icon: BadgeCheck,
+      to: "/projects?status=CONCLUIDO",
+    },
+    {
       label: "Valor estimado",
       value: formatCurrency(data.summary.totalEstimatedAmount),
       helper: `${data.summary.estimatesFinalized} estimativas finalizadas`,
@@ -186,13 +193,6 @@ function ExecutiveContent({
       helper: "Projetos com Nota de Empenho",
       icon: Landmark,
       to: "/projects",
-    },
-    {
-      label: "Projetos concluídos",
-      value: formatCurrency(data.summary.totalCompletedProjectsAmount),
-      helper: `${data.summary.projectsCompleted} projetos finalizados`,
-      icon: BadgeCheck,
-      to: "/projects?status=CONCLUIDO",
     },
     {
       label: "Valor em Ordens de Serviço",
