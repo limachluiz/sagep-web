@@ -379,7 +379,7 @@ export function EstimateDetailsPage() {
             </DialogTitle>
             <DialogDescription>
               {statusConfirmation === "FINALIZADA"
-                ? "O saldo dos itens será validado novamente e o projeto avançará para a próxima etapa do fluxo documental."
+                ? "O saldo dos itens será validado novamente e o projeto avançará para a Nota de Crédito. A finalização ainda não reserva saldo; a reserva ocorre somente na criação do DIEx."
                 : "A estimativa será marcada como cancelada e deixará de permitir edição pela interface."}
             </DialogDescription>
           </DialogHeader>

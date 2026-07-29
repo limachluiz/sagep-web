@@ -149,6 +149,17 @@ export type ProjectFlowPayload = {
   serviceCompletedAt?: string
 }
 
+export type CancelCommitmentNoteResponse = {
+  message: string
+  project: ProjectMutationResponse
+  rollback: {
+    estimateId: string
+    diexRequestId: string
+    serviceOrderId: string | null
+    reason: string
+  }
+}
+
 export type AsBuiltReviewPayload =
   | { approved: true; reviewedAt: string; asBuiltLink: string }
   | { approved: false; reviewedAt: string; rejectionReason: string }

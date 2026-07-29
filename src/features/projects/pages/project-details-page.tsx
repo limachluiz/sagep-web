@@ -39,6 +39,7 @@ import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectFormSheet } from "@/features/projects/components/project-form-sheet"
 import { ProjectAuditPanel } from "@/features/projects/components/project-audit-panel"
 import { ProjectDocumentsPanel } from "@/features/projects/components/project-documents-panel"
+import { CancelCommitmentNoteDialog } from "@/features/projects/components/cancel-commitment-note-dialog"
 import { ProjectFinancialCard } from "@/features/projects/components/project-financial-card"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
 import { ProjectTeamSummary } from "@/features/projects/components/project-team-summary"
@@ -56,6 +57,11 @@ import { CreateDiexDialog } from "@/features/diex/components/create-diex-dialog"
 import { CreateServiceOrderDialog } from "@/features/service-orders/components/create-service-order-dialog"
 import { StartExecutionDialog } from "@/features/service-orders/components/start-execution-dialog"
 import { projectsService } from "@/features/projects/projects.service"
+import { invalidateProjectFlow } from "@/features/projects/project-flow-cache"
+import {
+  getActiveWorkflowDocuments,
+  isDiexReadyForCommitmentNote,
+} from "@/features/projects/project-document-flow"
 import { TaskFormSheet } from "@/features/tasks/components/task-form-sheet"
 import { tasksService } from "@/features/tasks/tasks.service"
 import type { CreateTaskPayload, TaskStatus, UpdateTaskPayload } from "@/features/tasks/tasks.types"
@@ -293,6 +299,7 @@ export function ProjectDetailsPage() {
   const [creditNoteOpen, setCreditNoteOpen] = useState(false)
   const [createDiexOpen, setCreateDiexOpen] = useState(false)
   const [commitmentNoteOpen, setCommitmentNoteOpen] = useState(false)
+  const [cancelCommitmentNoteOpen, setCancelCommitmentNoteOpen] = useState(false)
   const [createServiceOrderOpen, setCreateServiceOrderOpen] = useState(false)
   const [startExecutionOpen, setStartExecutionOpen] = useState(false)
   const [receiveAsBuiltOpen, setReceiveAsBuiltOpen] = useState(false)
@@ -415,7 +422,17 @@ export function ProjectDetailsPage() {
   const canChangeTaskStatus = !details.project.archivedAt && (hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete"))
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
-  const canRegisterCommitmentNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
+  const activeDocuments = getActiveWorkflowDocuments(details)
+  const diexReadyForCommitmentNote = isDiexReadyForCommitmentNote(details)
+  const canCompleteDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt
+    && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
+    && Boolean(activeDocuments.diex)
+    && !diexReadyForCommitmentNote
+  const canRegisterCommitmentNote = canManage && !details.project.archivedAt
+    && details.workflow.stage === "AGUARDANDO_NOTA_EMPENHO"
+    && diexReadyForCommitmentNote
+  const canCancelCommitmentNote = canManage && !details.project.archivedAt
+    && Boolean(details.workflow.milestones.commitmentNoteNumber || details.workflow.milestones.commitmentNoteReceivedAt)
   const canIssueServiceOrder = hasPermission("service_orders.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA"
   const canStartExecution = canManage && !details.project.archivedAt && details.workflow.stage === "OS_LIBERADA" && details.documents.serviceOrders.some((order) => !order.archivedAt)
   const canReceiveAsBuilt = canManage && !details.project.archivedAt && details.workflow.stage === "SERVICO_EM_EXECUCAO"
@@ -436,6 +453,8 @@ export function ProjectDetailsPage() {
               ? { label: "Emitir OS", icon: FileCheck2, run: () => setCreateServiceOrderOpen(true) }
               : canRegisterCommitmentNote
                 ? { label: "Registrar Nota de Empenho", icon: Landmark, run: () => setCommitmentNoteOpen(true) }
+                : canCompleteDiex
+                  ? { label: "Completar DIEx", icon: ClipboardCheck, run: () => navigate(`/diex/${activeDocuments.diex!.id}`) }
                 : canCreateDiex
                   ? { label: "Emitir DIEx", icon: ClipboardCheck, run: () => setCreateDiexOpen(true) }
                   : canRegisterCreditNote
@@ -521,7 +540,13 @@ export function ProjectDetailsPage() {
             />
           </TabsContent>
         )}
-        <TabsContent value="documents"><ProjectDocumentsPanel details={details} /></TabsContent>
+        <TabsContent value="documents">
+          <ProjectDocumentsPanel
+            details={details}
+            canCancelCommitmentNote={canCancelCommitmentNote}
+            onCancelCommitmentNote={() => setCancelCommitmentNoteOpen(true)}
+          />
+        </TabsContent>
         <TabsContent value="team"><ProjectTeamCard details={details} canManage={canManage} /></TabsContent>
         <TabsContent value="timeline"><Timeline details={details} /></TabsContent>
         {canViewAudit && details.auditTrail && (
@@ -579,8 +604,7 @@ export function ProjectDetailsPage() {
           open={creditNoteOpen}
           onOpenChange={setCreditNoteOpen}
           onSaved={() => {
-            queryClient.invalidateQueries({ queryKey: ["projects"] })
-            queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+            invalidateProjectFlow(queryClient)
           }}
         />
       )}
@@ -591,9 +615,7 @@ export function ProjectDetailsPage() {
           open={createDiexOpen}
           onOpenChange={setCreateDiexOpen}
           onCreated={(diex) => {
-            queryClient.invalidateQueries({ queryKey: ["projects"] })
-            queryClient.invalidateQueries({ queryKey: ["dashboard"] })
-            queryClient.invalidateQueries({ queryKey: ["diex"] })
+            invalidateProjectFlow(queryClient)
             navigate(`/diex/${diex.id}`)
           }}
         />
@@ -606,15 +628,27 @@ export function ProjectDetailsPage() {
           open={commitmentNoteOpen}
           onOpenChange={setCommitmentNoteOpen}
           onSaved={() => {
-            queryClient.invalidateQueries({ queryKey: ["projects"] })
-            queryClient.invalidateQueries({ queryKey: ["dashboard"] })
-            queryClient.invalidateQueries({ queryKey: ["estimates"] })
-            queryClient.invalidateQueries({ queryKey: ["diex"] })
+            invalidateProjectFlow(queryClient)
           }}
         />
       )}
 
-      {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); navigate(`/service-orders/${order.id}`) }} />}
+      {cancelCommitmentNoteOpen && (
+        <CancelCommitmentNoteDialog
+          projectId={details.project.id}
+          projectCode={details.project.projectCode}
+          commitmentNoteNumber={details.workflow.milestones.commitmentNoteNumber}
+          hasServiceOrder={Boolean(activeDocuments.serviceOrder)}
+          open={cancelCommitmentNoteOpen}
+          onOpenChange={setCancelCommitmentNoteOpen}
+          onCancelled={() => {
+            invalidateProjectFlow(queryClient)
+            selectTab("timeline")
+          }}
+        />
+      )}
+
+      {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { invalidateProjectFlow(queryClient); navigate(`/service-orders/${order.id}`) }} />}
 
       {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["service-orders-gantt"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }) }} />}
 

@@ -4,6 +4,7 @@ import { FileSignature, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import {
   Dialog,
   DialogContent,
@@ -94,6 +95,14 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
         </DialogHeader>
 
         <div className="space-y-5">
+          <Alert>
+            <FileSignature />
+            <AlertTitle>Reserva financeira</AlertTitle>
+            <AlertDescription>
+              A criação do DIEx reserva na ATA as quantidades da estimativa selecionada. O consumo definitivo ocorrerá somente após o registro da Nota de Empenho.
+            </AlertDescription>
+          </Alert>
+
           <div className="space-y-2">
             <Label>Estimativa finalizada</Label>
             <Select value={estimateId} onValueChange={setEstimateId}>

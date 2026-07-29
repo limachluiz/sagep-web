@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { AlertTriangle, ChevronLeft, ChevronRight, FileSignature, RefreshCw, Search } from "lucide-react"
+import { AlertTriangle, FileSignature, RefreshCw, X } from "lucide-react"
 import { Link } from "react-router"
 
+import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
+import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
+import { ListPagination } from "@/components/list-pagination"
+import { PageHeader } from "@/components/page-header"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { diexService } from "@/features/diex/diex.service"
 import { useAuthStore } from "@/features/auth/auth.store"
@@ -30,6 +32,7 @@ export function DiexListPage() {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [visibility, setVisibility] = useState<"active" | "archived">("active")
 
   useEffect(() => {
@@ -37,28 +40,41 @@ export function DiexListPage() {
     return () => window.clearTimeout(timeout)
   }, [search])
 
+  const filters = useMemo(() => ({
+    page,
+    pageSize,
+    search: debouncedSearch || undefined,
+    onlyArchived: visibility === "archived" || undefined,
+  }), [debouncedSearch, page, pageSize, visibility])
   const query = useQuery({
-    queryKey: ["diex", "list", page, debouncedSearch, visibility],
-    queryFn: () => diexService.list({ page, pageSize: 10, search: debouncedSearch || undefined, onlyArchived: visibility === "archived" || undefined }),
+    queryKey: ["diex", "list", filters],
+    queryFn: () => diexService.list(filters),
     placeholderData: (previous) => previous,
   })
   const meta = query.data?.meta
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-        <div><Badge className="mb-3">Fluxo documental</Badge><h1 className="text-3xl font-semibold tracking-tight">DIEx requisitórios</h1><p className="mt-2 text-sm text-muted-foreground">Consulte documentos, fornecedores, projetos e valores requisitados.</p></div>
-        <Button variant="outline" className="gap-2" onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw className={query.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>
-      </div>
+      <PageHeader
+        eyebrow="Fluxo documental"
+        title="DIEx requisitórios"
+        description="Consulte documentos, fornecedores, projetos, valores requisitados e a reserva correspondente na ATA."
+        icon={FileSignature}
+        actions={<Button variant="outline" className="gap-2" onClick={() => query.refetch()} disabled={query.isFetching}><RefreshCw className={query.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>}
+      />
 
-      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-5 md:grid-cols-[minmax(280px,1fr)_180px]"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Buscar número, fornecedor, CNPJ ou requisitante..." value={search} onChange={(event) => setSearch(event.target.value)} /></div>{canViewArchived && <Select value={visibility} onValueChange={(value) => { setVisibility(value as "active" | "archived"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Ativos</SelectItem><SelectItem value="archived">Arquivados</SelectItem></SelectContent></Select>}</CardContent></Card>
+      <FilterToolbar className="md:grid-cols-[minmax(280px,1fr)_180px_auto]">
+        <SearchField aria-label="Buscar DIEx" placeholder="Buscar número, fornecedor, CNPJ ou requisitante..." value={search} onChange={(event) => setSearch(event.target.value)} />
+        {canViewArchived && <Select value={visibility} onValueChange={(value) => { setVisibility(value as "active" | "archived"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="active">Ativos</SelectItem><SelectItem value="archived">Arquivados</SelectItem></SelectContent></Select>}
+        {search && <Button variant="ghost" onClick={() => { setSearch(""); setDebouncedSearch(""); setPage(1) }}><X className="size-4" />Limpar</Button>}
+      </FilterToolbar>
 
       {query.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar os DIEx</AlertTitle><AlertDescription>{query.error.message}</AlertDescription></Alert>}
 
       <Card className="border-none shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><FileSignature className="size-5 text-primary" />{visibility === "archived" ? "Documentos arquivados" : "Documentos cadastrados"}</CardTitle>{meta && <Badge variant="outline">{meta.totalItems} DIEx</Badge>}</CardHeader>
         <CardContent>
-          {query.isLoading ? <div className="space-y-3">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-16" />)}</div> : query.data?.items.length ? (
+          {query.isLoading ? <DataTableSkeleton /> : query.data?.items.length ? (
             <Table>
               <TableHeader><TableRow><TableHead>DIEx</TableHead><TableHead>Projeto</TableHead><TableHead>Estimativa</TableHead><TableHead>Fornecedor</TableHead><TableHead>Emissão</TableHead><TableHead>Total</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader>
               <TableBody>{query.data.items.map((diex) => (
@@ -73,9 +89,9 @@ export function DiexListPage() {
                 </TableRow>
               ))}</TableBody>
             </Table>
-          ) : <div className="py-14 text-center"><FileSignature className="mx-auto size-10 text-muted-foreground/50" /><p className="mt-4 font-medium">Nenhum DIEx encontrado</p></div>}
+          ) : <EmptyState icon={FileSignature} title="Nenhum DIEx encontrado" description="Ajuste a busca ou aguarde a emissão do primeiro DIEx requisitório." />}
 
-          {meta && meta.totalItems > 0 && <div className="mt-5 flex items-center justify-end gap-3 border-t pt-4"><span className="text-sm text-muted-foreground">Página {meta.page} de {meta.totalPages}</span><Button size="icon" variant="outline" disabled={!meta.hasPreviousPage} onClick={() => setPage((value) => value - 1)}><ChevronLeft className="size-4" /></Button><Button size="icon" variant="outline" disabled={!meta.hasNextPage} onClick={() => setPage((value) => value + 1)}><ChevronRight className="size-4" /></Button></div>}
+          {meta && meta.totalItems > 0 && <ListPagination page={meta.page} totalPages={meta.totalPages} hasPreviousPage={meta.hasPreviousPage} hasNextPage={meta.hasNextPage} pageSize={pageSize} pageSizeOptions={[10, 20, 50]} itemLabel="DIEx" onPageSizeChange={(value) => { setPageSize(value); setPage(1) }} onPrevious={() => setPage((value) => value - 1)} onNext={() => setPage((value) => value + 1)} />}
         </CardContent>
       </Card>
     </div>

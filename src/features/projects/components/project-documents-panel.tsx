@@ -4,14 +4,13 @@ import {
   FileCheck2,
   FileSpreadsheet,
   FolderOpen,
-  Landmark,
-  ReceiptText,
 } from "lucide-react"
 import { Link } from "react-router"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { ProjectDocumentFlowPanel } from "@/features/projects/components/project-document-flow-panel"
 import type { ProjectDetailsResponse } from "@/features/projects/projects.types"
 
 function formatCurrency(value: string | number) {
@@ -35,8 +34,12 @@ function formatStatus(value: string) {
 
 export function ProjectDocumentsPanel({
   details,
+  canCancelCommitmentNote,
+  onCancelCommitmentNote,
 }: {
   details: ProjectDetailsResponse
+  canCancelCommitmentNote?: boolean
+  onCancelCommitmentNote?: () => void
 }) {
   const groups = [
     {
@@ -81,62 +84,34 @@ export function ProjectDocumentsPanel({
   ]
 
   const asBuiltLink = details.workflow.milestones.asBuiltLink
-  const references = [
-    {
-      label: "Nota de Crédito",
-      value: details.workflow.milestones.creditNoteNumber,
-      date: details.workflow.milestones.creditNoteReceivedAt,
-      icon: ReceiptText,
-    },
-    {
-      label: "Nota de Empenho",
-      value: details.workflow.milestones.commitmentNoteNumber,
-      date: details.workflow.milestones.commitmentNoteReceivedAt,
-      icon: Landmark,
-    },
-  ]
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-4 lg:grid-cols-3">
-        {references.map((reference) => {
-          const Icon = reference.icon
-          return (
-            <Card key={reference.label} className="border-none shadow-sm">
-              <CardContent className="flex items-start gap-4 p-5">
-                <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                  <Icon className="size-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs text-muted-foreground">{reference.label}</p>
-                  <p className="mt-1 truncate font-semibold">{reference.value || "Pendente"}</p>
-                  <p className="mt-1 text-xs text-muted-foreground">{formatDate(reference.date)}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+      <ProjectDocumentFlowPanel
+        details={details}
+        canCancelCommitmentNote={canCancelCommitmentNote}
+        onCancelCommitmentNote={onCancelCommitmentNote}
+      />
 
-        <Card className="border-none shadow-sm">
-          <CardContent className="flex items-start gap-4 p-5">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <FolderOpen className="size-5" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-xs text-muted-foreground">As-Built</p>
-              <p className="mt-1 font-semibold">{asBuiltLink ? "Documento vinculado" : "Pendente"}</p>
-              {asBuiltLink && (
-                <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs">
-                  <a href={asBuiltLink} target="_blank" rel="noreferrer">
-                    Abrir arquivo
-                    <ExternalLink className="size-3" />
-                  </a>
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="border-none shadow-sm">
+        <CardContent className="flex items-start gap-4 p-5">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <FolderOpen className="size-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-xs text-muted-foreground">As-Built</p>
+            <p className="mt-1 font-semibold">{asBuiltLink ? "Documento vinculado" : "Pendente"}</p>
+            {asBuiltLink && (
+              <Button asChild variant="link" className="mt-1 h-auto p-0 text-xs">
+                <a href={asBuiltLink} target="_blank" rel="noreferrer">
+                  Abrir arquivo
+                  <ExternalLink className="size-3" />
+                </a>
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 xl:grid-cols-3">
         {groups.map((group) => {

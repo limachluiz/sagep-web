@@ -33,6 +33,7 @@ function todayInputValue() {
 export function CommitmentNoteDialog({ projectId, projectCode, open, onOpenChange, onSaved }: CommitmentNoteDialogProps) {
   const [number, setNumber] = useState("")
   const [receivedAt, setReceivedAt] = useState(todayInputValue)
+  const [financialImpactConfirmed, setFinancialImpactConfirmed] = useState(false)
   const validationError = useMemo(
     () => !number.trim() && !receivedAt ? "Informe o número ou a data de recebimento da Nota de Empenho." : null,
     [number, receivedAt],
@@ -74,12 +75,23 @@ export function CommitmentNoteDialog({ projectId, projectCode, open, onOpenChang
           <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
             Esta ação converte a reserva do DIEx em consumo efetivo dos itens da ATA. O projeto avançará para <strong>OS liberada</strong>.
           </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border p-4 text-sm">
+            <input
+              type="checkbox"
+              className="mt-0.5 size-4 accent-primary"
+              checked={financialImpactConfirmed}
+              onChange={(event) => setFinancialImpactConfirmed(event.target.checked)}
+            />
+            <span>
+              Confirmo que a Nota de Empenho foi conferida e autorizo o consumo definitivo do saldo reservado.
+            </span>
+          </label>
           {validationError && <p className="text-sm font-medium text-destructive">{validationError}</p>}
         </div>
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={mutation.isPending}>Cancelar</Button>
-          <Button onClick={() => mutation.mutate()} disabled={Boolean(validationError) || mutation.isPending}>
+          <Button onClick={() => mutation.mutate()} disabled={Boolean(validationError) || !financialImpactConfirmed || mutation.isPending}>
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Registrar e liberar OS
           </Button>

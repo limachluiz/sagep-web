@@ -4,6 +4,7 @@ import type {
   AsBuiltReviewPayload,
   ProjectDetailsResponse,
   ProjectFlowPayload,
+  CancelCommitmentNoteResponse,
   ProjectMemberMutationResponse,
   ProjectKanbanResponse,
   ProjectMutationPayload,
@@ -78,6 +79,13 @@ export const projectsService = {
 
   updateFlow(projectId: string, payload: ProjectFlowPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}/flow`, payload)
+  },
+
+  cancelCommitmentNote(projectId: string, reason: string) {
+    return api.post<CancelCommitmentNoteResponse>(
+      `/projects/${projectId}/commitment-note/cancel`,
+      { reason },
+    )
   },
 
   reviewAsBuilt(projectId: string, payload: AsBuiltReviewPayload) {

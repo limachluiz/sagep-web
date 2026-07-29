@@ -16,6 +16,7 @@ import { diexService } from "@/features/diex/diex.service"
 import { CompleteDiexDialog } from "@/features/diex/components/complete-diex-dialog"
 import { EditDiexDialog } from "@/features/diex/components/edit-diex-dialog"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { invalidateProjectFlow } from "@/features/projects/project-flow-cache"
 
 function formatCurrency(value: string) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value)) }
 function formatQuantity(value: string) { return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(Number(value)) }
@@ -44,6 +45,7 @@ export function DiexDetailsPage() {
       queryClient.invalidateQueries({ queryKey: ["diex"] })
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["atas"] })
       navigate("/diex")
     },
     onError: (error) => toast.error(error.message),
@@ -54,6 +56,7 @@ export function DiexDetailsPage() {
       toast.success("DIEx restaurado com sucesso.")
       queryClient.invalidateQueries({ queryKey: ["diex"] })
       queryClient.invalidateQueries({ queryKey: ["projects"] })
+      queryClient.invalidateQueries({ queryKey: ["atas"] })
       navigate(`/diex/${diexId}`)
     },
     onError: (error) => toast.error(error.message),
@@ -65,6 +68,7 @@ export function DiexDetailsPage() {
       queryClient.invalidateQueries({ queryKey: ["diex"] })
       queryClient.invalidateQueries({ queryKey: ["projects"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
+      queryClient.invalidateQueries({ queryKey: ["atas"] })
       navigate("/diex")
     },
     onError: (error) => toast.error(error.message),
@@ -96,8 +100,8 @@ export function DiexDetailsPage() {
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card className="border-none shadow-sm"><CardContent className="p-5"><FileSignature className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Valor requisitado</p><p className="mt-1 text-xl font-semibold">{formatCurrency(diex.totalAmount)}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><Building2 className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Fornecedor</p><p className="mt-1 font-semibold">{diex.supplierName}</p><p className="text-xs text-muted-foreground">{diex.supplierCnpj}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><UserRound className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Requisitante</p><p className="mt-1 font-semibold">{diex.requesterRank} {diex.requesterName}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><p className="text-xs text-muted-foreground">Vínculos</p><Button asChild variant="link" className="mt-1 h-auto p-0"><Link to={`/projects/${diex.project.id}`}>PRJ-{diex.project.projectCode}</Link></Button><p className="text-sm">EST-{diex.estimate.estimateCode} · {diex.estimate.om?.sigla ?? diex.estimate.omName}</p></CardContent></Card></div>
 
     <Card className="border-none shadow-sm"><CardHeader><CardTitle>Itens requisitados</CardTitle></CardHeader><CardContent><Table><TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Descrição</TableHead><TableHead>Unidade</TableHead><TableHead>Quantidade</TableHead><TableHead>Valor unitário</TableHead><TableHead className="text-right">Total</TableHead></TableRow></TableHeader><TableBody>{diex.items.map((item) => <TableRow key={item.id}><TableCell className="font-medium">{item.itemCode}</TableCell><TableCell>{item.description}</TableCell><TableCell>{item.supplyUnit}</TableCell><TableCell>{formatQuantity(item.quantityRequested)}</TableCell><TableCell>{formatCurrency(item.unitPrice)}</TableCell><TableCell className="text-right font-semibold">{formatCurrency(item.totalPrice)}</TableCell></TableRow>)}</TableBody></Table></CardContent></Card>
-    {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
-    {editOpen && <EditDiexDialog diex={diex} open={editOpen} onOpenChange={setEditOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId, includeArchived], updated); queryClient.invalidateQueries({ queryKey: ["diex", "list"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }) }} />}
+    {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); invalidateProjectFlow(queryClient) }} />}
+    {editOpen && <EditDiexDialog diex={diex} open={editOpen} onOpenChange={setEditOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId, includeArchived], updated); invalidateProjectFlow(queryClient) }} />}
     <ArchiveActionDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen} mode={diex.archivedAt ? "restore" : "archive"} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description={diex.archivedAt ? "O documento voltará ao fluxo ativo do projeto." : "A reserva de saldo será liberada e o projeto retornará à etapa documental anterior. A ação é bloqueada quando existe OS ativa vinculada."} pending={archiveMutation.isPending || restoreMutation.isPending} onConfirm={() => diex.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()} />
     <DeleteActionDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description="Ordens de Serviço dependentes também serão excluídas logicamente." pending={deleteMutation.isPending} onConfirm={() => deleteMutation.mutate()} />
   </div>
