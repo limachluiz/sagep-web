@@ -3,7 +3,6 @@ import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Building2,
   CalendarRange,
-  ChartNoAxesCombined,
   Columns3,
   ClipboardList,
   FileText,
@@ -54,13 +53,7 @@ const navigation: NavigationGroup[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
-    anyOf: ["dashboard.view_operational"],
-  },
-  {
-    label: "Dashboard Executivo",
-    href: "/dashboard/executive",
-    icon: ChartNoAxesCombined,
-    anyOf: ["dashboard.view_executive"],
+    anyOf: ["dashboard.financial_view", "dashboard.view_operational", "dashboard.view_executive"],
   },
   ]},
   { label: "Projetos", items: [

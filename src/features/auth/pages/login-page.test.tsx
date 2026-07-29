@@ -149,7 +149,8 @@ describe("LoginPage", () => {
     await user.type(await screen.findByLabelText("Senha"), "123456")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
-    expect(await screen.findByText("Visão geral da operação")).toBeInTheDocument()
+    expect(await screen.findByText("Centro de controle do SAGEP")).toBeInTheDocument()
+    expect(await screen.findByText("Perspectiva operacional")).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledTimes(4)
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest"
 
 import themeCss from "@/index.css?raw"
 import executiveDashboardSource from "@/features/dashboard/pages/executive-dashboard-page.tsx?raw"
+import dashboardOverviewSource from "@/features/dashboard/pages/dashboard-overview-page.tsx?raw"
 import operationalDashboardSource from "@/features/dashboard/pages/operational-dashboard-page.tsx?raw"
 import projectsKanbanSource from "@/features/projects/pages/projects-kanban-page.tsx?raw"
 import serviceOrdersGanttSource from "@/features/service-orders/pages/service-orders-gantt-page.tsx?raw"
@@ -9,6 +10,7 @@ import serviceOrdersGanttSource from "@/features/service-orders/pages/service-or
 const themedHeroSources = [
   operationalDashboardSource,
   executiveDashboardSource,
+  dashboardOverviewSource,
   projectsKanbanSource,
   serviceOrdersGanttSource,
 ]

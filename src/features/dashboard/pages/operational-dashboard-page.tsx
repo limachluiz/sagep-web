@@ -440,7 +440,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
   )
 }
 
-export function OperationalDashboardPage() {
+export function OperationalDashboardPage({ embedded = false }: { embedded?: boolean }) {
   const [staleDays, setStaleDays] = useState(15)
   const dashboardQuery = useQuery({
     queryKey: ["dashboard", "operational", staleDays],
@@ -450,13 +450,41 @@ export function OperationalDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow="Dashboard operacional"
-        title="Visão geral da operação"
-        description="Projetos, pendências documentais, alertas e posição atual dos itens da ATA com dados da API."
-        icon={Radar}
-        meta={dashboardQuery.data ? `Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}` : undefined}
-        actions={<>
+      {embedded ? (
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-[.16em] text-primary uppercase">Perspectiva operacional</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Prioridades, alertas e posição atual da execução.
+                {dashboardQuery.data ? ` Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}.` : ""}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <Select value={String(staleDays)} onValueChange={(value) => setStaleDays(Number(value))}>
+                <SelectTrigger className="w-full sm:w-52" aria-label="Período sem avanço"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">Sem avanço há 7 dias</SelectItem>
+                  <SelectItem value="15">Sem avanço há 15 dias</SelectItem>
+                  <SelectItem value="30">Sem avanço há 30 dias</SelectItem>
+                  <SelectItem value="60">Sem avanço há 60 dias</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()} disabled={dashboardQuery.isFetching}>
+                {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+                Atualizar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <PageHeader
+          eyebrow="Dashboard operacional"
+          title="Visão geral da operação"
+          description="Projetos, pendências documentais, alertas e posição atual dos itens da ATA com dados da API."
+          icon={Radar}
+          meta={dashboardQuery.data ? `Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}` : undefined}
+          actions={<>
           <Select value={String(staleDays)} onValueChange={(value) => setStaleDays(Number(value))}>
             <SelectTrigger className="w-full sm:w-52" aria-label="Período sem avanço"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -470,8 +498,9 @@ export function OperationalDashboardPage() {
             {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
             Atualizar
           </Button>
-        </>}
-      />
+          </>}
+        />
+      )}
 
       {dashboardQuery.isError && (
         <Alert variant="destructive">

@@ -164,6 +164,107 @@ export type DashboardExecutiveFilters = {
   ownerId?: string
 }
 
+export type DashboardOverviewFilters = DashboardExecutiveFilters
+
+export type DashboardOverviewResponse = {
+  generatedAt: string
+  filter: {
+    mode: "all" | "interval" | "as_of"
+    label: string
+    periodType: DashboardOverviewFilters["periodType"] | null
+    referenceDate: string | null
+    startDate: string | null
+    endDate: string | null
+    asOfDate: string | null
+  }
+  summary: {
+    projectsOpen: number
+    projectsCompleted: number
+    projectsCanceled: number
+    estimatesFinalized: number
+    diexIssued: number
+    serviceOrdersIssued: number
+    totalEstimatedAmount: string
+    projectsNeedingAttention: number
+  }
+  totals: {
+    users: {
+      total: number
+      active: number
+      inactive: number
+    }
+    projects: number
+    tasks: number
+    estimates: number
+    diex: number
+    serviceOrders: number
+    atas: number
+    ataItems: number
+  }
+  documents: {
+    diex: {
+      total: number
+      withNumber: number
+      draft: number
+    }
+    serviceOrders: {
+      total: number
+      emergency: number
+      scheduled: number
+    }
+  }
+  pendingActions: {
+    awaitingCreditNote: number
+    awaitingDiexFormalization: number
+    awaitingCommitmentNote: number
+    awaitingServiceOrder: number
+    awaitingSignedServiceOrder: number
+    awaitingExecutionStart: number
+    awaitingAsBuiltAnalysis: number
+    awaitingInvoiceAttestation: number
+  }
+  financial: {
+    totalEstimatedAmount: string
+    totalWithDiex: string
+    totalWithServiceOrder: string
+    totalCompletedProjectsAmount: string
+    byEstimateStatus: AmountBreakdown[]
+    byAtaType: AmountBreakdown[]
+  }
+  pipeline: {
+    projectsByStage: Array<{
+      stage: ProjectStage
+      count: number
+      percentage: number
+      totalEstimatedAmount: string
+    }>
+    projectsByStatus: CountBreakdown[]
+    tasksByStatus: CountBreakdown[]
+    estimatesByStatus: CountBreakdown[]
+  }
+  attention: Array<{
+    id: string
+    projectCode: number
+    title: string
+    status: string
+    stage: ProjectStage
+    updatedAt: string
+    totalEstimatedAmount: string
+    reason: string
+  }>
+  openProjects: {
+    total: number
+    recent: Array<{
+      id: string
+      projectCode: number
+      title: string
+      status: string
+      stage: ProjectStage
+      updatedAt: string
+    }>
+  }
+}
+
 export type DashboardExecutiveResponse = {
   generatedAt: string
   filter: {

@@ -11,8 +11,7 @@ const AtasPage = lazy(() => import("@/features/atas/pages/atas-page").then((modu
 const AccessDeniedPage = lazy(() => import("@/features/auth/pages/access-denied-page").then((module) => ({ default: module.AccessDeniedPage })))
 const SessionsPage = lazy(() => import("@/features/auth/pages/sessions-page").then((module) => ({ default: module.SessionsPage })))
 const LoginPage = lazy(() => import("@/features/auth/pages/login-page").then((module) => ({ default: module.LoginPage })))
-const OperationalDashboardPage = lazy(() => import("@/features/dashboard/pages/operational-dashboard-page").then((module) => ({ default: module.OperationalDashboardPage })))
-const ExecutiveDashboardPage = lazy(() => import("@/features/dashboard/pages/executive-dashboard-page").then((module) => ({ default: module.ExecutiveDashboardPage })))
+const DashboardPage = lazy(() => import("@/features/dashboard/pages/dashboard-page").then((module) => ({ default: module.DashboardPage })))
 const DiexDetailsPage = lazy(() => import("@/features/diex/pages/diex-details-page").then((module) => ({ default: module.DiexDetailsPage })))
 const DiexListPage = lazy(() => import("@/features/diex/pages/diex-list-page").then((module) => ({ default: module.DiexListPage })))
 const EstimateDetailsPage = lazy(() => import("@/features/estimates/pages/estimate-details-page").then((module) => ({ default: module.EstimateDetailsPage })))
@@ -47,8 +46,8 @@ export default function App() {
           <Route
             path="/dashboard"
             element={
-              <PermissionRoute anyOf={["dashboard.view_operational"]}>
-                <OperationalDashboardPage />
+              <PermissionRoute anyOf={["dashboard.financial_view", "dashboard.view_operational", "dashboard.view_executive"]}>
+                <DashboardPage />
               </PermissionRoute>
             }
           />
@@ -56,7 +55,15 @@ export default function App() {
             path="/dashboard/executive"
             element={
               <PermissionRoute anyOf={["dashboard.view_executive"]}>
-                <ExecutiveDashboardPage />
+                <Navigate to="/dashboard?view=executive" replace />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/operational"
+            element={
+              <PermissionRoute anyOf={["dashboard.view_operational"]}>
+                <Navigate to="/dashboard?view=operational" replace />
               </PermissionRoute>
             }
           />
