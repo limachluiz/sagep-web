@@ -42,7 +42,7 @@ export function ProtectedRoute() {
     return <Navigate to="/login" replace state={{ from: location }} />
   }
 
-  if (meQuery.isLoading || meQuery.isFetching) {
+  if (meQuery.isPending) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
         <div className="rounded-2xl border border-white/10 bg-white/4 p-6 text-center shadow-2xl">

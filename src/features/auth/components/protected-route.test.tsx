@@ -15,10 +15,13 @@ const authenticatedUser = {
   permissions: [],
 }
 
-function renderProtectedRoute() {
+function renderProtectedRoute(
+  configureQueryClient?: (queryClient: QueryClient) => void,
+) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
+  configureQueryClient?.(queryClient)
 
   return render(
     <QueryClientProvider client={queryClient}>
@@ -75,6 +78,17 @@ describe("ProtectedRoute", () => {
     )
 
     expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it("mantém a área protegida visível durante atualização da sessão em segundo plano", () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)))
+
+    renderProtectedRoute((queryClient) => {
+      queryClient.setQueryData(["auth", "me"], authenticatedUser)
+    })
+
+    expect(screen.getByText("Área protegida")).toBeInTheDocument()
+    expect(screen.queryByText("Validando sessão...")).not.toBeInTheDocument()
   })
 
   it("encerra a sessão quando a API rejeita as credenciais", async () => {

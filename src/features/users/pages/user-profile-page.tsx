@@ -100,6 +100,7 @@ export function UserProfilePage() {
     queryFn: authService.me,
     initialData: currentUser ?? undefined,
     enabled: Boolean(currentUser),
+    staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   })
 

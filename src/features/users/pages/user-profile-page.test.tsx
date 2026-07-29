@@ -98,5 +98,6 @@ describe("UserProfilePage", () => {
     await user.type(screen.getByRole("textbox", { name: "Buscar permissão" }), "projetos")
     expect(screen.getByText("Visualizar todos os projetos")).toBeInTheDocument()
     expect(screen.queryByText("Administrar usuários")).not.toBeInTheDocument()
+    expect(fetch).not.toHaveBeenCalled()
   })
 })
