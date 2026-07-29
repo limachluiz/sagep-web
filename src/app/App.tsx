@@ -30,6 +30,7 @@ const TasksListPage = lazy(() => import("@/features/tasks/pages/tasks-list-page"
 const UsersPage = lazy(() => import("@/features/users/pages/users-page").then((module) => ({ default: module.UsersPage })))
 const PermissionsSettingsPage = lazy(() => import("@/features/permissions/pages/permissions-settings-page").then((module) => ({ default: module.PermissionsSettingsPage })))
 const ReportsPage = lazy(() => import("@/features/reports/pages/reports-page").then((module) => ({ default: module.ReportsPage })))
+const AuditPage = lazy(() => import("@/features/audit/pages/audit-page").then((module) => ({ default: module.AuditPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -209,6 +210,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["permissions.view"]}>
                 <PermissionsSettingsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/audit"
+            element={
+              <PermissionRoute anyOf={["audit.view"]}>
+                <AuditPage />
               </PermissionRoute>
             }
           />

@@ -95,3 +95,16 @@ export type SessionMutationResponse = {
   message: string
   revokedCount?: number
 }
+
+export type SessionCleanupResponse = {
+  message: string
+  deleted: {
+    refreshTokens: number
+    auditLogs: number
+  }
+  summary: {
+    deletedRefreshTokens: number
+    deletedAuditLogs: number
+    executedAt: string
+  }
+}

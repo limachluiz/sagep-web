@@ -18,6 +18,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   FileChartColumn,
+  History,
   Settings,
   ShieldCheck,
   Users,
@@ -141,6 +142,12 @@ const navigation: NavigationGroup[] = [
     href: "/settings",
     icon: Settings,
     anyOf: ["permissions.view"],
+  },
+  {
+    label: "Auditoria",
+    href: "/audit",
+    icon: History,
+    anyOf: ["audit.view"],
   },
   ]},
 ]
