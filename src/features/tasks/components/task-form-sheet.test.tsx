@@ -84,13 +84,12 @@ describe("TaskFormSheet", () => {
     })))
   })
 
-  it("usa um painel lateral compacto no desktop e responsivo no celular", () => {
+  it("usa um modal amplo e com altura limitada para o formulário", () => {
     renderForm()
 
-    expect(document.querySelector('[data-slot="sheet-content"]')).toHaveClass(
-      "w-full",
-      "sm:w-[30rem]",
-      "sm:max-w-[30rem]",
+    expect(document.querySelector('[data-slot="dialog-content"]')).toHaveClass(
+      "max-h-[92vh]",
+      "sm:max-w-3xl",
     )
   })
 })

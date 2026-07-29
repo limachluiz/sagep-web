@@ -7,17 +7,17 @@ import { z } from "zod"
 
 import { FormSection } from "@/components/form-section"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
 import { Textarea } from "@/components/ui/textarea"
 import { ProjectSelect } from "@/features/projects/components/project-select"
 import type { ProjectSelectOption } from "@/features/projects/components/project-select.utils"
@@ -169,18 +169,18 @@ export function TaskFormSheet({
   })
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:w-[30rem] sm:max-w-[30rem]">
-        <SheetHeader className="border-b px-6 py-5">
-          <SheetTitle className="text-xl">{isEditing ? "Editar tarefa" : "Nova tarefa"}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[92vh] grid-rows-[auto_minmax(0,1fr)_auto] gap-0 p-0 sm:max-w-3xl">
+        <DialogHeader className="border-b px-6 py-5 pr-14">
+          <DialogTitle className="text-xl">{isEditing ? "Editar tarefa" : "Nova tarefa"}</DialogTitle>
+          <DialogDescription>
             {isEditing
               ? `Atualize os dados da TSK-${task?.taskCode}.`
               : "Cadastre uma atividade vinculada a um projeto do SAGEP."}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <form id="task-form" className="space-y-4 px-6 py-2" onSubmit={submit}>
+        <form id="task-form" className="min-h-0 space-y-4 overflow-y-auto px-6 py-4" onSubmit={submit}>
           <FormSection icon={Link2} title="Vínculo do projeto" description="Toda tarefa integra o histórico e a equipe de um projeto.">
             <div className="space-y-2">
               <Label>Projeto</Label>
@@ -195,6 +195,7 @@ export function TaskFormSheet({
                 loading={projectsQuery.isLoading}
                 error={projectsQuery.isError}
                 ariaLabel="Projeto da tarefa"
+                className="h-auto min-h-9 w-full py-2 text-left whitespace-normal [&_[data-slot=select-value]]:line-clamp-2"
               />
               {form.formState.errors.projectId && <p className="text-xs text-destructive">{form.formState.errors.projectId.message}</p>}
               {projectsQuery.isError && <p className="text-xs text-destructive">{projectsQuery.error.message}</p>}
@@ -268,14 +269,14 @@ export function TaskFormSheet({
           </FormSection>
         </form>
 
-        <SheetFooter className="border-t px-6 py-5 sm:flex-row sm:justify-end">
+        <DialogFooter className="border-t px-6 py-5">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>Cancelar</Button>
           <Button type="submit" form="task-form" disabled={pending}>
             {pending && <Loader2 className="size-4 animate-spin" />}
             {isEditing ? "Salvar alterações" : "Criar tarefa"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
