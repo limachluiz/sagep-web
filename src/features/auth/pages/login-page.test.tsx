@@ -157,6 +157,11 @@ describe("LoginPage", () => {
     expect(await screen.findByRole("button", {
       name: /Abrir menu da conta de 3º Sgt Lima/i,
     })).toBeInTheDocument()
+    expect(
+      screen.getAllByRole("img", {
+        name: /Brasão do 4º Centro de Telemática de Área/i,
+      }).length,
+    ).toBeGreaterThan(0)
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/auth\/me$/),
       expect.objectContaining({ method: "GET" }),
@@ -181,6 +186,18 @@ describe("LoginPage", () => {
 
     const user = userEvent.setup()
     renderApplication()
+
+    expect(
+      screen.getAllByRole("img", {
+        name: /Brasão do 4º Centro de Telemática de Área/i,
+      }).length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText("Sistema de Apoio à Gestão de Projetos").length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getByText("Desenvolvido pelo 2º Ten Luiz - 4º CTA"),
+    ).toBeInTheDocument()
 
     await user.type(await screen.findByLabelText("Senha"), "senha-errada")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
