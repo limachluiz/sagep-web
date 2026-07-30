@@ -9,11 +9,11 @@ import {
   Fingerprint,
   Loader2,
   LockKeyhole,
-  Network,
   ShieldCheck,
 } from "lucide-react"
 import { toast } from "sonner"
 
+import ctaLogo from "@/assets/cta-logo.svg"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -74,12 +74,13 @@ export function LoginPage() {
       <div className="relative z-10 grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(430px,.92fr)]">
         <section className="relative hidden min-h-screen flex-col justify-between border-r border-sidebar-border bg-sidebar p-10 text-sidebar-foreground lg:flex xl:p-14">
           <header className="flex items-center gap-4">
-            <div className="relative flex size-11 items-center justify-center rounded-lg border border-sidebar-primary/30 bg-sidebar-primary/10 text-sidebar-primary">
-              <Network className="size-5" aria-hidden="true" />
+            <div className="flex h-16 w-14 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/95 p-1.5 shadow-sm">
+              <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-full w-full object-contain" />
             </div>
             <div>
               <p className="font-heading text-xl font-bold tracking-[.16em]">SAGEP</p>
-              <p className="text-[9px] uppercase tracking-[.2em] text-sidebar-foreground/70">4º Centro de Telemática de Área</p>
+              <p className="mt-0.5 text-[10px] font-medium text-sidebar-foreground/85">Sistema de Apoio à Gestão de Projetos</p>
+              <p className="mt-1 text-[8px] uppercase tracking-[.18em] text-sidebar-foreground/60">4º Centro de Telemática de Área</p>
             </div>
           </header>
 
@@ -115,12 +116,13 @@ export function LoginPage() {
         <section className="flex min-h-screen items-center justify-center p-5 sm:p-10 lg:p-12">
           <div className="w-full max-w-md">
             <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="flex size-10 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
-                <Network className="size-5" />
+              <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-white p-1 shadow-sm">
+                <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-full w-full object-contain" />
               </div>
               <div>
                 <p className="font-heading text-lg font-bold tracking-[.16em]">SAGEP</p>
-                <p className="text-[8px] uppercase tracking-[.2em] text-muted-foreground">4º CTA</p>
+                <p className="text-[9px] font-medium text-muted-foreground">Sistema de Apoio à Gestão de Projetos</p>
+                <p className="mt-0.5 text-[8px] uppercase tracking-[.18em] text-muted-foreground/75">4º CTA</p>
               </div>
             </div>
 
@@ -193,7 +195,10 @@ export function LoginPage() {
               <p>Acesso restrito a usuários autorizados. Sessões e operações são registradas para fins de segurança e auditoria.</p>
             </div>
 
-            <p className="mt-8 text-center text-[9px] uppercase tracking-[.16em] text-muted-foreground/60">SAGEP v1.0 · Exército Brasileiro</p>
+            <footer className="mt-8 space-y-2 text-center">
+              <p className="text-[9px] uppercase tracking-[.16em] text-muted-foreground/60">SAGEP v1.0 · Exército Brasileiro</p>
+              <p className="text-[10px] font-medium text-muted-foreground/75">Desenvolvido pelo 2º Ten Luiz - 4º CTA</p>
+            </footer>
           </div>
         </section>
       </div>
