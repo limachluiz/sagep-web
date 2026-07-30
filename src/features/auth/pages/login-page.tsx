@@ -3,17 +3,23 @@ import { Navigate, useLocation, useNavigate } from "react-router"
 import { useMutation } from "@tanstack/react-query"
 import {
   ArrowRight,
-  CheckCircle2,
+  CheckSquare2,
+  ClipboardList,
   Eye,
   EyeOff,
-  Fingerprint,
+  FileText,
   Loader2,
   LockKeyhole,
+  RadioTower,
+  Settings2,
   ShieldCheck,
+  UserRound,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import ctaLogo from "@/assets/cta-logo.svg"
+import engineeringGear from "@/assets/engineering-gear.svg"
+import loginMap from "@/assets/sagep-login-map.svg"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -21,10 +27,11 @@ import { ThemeToggle } from "@/components/theme-toggle"
 import { authService } from "@/features/auth/auth.service"
 import { useAuthStore } from "@/features/auth/auth.store"
 
-const platformMetrics = [
-  { value: "09", label: "etapas rastreáveis" },
-  { value: "04", label: "perfis de acesso" },
-  { value: "24/7", label: "auditoria ativa" },
+const workflow = [
+  { label: "Planejamento", icon: ClipboardList },
+  { label: "Documentação", icon: FileText },
+  { label: "Execução", icon: Settings2 },
+  { label: "Entrega", icon: CheckSquare2 },
 ]
 
 export function LoginPage() {
@@ -63,86 +70,107 @@ export function LoginPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-background text-foreground selection:bg-primary selection:text-primary-foreground">
-      <div className="sagep-signal-grid absolute inset-0" aria-hidden="true" />
-      <div className="absolute left-[14%] top-[-22rem] size-[38rem] rounded-full bg-primary/8 blur-[130px]" aria-hidden="true" />
-      <div className="absolute bottom-[-25rem] right-[-8rem] size-[45rem] rounded-full bg-gold/8 blur-[150px]" aria-hidden="true" />
-      <div className="absolute right-5 top-5 z-20 rounded-lg border border-border/70 bg-card/75 shadow-sm backdrop-blur-md">
-        <ThemeToggle />
+    <main className="sagep-login-shell relative min-h-screen overflow-hidden bg-[#06120e] text-[#f2efe5] selection:bg-[#c99b32] selection:text-[#152115]">
+      <img
+        src={loginMap}
+        alt=""
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 size-full object-cover object-center opacity-80"
+      />
+      <div className="sagep-login-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
+      <div className="sagep-login-grid pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" />
+
+      <div className="absolute right-4 top-4 z-30 flex items-center gap-2 sm:right-7 sm:top-6">
+        <div className="hidden items-center gap-2 rounded-md border border-[#a9893d]/20 bg-[#07120f]/70 px-4 py-2 text-[9px] font-semibold uppercase tracking-[.2em] text-[#d8b45a] backdrop-blur-md sm:flex">
+          <span className="size-2 rounded-full bg-[#e7b64b] shadow-[0_0_12px_#e7b64b]" />
+          Sistema operacional
+        </div>
+        <div className="rounded-md border border-[#a9893d]/20 bg-[#07120f]/70 text-[#d8b45a] backdrop-blur-md">
+          <ThemeToggle />
+        </div>
       </div>
 
-      <div className="relative z-10 grid min-h-screen lg:grid-cols-[minmax(0,1.08fr)_minmax(430px,.92fr)]">
-        <section className="relative hidden min-h-screen flex-col justify-between border-r border-sidebar-border bg-sidebar p-10 text-sidebar-foreground lg:flex xl:p-14">
-          <header className="flex items-center gap-4">
-            <div className="flex h-16 w-14 shrink-0 items-center justify-center rounded-xl border border-white/20 bg-white/95 p-1.5 shadow-sm">
-              <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-full w-full object-contain" />
+      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-[1680px] items-center gap-8 px-6 pb-10 pt-24 lg:grid-cols-[minmax(0,1fr)_minmax(430px,520px)] lg:gap-14 lg:px-14 lg:pb-8 lg:pt-20 xl:grid-cols-[minmax(0,1.25fr)_minmax(460px,540px)] xl:px-20">
+        <section className="hidden min-w-0 flex-col justify-center lg:flex">
+          <div className="w-full max-w-[650px]">
+            <div className="mx-auto flex w-fit flex-col items-center text-center">
+              <div className="relative mb-3">
+                <div className="absolute inset-3 rounded-full bg-[#d4a13a]/12 blur-2xl" aria-hidden="true" />
+                <img
+                  src={ctaLogo}
+                  alt="Brasão do 4º Centro de Telemática de Área"
+                  className="relative h-40 w-36 object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,.45)] xl:h-44 xl:w-40"
+                />
+              </div>
+              <p className="font-heading text-[5.35rem] font-extrabold leading-[.8] tracking-[.05em] text-[#ece9df] drop-shadow-[0_5px_12px_rgba(0,0,0,.7)] xl:text-[6rem]">
+                SAGEP
+              </p>
+              <p className="mt-5 max-w-[360px] font-heading text-lg font-semibold uppercase leading-6 tracking-[.08em] text-[#b8a276]">
+                Sistema de Apoio à
+                <span className="block">Gestão de Projetos</span>
+              </p>
             </div>
-            <div>
-              <p className="font-heading text-xl font-bold tracking-[.16em]">SAGEP</p>
-              <p className="mt-0.5 text-[10px] font-medium text-sidebar-foreground/85">Sistema de Apoio à Gestão de Projetos</p>
-              <p className="mt-1 text-[8px] uppercase tracking-[.18em] text-sidebar-foreground/60">4º Centro de Telemática de Área</p>
-            </div>
-          </header>
 
-          <div className="max-w-2xl py-12">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-sidebar-primary/20 bg-sidebar-primary/[.07] px-3 py-2 text-[10px] font-semibold uppercase tracking-[.18em] text-sidebar-primary">
-              <ShieldCheck className="size-3.5" />
-              Gestão institucional
+            <div className="mt-8 flex items-center gap-3 text-[#aa8a3f]/70" aria-hidden="true">
+              <span className="h-px flex-1 bg-current" />
+              <span className="size-2 rotate-45 border border-[#d8aa42] bg-[#8f742f]" />
+              <span className="h-px flex-1 bg-current" />
             </div>
-            <h1 className="font-heading text-5xl font-semibold leading-[.96] tracking-[-.02em] xl:text-7xl">
-              Projetos com
-              <span className="block text-sidebar-primary">visão completa.</span>
-            </h1>
-            <p className="mt-7 max-w-xl text-base leading-7 text-sidebar-foreground/78 xl:text-lg">
-              Planejamento, execução e rastreabilidade em uma plataforma integrada para a gestão técnica do 4º CTA.
+
+            <p className="mt-5 text-center font-heading text-lg font-semibold uppercase tracking-[.12em] text-[#b4aa80]">
+              Planejamento. <span className="text-[#dda93a]">Controle.</span> Rastreabilidade.
             </p>
 
-            <div className="mt-10 grid max-w-xl grid-cols-3 border-y border-sidebar-border">
-              {platformMetrics.map((metric) => (
-                <div className="border-r border-sidebar-border px-4 py-5 first:pl-0 last:border-r-0" key={metric.label}>
-                  <p className="font-heading text-xl font-semibold text-sidebar-foreground">{metric.value}</p>
-                  <p className="mt-1 text-[9px] uppercase tracking-[.15em] text-sidebar-foreground/65">{metric.label}</p>
-                </div>
-              ))}
+            <div className="mt-10">
+              <p className="mb-4 text-[9px] font-semibold uppercase tracking-[.22em] text-[#b7a66e]">Fluxo de trabalho</p>
+              <div className="grid grid-cols-4">
+                {workflow.map(({ label, icon: Icon }, index) => (
+                  <div className="relative flex flex-col items-center text-center" key={label}>
+                    {index < workflow.length - 1 && (
+                      <span className="absolute left-[calc(50%+25px)] top-6 h-px w-[calc(100%-50px)] bg-[linear-gradient(90deg,#bc8d2f_45%,transparent_45%)] bg-[length:6px_1px]" aria-hidden="true" />
+                    )}
+                    <span className="relative z-10 flex size-12 items-center justify-center rounded-full border border-[#bf8d2d] bg-[#0b1a13]/80 text-[#e0ac3d] shadow-[0_0_0_5px_rgba(5,17,13,.55)]">
+                      <Icon className="size-5" strokeWidth={1.6} aria-hidden="true" />
+                    </span>
+                    <span className="mt-3 text-[8px] font-semibold uppercase tracking-[.16em] text-[#dca63b]">{label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-
-          <footer className="flex items-center justify-between text-[9px] uppercase tracking-[.16em] text-sidebar-foreground/60">
-            <span>Divisão Técnica · Seção de Projetos</span>
-            <span className="flex items-center gap-2 text-sidebar-foreground/70"><CheckCircle2 className="size-3 text-sidebar-primary" /> ambiente monitorado</span>
-          </footer>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center p-5 sm:p-10 lg:p-12">
-          <div className="w-full max-w-md">
-            <div className="mb-10 flex items-center gap-3 lg:hidden">
-              <div className="flex h-14 w-12 shrink-0 items-center justify-center rounded-lg border border-border/80 bg-white p-1 shadow-sm">
-                <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-full w-full object-contain" />
-              </div>
+        <section className="flex items-center justify-center">
+          <div className="sagep-login-card relative w-full max-w-[520px] bg-[#f1ede2] px-7 py-9 text-[#1d271d] shadow-[16px_22px_0_rgba(16,27,18,.64),0_28px_70px_rgba(0,0,0,.38)] sm:px-12 sm:py-11">
+            <div className="mb-7 flex items-center gap-3 lg:hidden">
+              <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-16 w-14 object-contain" />
               <div>
-                <p className="font-heading text-lg font-bold tracking-[.16em]">SAGEP</p>
-                <p className="text-[9px] font-medium text-muted-foreground">Sistema de Apoio à Gestão de Projetos</p>
-                <p className="mt-0.5 text-[8px] uppercase tracking-[.18em] text-muted-foreground/75">4º CTA</p>
+                <p className="font-heading text-2xl font-extrabold tracking-[.12em]">SAGEP</p>
+                <p className="text-[9px] font-semibold uppercase tracking-[.09em] text-[#66705c]">Sistema de Apoio à Gestão de Projetos</p>
               </div>
             </div>
 
-            <div className="mb-8">
-              <p className="mb-3 text-[10px] font-semibold uppercase tracking-[.2em] text-primary">Acesso institucional</p>
-              <h2 className="font-heading text-4xl font-semibold tracking-tight sm:text-5xl">Acesso ao sistema</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">Use suas credenciais institucionais para iniciar uma sessão.</p>
+            <div className="mb-7">
+              <div className="mb-5 flex items-center gap-3">
+                <p className="text-[9px] font-bold uppercase tracking-[.28em] text-[#42513b]">Acesso institucional</p>
+                <span className="h-px flex-1 bg-[#aa914f]/60" aria-hidden="true" />
+                <span className="size-1.5 rotate-45 border border-[#aa914f]" aria-hidden="true" />
+              </div>
+              <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-[2.65rem]">Bem-vindo ao SAGEP</h1>
+              <p className="mt-2 text-sm text-[#5e6758]">Entre com suas credenciais para continuar.</p>
             </div>
 
             <form className="space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">E-mail institucional</Label>
+                <Label htmlFor="email" className="text-sm font-semibold text-[#273126]">Usuário</Label>
                 <div className="group relative">
-                  <Fingerprint className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70 transition-colors group-focus-within:text-primary" />
+                  <UserRound className="pointer-events-none absolute left-4 top-1/2 size-[18px] -translate-y-1/2 text-[#65705f] transition-colors group-focus-within:text-[#8b6b20]" />
                   <Input
                     id="email"
                     type="email"
                     autoComplete="username"
-                    placeholder="nome@4cta.eb.mil.br"
-                    className="h-13 rounded-lg border-border/80 bg-card/70 pl-11 shadow-sm focus-visible:bg-card"
+                    placeholder="Digite seu usuário"
+                    className="h-12 rounded-md border-[#b9b4a7] bg-white/25 pl-11 text-[#253025] shadow-none placeholder:text-[#777c73] focus-visible:border-[#9a7b31] focus-visible:ring-[#9a7b31]/20"
                     value={email}
                     onChange={(event) => setEmail(event.target.value)}
                     disabled={loginMutation.isPending}
@@ -152,15 +180,15 @@ export function LoginPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-[10px] font-semibold uppercase tracking-[.14em] text-muted-foreground">Senha</Label>
+                <Label htmlFor="password" className="text-sm font-semibold text-[#273126]">Senha</Label>
                 <div className="group relative">
-                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground/70 transition-colors group-focus-within:text-primary" />
+                  <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-[17px] -translate-y-1/2 text-[#65705f] transition-colors group-focus-within:text-[#8b6b20]" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
                     autoComplete="current-password"
-                    placeholder="••••••••"
-                    className="h-13 rounded-lg border-border/80 bg-card/70 pl-11 pr-12 shadow-sm focus-visible:bg-card"
+                    placeholder="Digite sua senha"
+                    className="h-12 rounded-md border-[#b9b4a7] bg-white/25 pl-11 pr-12 text-[#253025] shadow-none placeholder:text-[#777c73] focus-visible:border-[#9a7b31] focus-visible:ring-[#9a7b31]/20"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                     disabled={loginMutation.isPending}
@@ -168,7 +196,7 @@ export function LoginPage() {
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted-foreground transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+                    className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-[#66705f] transition-colors hover:text-[#8b6b20] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#9a7b31]"
                     onClick={() => setShowPassword((value) => !value)}
                     aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                   >
@@ -178,30 +206,52 @@ export function LoginPage() {
               </div>
 
               <Button
-                className="group h-13 w-full rounded-lg text-xs font-bold uppercase tracking-[.14em]"
+                className="group h-13 w-full rounded-md bg-[linear-gradient(90deg,#80681c,#9c7e24,#76601a)] text-sm font-medium tracking-[.02em] text-white shadow-[0_8px_20px_rgba(92,70,11,.18)] hover:brightness-110"
                 type="submit"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? (
                   <><Loader2 className="size-4 animate-spin" />Autenticando...</>
                 ) : (
-                  <>Entrar no sistema<ArrowRight className="size-4 transition-transform group-hover:translate-x-1" /></>
+                  <>Entrar no sistema<ArrowRight className="ml-auto size-4 transition-transform group-hover:translate-x-1" /></>
                 )}
               </Button>
             </form>
 
-            <div className="mt-7 flex gap-3 rounded-lg border border-border/70 bg-muted/45 p-4 text-xs leading-5 text-muted-foreground">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-              <p>Acesso restrito a usuários autorizados. Sessões e operações são registradas para fins de segurança e auditoria.</p>
+            <div className="mt-5 flex items-center justify-center gap-2 text-xs text-[#5c6757]">
+              <ShieldCheck className="size-4" aria-hidden="true" />
+              <span>Ambiente seguro e monitorado</span>
             </div>
 
-            <footer className="mt-8 space-y-2 text-center">
-              <p className="text-[9px] uppercase tracking-[.16em] text-muted-foreground/60">SAGEP v1.0 · Exército Brasileiro</p>
-              <p className="text-[10px] font-medium text-muted-foreground/75">Desenvolvido pelo 2º Ten Luiz - 4º CTA</p>
-            </footer>
+            <div className="my-6 flex items-center gap-3 text-[#b7a66f]/65" aria-hidden="true">
+              <span className="h-px flex-1 bg-current" />
+              <span className="size-1.5 rotate-45 border border-[#a68c4b]" />
+              <span className="h-px flex-1 bg-current" />
+            </div>
+
+            <button
+              type="button"
+              className="mx-auto block border-b border-dashed border-[#6d755f]/55 text-xs text-[#495346] transition-colors hover:border-[#8b6b20] hover:text-[#7a5c18]"
+              onClick={() => toast.info("Entre em contato com o administrador do SAGEP.")}
+            >
+              Problemas de acesso?
+            </button>
           </div>
         </section>
       </div>
+
+      <footer className="relative z-20 grid min-h-[72px] items-center gap-3 border-t border-[#d0aa4b]/15 bg-[#06110e]/76 px-6 py-4 text-[#d5d0c1] backdrop-blur-sm sm:grid-cols-2 lg:px-12 xl:px-16">
+        <div className="flex items-center gap-3">
+          <RadioTower className="size-5 text-[#d5a032]" strokeWidth={1.5} aria-hidden="true" />
+          <p className="text-xs tracking-[.04em] sm:text-sm">
+            4º Centro de Telemática de Área <span className="px-2 text-[#9e823c]">•</span> Divisão Técnica
+          </p>
+        </div>
+        <div className="flex items-center gap-3 sm:justify-end">
+          <p className="text-[10px] tracking-[.06em] text-[#b39b56] sm:text-xs">Desenvolvido pelo 2º Ten Luiz - 4º CTA</p>
+          <img src={engineeringGear} alt="" aria-hidden="true" className="size-9 object-contain opacity-90" />
+        </div>
+      </footer>
     </main>
   )
 }
