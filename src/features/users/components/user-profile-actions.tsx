@@ -36,9 +36,11 @@ import type {
   UpdateOwnProfilePayload,
   UserThemePreference,
 } from "@/features/auth/auth.types"
+import { isMilitaryRank, militaryRanks } from "@/features/users/military-ranks"
 
 const MAX_AVATAR_BYTES = 256 * 1024
 const AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
+const NO_RANK = "NONE"
 
 function getInitials(user: AuthUser) {
   return (user.name?.trim() || user.email)
@@ -101,7 +103,7 @@ export function EditOwnProfileDialog({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(user.name ?? "")
   const [warName, setWarName] = useState(user.warName ?? "")
-  const [rank, setRank] = useState(user.rank ?? "")
+  const [rank, setRank] = useState(user.rank && isMilitaryRank(user.rank) ? user.rank : "")
   const [cpf, setCpf] = useState(formatCpfInput(user.cpf ?? ""))
   const [phone, setPhone] = useState(formatPhoneInput(user.phone ?? ""))
   const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(user.avatarDataUrl ?? null)
@@ -224,12 +226,15 @@ export function EditOwnProfileDialog({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="own-profile-rank">Posto/graduação</Label>
-              <Input
-                id="own-profile-rank"
-                value={rank}
-                maxLength={80}
-                onChange={(event) => setRank(event.target.value)}
-              />
+              <Select value={rank || NO_RANK} onValueChange={(value) => setRank(value === NO_RANK ? "" : value)}>
+                <SelectTrigger id="own-profile-rank"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_RANK}>Não informado</SelectItem>
+                  {militaryRanks.map((militaryRank) => (
+                    <SelectItem key={militaryRank} value={militaryRank}>{militaryRank}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="own-profile-war-name">Nome de guerra</Label>

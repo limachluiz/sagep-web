@@ -10,7 +10,10 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { UserRole } from "@/features/auth/auth.types"
+import { isMilitaryRank, militaryRanks } from "@/features/users/military-ranks"
 import type { AdminUser, UserFormPayload } from "@/features/users/users.types"
+
+const NO_RANK = "NONE"
 
 const schema = z.object({
   name: z.string().trim().min(3, "Informe o nome completo."),
@@ -18,7 +21,7 @@ const schema = z.object({
   email: z.email("Informe um e-mail válido."),
   password: z.string(),
   role: z.enum(["ADMIN", "GESTOR", "PROJETISTA", "CONSULTA"]),
-  rank: z.string(),
+  rank: z.union([z.literal(""), z.enum(militaryRanks)]),
   cpf: z.string(),
 })
 
@@ -47,6 +50,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
     defaultValues: { name: "", warName: "", email: "", password: "", role: "PROJETISTA", rank: "", cpf: "" },
   })
   const role = useWatch({ control: form.control, name: "role" })
+  const rank = useWatch({ control: form.control, name: "rank" })
 
   useEffect(() => {
     if (!open) return
@@ -56,7 +60,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
       email: user?.email ?? "",
       password: "",
       role: user?.role ?? "PROJETISTA",
-      rank: user?.rank ?? "",
+      rank: user?.rank && isMilitaryRank(user.rank) ? user.rank : "",
       cpf: user?.cpf ?? "",
     })
   }, [form, open, user])
@@ -73,7 +77,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
       email: values.email.trim().toLowerCase(),
       password: user ? undefined : values.password,
       role: values.role,
-      rank: values.rank.trim() || undefined,
+      rank: values.rank || (user ? null : undefined),
       cpf: values.cpf.trim() || undefined,
     })
   })
@@ -101,7 +105,19 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2"><Label htmlFor="user-rank">Posto/graduação</Label><Input id="user-rank" placeholder="Ex.: Cap" {...form.register("rank")} /></div>
+            <div className="space-y-2">
+              <Label htmlFor="user-rank">Posto/graduação</Label>
+              <Select
+                value={rank || NO_RANK}
+                onValueChange={(value) => form.setValue("rank", value === NO_RANK ? "" : value as FormValues["rank"], { shouldValidate: true })}
+              >
+                <SelectTrigger id="user-rank"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={NO_RANK}>Não informado</SelectItem>
+                  {militaryRanks.map((rank) => <SelectItem key={rank} value={rank}>{rank}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="space-y-2"><Label htmlFor="user-war-name">Nome de guerra</Label><Input id="user-war-name" placeholder="Ex.: Lima" {...form.register("warName")} /></div>
             <div className="space-y-2"><Label htmlFor="user-cpf">CPF</Label><Input id="user-cpf" inputMode="numeric" placeholder="000.000.000-00" {...form.register("cpf")} /></div>
           </div>

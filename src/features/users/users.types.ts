@@ -62,7 +62,7 @@ export type UpdateUserPayload = {
   name: string
   warName?: string | null
   email: string
-  rank?: string
+  rank?: string | null
   cpf?: string
 }
 
