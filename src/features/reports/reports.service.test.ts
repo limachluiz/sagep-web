@@ -44,4 +44,16 @@ describe("reportsService", () => {
     expect(query.get("projectType")).toBe("FIBRA_OPTICA_PONTO_LOGICO")
     expect(query.get("ownerId")).toBe("user-1")
   })
+
+  it("permite gerar o relatório por tipo de projeto", () => {
+    reportsService.executiveProjectsPdf({
+      staleDays: 15,
+      projectType: "CFTV",
+    })
+
+    const url = vi.mocked(api.getBlob).mock.calls[0][0]
+    expect(new URL(url, "https://sagep.test").searchParams.get("projectType")).toBe(
+      "CFTV",
+    )
+  })
 })

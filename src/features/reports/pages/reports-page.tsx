@@ -69,6 +69,9 @@ export function ReportsPage() {
   const [includeArchived, setIncludeArchived] = useState(false)
   const [projectId, setProjectId] = useState("")
   const [staleDays, setStaleDays] = useState("15")
+  const [executiveScope, setExecutiveScope] = useState<
+    "all" | "CFTV" | "FIBRA_OPTICA_PONTO_LOGICO"
+  >("all")
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350)
@@ -112,7 +115,10 @@ export function ReportsPage() {
   })
   const executivePdfMutation = useMutation({
     mutationFn: () =>
-      reportsService.executiveProjectsPdf({ staleDays: Number(staleDays) }),
+      reportsService.executiveProjectsPdf({
+        staleDays: Number(staleDays),
+        projectType: executiveScope === "all" ? undefined : executiveScope,
+      }),
     onSuccess: (blob) => {
       downloadBlob(
         blob,
@@ -139,20 +145,28 @@ export function ReportsPage() {
           <div className="absolute -right-16 -top-20 size-64 rounded-full border border-white/10 bg-white/5" />
           <div className="relative max-w-2xl">
             <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/10">Relatório para o Comando</Badge>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight">Visão executiva dos projetos em andamento</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-white/75">PDF paisagem com cards gerenciais, gráficos, valores, avanço do fluxo, pontos de atenção e o resumo de toda a carteira ativa da Seção de Projetos.</p>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight">O coração da Seção de Projetos</h2>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-white/75">PDF executivo com carteira geral, entregas, valores em andamento, concluídos e empenhados, saúde dos prazos e o resumo dos projetos abertos.</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-white/15 bg-white/10 p-3"><Presentation className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Leitura rápida</p><p className="mt-1 text-[11px] text-white/65">Síntese para decisão</p></div>
-              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><BarChart3 className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Gráficos nítidos</p><p className="mt-1 text-[11px] text-white/65">Etapas, estados e riscos</p></div>
+              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><BarChart3 className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Saúde da carteira</p><p className="mt-1 text-[11px] text-white/65">Etapas, valores e prazos</p></div>
               <div className="rounded-xl border border-white/15 bg-white/10 p-3"><ShieldCheck className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Dados do SAGEP</p><p className="mt-1 text-[11px] text-white/65">Gerado no momento</p></div>
             </div>
           </div>
         </CardContent>
         <CardContent className="flex flex-col justify-center p-6 lg:p-8">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Critério de atenção</p>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Defina quantos dias sem atualização fazem um projeto aparecer em amarelo para o Comando.</p>
-          <Select value={staleDays} onValueChange={setStaleDays}>
+          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Escopo do relatório</p>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">Escolha a visão geral da seção ou gere um recorte por tipo de projeto.</p>
+          <Select value={executiveScope} onValueChange={(value) => setExecutiveScope(value as typeof executiveScope)}>
             <SelectTrigger className="mt-5 w-full"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Relatório geral</SelectItem>
+              <SelectItem value="CFTV">Somente CFTV</SelectItem>
+              <SelectItem value="FIBRA_OPTICA_PONTO_LOGICO">Somente Fibra Óptica</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={staleDays} onValueChange={setStaleDays}>
+            <SelectTrigger className="mt-3 w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7">7 dias sem atualização</SelectItem>
               <SelectItem value="15">15 dias sem atualização</SelectItem>
@@ -164,7 +178,7 @@ export function ReportsPage() {
             <Download className="size-4" />
             {executivePdfMutation.isPending ? "Montando relatório..." : "Baixar relatório executivo"}
           </Button>
-          <p className="mt-3 text-center text-xs text-muted-foreground">Inclui somente projetos abertos e não arquivados.</p>
+          <p className="mt-3 text-center text-xs text-muted-foreground">Os cards consolidam andamento e concluídos; a carteira detalha os projetos abertos.</p>
         </CardContent>
       </div>
     </Card>}
