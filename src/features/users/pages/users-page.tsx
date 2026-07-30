@@ -24,6 +24,7 @@ const roleLabels: Record<UserRole, string> = { ADMIN: "Administrador", GESTOR: "
 export function UsersPage() {
   const queryClient = useQueryClient()
   const currentUser = useAuthStore((state) => state.user)
+  const setCurrentUser = useAuthStore((state) => state.setUser)
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [role, setRole] = useState<UserRole | "all">("all")
@@ -49,7 +50,23 @@ export function UsersPage() {
       const updated = await usersService.update(selected.id, { name: payload.name, warName: payload.warName, email: payload.email, rank: payload.rank, cpf: payload.cpf })
       return payload.role === selected.role ? updated : usersService.updateRole(selected.id, payload.role)
     },
-    onSuccess: (user) => { toast.success(selected ? `${user.name} atualizado com sucesso.` : `${user.name} criado com sucesso.`); setFormOpen(false); setSelected(null); invalidate() },
+    onSuccess: (user) => {
+      if (user.id === currentUser?.id) {
+        const synchronizedUser = {
+          ...currentUser,
+          ...user,
+          permissions: currentUser.permissions,
+          access: currentUser.access,
+        }
+        setCurrentUser(synchronizedUser)
+        queryClient.setQueryData(["auth", "me"], synchronizedUser)
+        void queryClient.invalidateQueries({ queryKey: ["auth", "me"] })
+      }
+      toast.success(selected ? `${user.name} atualizado com sucesso.` : `${user.name} criado com sucesso.`)
+      setFormOpen(false)
+      setSelected(null)
+      invalidate()
+    },
     onError: (error) => toast.error(error.message),
   })
   const toggleMutation = useMutation({
