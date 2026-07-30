@@ -36,6 +36,7 @@ import {
   formatProfileDate,
   formatPhone,
   getAccessGroups,
+  getUserDisplayName,
   maskCpf,
   roleDescriptions,
   roleLabels,
@@ -144,7 +145,7 @@ export function UserProfilePage() {
     )
   }
 
-  const displayName = user.name?.trim() || user.email
+  const displayName = getUserDisplayName(user)
   const permissionCount = user.permissions?.length ?? 0
   const active = user.active !== false
   const canManageSessions = hasPermission("sessions.manage_own")
@@ -199,7 +200,7 @@ export function UserProfilePage() {
                 <BadgeCheck className="size-3.5" />{active ? "Conta ativa" : "Conta inativa"}
               </Badge>
             </div>
-            <p className="mt-1 text-sm text-muted-foreground">{user.rank || "Posto/graduação não informado"} · {user.email}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{user.name?.trim() || user.email} · {user.email}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Badge variant="outline">{roleLabels[user.role]}</Badge>
               {user.userCode && <Badge variant="outline" className="font-mono">USR-{user.userCode}</Badge>}
@@ -230,6 +231,8 @@ export function UserProfilePage() {
                 <CardDescription>Informações vinculadas à sua identificação no SAGEP.</CardDescription>
               </CardHeader>
               <CardContent className="grid gap-3 sm:grid-cols-2">
+                <ProfileField icon={UserRound} label="Nome completo" value={user.name?.trim() || "Não informado"} />
+                <ProfileField icon={BadgeCheck} label="Nome de guerra" value={user.warName?.trim() || "Não informado"} />
                 <ProfileField icon={Mail} label="E-mail institucional" value={user.email} />
                 <ProfileField icon={Fingerprint} label="CPF" value={maskCpf(user.cpf)} />
                 <ProfileField icon={Phone} label="Telefone" value={formatPhone(user.phone)} />

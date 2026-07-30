@@ -20,6 +20,19 @@ export const roleDescriptions: Record<UserRole, string> = {
   CONSULTA: "Acesso de leitura às informações autorizadas do sistema.",
 }
 
+export function getUserDisplayName(
+  user?: Pick<AuthUser, "name" | "warName" | "rank" | "email"> | null,
+) {
+  if (!user) return "Usuário"
+
+  const rank = user.rank?.trim()
+  const warName = user.warName?.trim()
+
+  if (rank && warName) return `${rank} ${warName}`
+  if (warName) return warName
+  return user.name?.trim() || user.email || "Usuário"
+}
+
 const groupLabels: Record<string, string> = {
   audit: "Auditoria",
   projects: "Projetos",

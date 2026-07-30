@@ -4,6 +4,7 @@ export type AdminUser = {
   id: string
   userCode: number
   name: string
+  warName: string | null
   email: string
   role: UserRole
   rank: string | null
@@ -49,6 +50,7 @@ export type UserOptionsFilters = {
 
 export type CreateUserPayload = {
   name: string
+  warName?: string
   email: string
   password: string
   role: Exclude<UserRole, "ADMIN">
@@ -58,6 +60,7 @@ export type CreateUserPayload = {
 
 export type UpdateUserPayload = {
   name: string
+  warName?: string | null
   email: string
   rank?: string
   cpf?: string

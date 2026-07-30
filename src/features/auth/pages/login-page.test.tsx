@@ -11,6 +11,8 @@ import { useAuthStore } from "@/features/auth/auth.store"
 const authenticatedUser = {
   id: "user-admin",
   name: "Administrador SAGEP",
+  warName: "Lima",
+  rank: "3º Sgt",
   email: "admin@sagep.com",
   role: "ADMIN" as const,
   permissions: ["dashboard.view_operational", "sessions.manage_own"],
@@ -153,7 +155,7 @@ describe("LoginPage", () => {
       expect(document.querySelector("main")).toBeInTheDocument()
     }, { timeout: 5_000 })
     expect(await screen.findByRole("button", {
-      name: /Abrir menu da conta de Administrador SAGEP/i,
+      name: /Abrir menu da conta de 3º Sgt Lima/i,
     })).toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringMatching(/\/auth\/me$/),

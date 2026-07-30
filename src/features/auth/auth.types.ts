@@ -29,6 +29,7 @@ export type AuthUser = {
   id: string
   userCode?: number
   name?: string
+  warName?: string | null
   email: string
   rank?: string | null
   cpf?: string | null
@@ -80,6 +81,7 @@ export type LoginResponse = {
 
 export type UpdateOwnProfilePayload = {
   name?: string
+  warName?: string | null
   rank?: string | null
   cpf?: string | null
   phone?: string | null

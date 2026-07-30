@@ -45,6 +45,7 @@ import { authService } from "@/features/auth/auth.service"
 import type { Permission } from "@/features/auth/auth.types"
 import { GlobalSearchDialog } from "@/features/header/components/global-search-dialog"
 import { NotificationsMenu } from "@/features/header/components/notifications-menu"
+import { getUserDisplayName } from "@/features/users/user-profile.utils"
 import { useTheme } from "next-themes"
 
 type NavigationItem = {
@@ -193,7 +194,7 @@ export function AuthenticatedLayout() {
     () => typeof window !== "undefined" && window.localStorage.getItem("sagep:sidebar-collapsed") === "true",
   )
 
-  const userDisplayName = user?.name ?? user?.email ?? "Usuário"
+  const userDisplayName = getUserDisplayName(user)
   const userRole = user?.role ?? "USUÁRIO"
   const initials = getInitials(userDisplayName)
 

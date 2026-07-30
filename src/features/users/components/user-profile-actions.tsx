@@ -100,6 +100,7 @@ export function EditOwnProfileDialog({
   const setUser = useAuthStore((state) => state.setUser)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [name, setName] = useState(user.name ?? "")
+  const [warName, setWarName] = useState(user.warName ?? "")
   const [rank, setRank] = useState(user.rank ?? "")
   const [cpf, setCpf] = useState(formatCpfInput(user.cpf ?? ""))
   const [phone, setPhone] = useState(formatPhoneInput(user.phone ?? ""))
@@ -154,6 +155,7 @@ export function EditOwnProfileDialog({
     }
     updateMutation.mutate({
       name: normalizedName,
+      warName: warName.trim() || null,
       rank: rank.trim() || null,
       cpf: normalizedCpf || null,
       phone: normalizedPhone || null,
@@ -230,6 +232,16 @@ export function EditOwnProfileDialog({
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="own-profile-war-name">Nome de guerra</Label>
+              <Input
+                id="own-profile-war-name"
+                value={warName}
+                maxLength={80}
+                placeholder="Ex.: Lima"
+                onChange={(event) => setWarName(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="own-profile-cpf">CPF</Label>
               <Input
                 id="own-profile-cpf"
@@ -240,7 +252,7 @@ export function EditOwnProfileDialog({
                 onChange={(event) => setCpf(formatCpfInput(event.target.value))}
               />
             </div>
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor="own-profile-phone">Telefone</Label>
               <Input
                 id="own-profile-phone"

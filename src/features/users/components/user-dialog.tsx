@@ -14,6 +14,7 @@ import type { AdminUser, UserFormPayload } from "@/features/users/users.types"
 
 const schema = z.object({
   name: z.string().trim().min(3, "Informe o nome completo."),
+  warName: z.string(),
   email: z.email("Informe um e-mail válido."),
   password: z.string(),
   role: z.enum(["ADMIN", "GESTOR", "PROJETISTA", "CONSULTA"]),
@@ -43,7 +44,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
   const isEditingSelf = user?.id === currentUserId
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
-    defaultValues: { name: "", email: "", password: "", role: "PROJETISTA", rank: "", cpf: "" },
+    defaultValues: { name: "", warName: "", email: "", password: "", role: "PROJETISTA", rank: "", cpf: "" },
   })
   const role = useWatch({ control: form.control, name: "role" })
 
@@ -51,6 +52,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
     if (!open) return
     form.reset({
       name: user?.name ?? "",
+      warName: user?.warName ?? "",
       email: user?.email ?? "",
       password: "",
       role: user?.role ?? "PROJETISTA",
@@ -67,6 +69,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
 
     await onSubmit({
       name: values.name.trim(),
+      warName: values.warName.trim() || (user ? null : undefined),
       email: values.email.trim().toLowerCase(),
       password: user ? undefined : values.password,
       role: values.role,
@@ -99,6 +102,7 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2"><Label htmlFor="user-rank">Posto/graduação</Label><Input id="user-rank" placeholder="Ex.: Cap" {...form.register("rank")} /></div>
+            <div className="space-y-2"><Label htmlFor="user-war-name">Nome de guerra</Label><Input id="user-war-name" placeholder="Ex.: Lima" {...form.register("warName")} /></div>
             <div className="space-y-2"><Label htmlFor="user-cpf">CPF</Label><Input id="user-cpf" inputMode="numeric" placeholder="000.000.000-00" {...form.register("cpf")} /></div>
           </div>
         </form>

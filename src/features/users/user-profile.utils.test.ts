@@ -4,6 +4,7 @@ import type { AuthUser } from "@/features/auth/auth.types"
 import {
   formatProfileDate,
   getAccessGroups,
+  getUserDisplayName,
   maskCpf,
   roleLabels,
 } from "./user-profile.utils"
@@ -51,5 +52,16 @@ describe("user profile utilities", () => {
     expect(maskCpf(null)).toBe("Não informado")
     expect(roleLabels.PROJETISTA).toBe("Projetista")
     expect(formatProfileDate("invalid")).toBe("Não informado")
+  })
+
+  it("presents posto/graduação with nome de guerra and keeps safe fallbacks", () => {
+    expect(getUserDisplayName({
+      ...user,
+      name: "Luiz Henrique Chagas de Lima",
+      rank: "3º Sgt",
+      warName: "Lima",
+    })).toBe("3º Sgt Lima")
+    expect(getUserDisplayName({ ...user, name: "Luiz Lima" })).toBe("Luiz Lima")
+    expect(getUserDisplayName(null)).toBe("Usuário")
   })
 })
