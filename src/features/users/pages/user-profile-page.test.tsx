@@ -96,6 +96,7 @@ describe("UserProfilePage", () => {
     expect(screen.getByRole("heading", { name: "Perfil e acessos" })).toBeInTheDocument()
     expect(screen.getByRole("heading", { name: "3º Sgt Lima" })).toBeInTheDocument()
     expect(screen.getByText("Nome de guerra")).toBeInTheDocument()
+    expect(screen.getByText("P/G")).toBeInTheDocument()
     expect(screen.getByText("***.456.789-**")).toBeInTheDocument()
     expect(screen.getByText("2 grupos de acesso")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: "Editar perfil" })).toBeInTheDocument()
@@ -122,6 +123,7 @@ describe("UserProfilePage", () => {
 
     await user.click(screen.getByRole("button", { name: "Editar perfil" }))
     expect(screen.getByLabelText("E-mail institucional")).toBeDisabled()
+    expect(screen.getByRole("combobox", { name: "P/G" })).toBeInTheDocument()
     expect(screen.getByLabelText("Nome de guerra")).toHaveValue("Lima")
     expect(screen.queryByRole("combobox", { name: /perfil|função|permiss/i })).not.toBeInTheDocument()
   })

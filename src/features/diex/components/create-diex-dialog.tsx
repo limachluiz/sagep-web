@@ -129,7 +129,7 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
               <Input id="requester-name" value={requesterName} onChange={(event) => setRequesterName(event.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="requester-rank">Posto/graduação</Label>
+              <Label htmlFor="requester-rank">P/G</Label>
               <Input id="requester-rank" value={requesterRank} onChange={(event) => setRequesterRank(event.target.value)} placeholder="Ex.: 1º Ten" />
             </div>
             <div className="space-y-2">

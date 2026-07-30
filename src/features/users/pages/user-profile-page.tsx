@@ -233,6 +233,7 @@ export function UserProfilePage() {
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 <ProfileField icon={UserRound} label="Nome completo" value={user.name?.trim() || "Não informado"} />
                 <ProfileField icon={BadgeCheck} label="Nome de guerra" value={user.warName?.trim() || "Não informado"} />
+                <ProfileField icon={ShieldCheck} label="P/G" value={user.rank?.trim() || "Não informado"} />
                 <ProfileField icon={Mail} label="E-mail institucional" value={user.email} />
                 <ProfileField icon={Fingerprint} label="CPF" value={maskCpf(user.cpf)} />
                 <ProfileField icon={Phone} label="Telefone" value={formatPhone(user.phone)} />

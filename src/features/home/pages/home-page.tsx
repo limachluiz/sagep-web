@@ -43,6 +43,7 @@ import type {
   ProjectStage,
 } from "@/features/dashboard/dashboard.types"
 import { getGreeting, selectPendingTasks } from "@/features/home/home.utils"
+import { getUserDisplayName } from "@/features/users/user-profile.utils"
 import {
   isTaskOverdue,
   taskPriorityLabels,
@@ -277,7 +278,7 @@ function HomeContent({
   const user = useAuthStore((state) => state.user)
   const hasAnyPermission = useAuthStore((state) => state.hasAnyPermission)
   const now = new Date()
-  const firstName = user?.name?.trim().split(/\s+/)[0] || "usuário"
+  const userDisplayName = getUserDisplayName(user)
   const role = user?.role ? roleLabels[user.role] : "Usuário"
   const ownerQueue = data.operationalQueue.filter(
     (project) => project.owner.id === user?.id,
@@ -316,11 +317,10 @@ function HomeContent({
               Início
             </Badge>
             <h1 className="font-heading text-3xl font-semibold tracking-tight">
-              {getGreeting(now)}, {firstName}.
+              {getGreeting(now)}, {userDisplayName}.
             </h1>
             <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              {formatLongDate(now)} · {user?.rank ? `${user.rank} · ` : ""}
-              {role} · 4º CTA
+              {formatLongDate(now)} · {role} · 4º CTA
             </p>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-foreground/80">
               Acompanhe as prioridades do fluxo documental e acesse rapidamente

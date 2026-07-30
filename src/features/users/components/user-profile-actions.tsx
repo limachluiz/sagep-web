@@ -225,7 +225,7 @@ export function EditOwnProfileDialog({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label htmlFor="own-profile-rank">Posto/graduação</Label>
+              <Label htmlFor="own-profile-rank">P/G</Label>
               <Select value={rank || NO_RANK} onValueChange={(value) => setRank(value === NO_RANK ? "" : value)}>
                 <SelectTrigger id="own-profile-rank"><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
