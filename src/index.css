@@ -189,15 +189,15 @@
 
   .sagep-login-vignette {
     background:
-      linear-gradient(90deg, rgba(2, 12, 9, .84) 0%, rgba(3, 15, 11, .26) 48%, rgba(2, 11, 8, .72) 100%),
-      linear-gradient(180deg, rgba(1, 8, 6, .46) 0%, transparent 38%, rgba(1, 8, 6, .68) 100%);
+      linear-gradient(90deg, rgba(2, 12, 9, .7) 0%, rgba(3, 15, 11, .08) 48%, rgba(2, 11, 8, .36) 100%),
+      linear-gradient(180deg, rgba(1, 8, 6, .25) 0%, transparent 40%, rgba(1, 8, 6, .52) 100%);
   }
 
   .sagep-login-grid {
     background-image:
       linear-gradient(rgba(197, 158, 62, .08) 1px, transparent 1px),
       linear-gradient(90deg, rgba(197, 158, 62, .08) 1px, transparent 1px);
-    background-size: 112px 112px;
+    background-size: 150px 150px;
     mask-image: radial-gradient(circle at center, black, transparent 78%);
   }
 

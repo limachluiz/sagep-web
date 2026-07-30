@@ -19,7 +19,7 @@ import { toast } from "sonner"
 
 import ctaLogo from "@/assets/cta-logo.svg"
 import engineeringGear from "@/assets/engineering-gear.svg"
-import loginMap from "@/assets/sagep-login-map.svg"
+import loginMap from "@/assets/sagep-login-cartography.webp"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -75,7 +75,7 @@ export function LoginPage() {
         src={loginMap}
         alt=""
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 size-full object-cover object-center opacity-80"
+        className="pointer-events-none absolute inset-0 size-full object-cover object-center opacity-95"
       />
       <div className="sagep-login-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="sagep-login-grid pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" />
@@ -90,22 +90,22 @@ export function LoginPage() {
         </div>
       </div>
 
-      <div className="relative z-10 mx-auto grid min-h-[calc(100vh-72px)] w-full max-w-[1680px] items-center gap-8 px-6 pb-10 pt-24 lg:grid-cols-[minmax(0,1fr)_minmax(430px,520px)] lg:gap-14 lg:px-14 lg:pb-8 lg:pt-20 xl:grid-cols-[minmax(0,1.25fr)_minmax(460px,540px)] xl:px-20">
-        <section className="hidden min-w-0 flex-col justify-center lg:flex">
-          <div className="w-full max-w-[650px]">
+      <div className="relative z-10 grid min-h-[calc(100vh-105px)] w-full items-center gap-8 px-6 pb-10 pt-24 lg:grid-cols-[minmax(0,1fr)_520px] lg:gap-16 lg:px-[46px] lg:pb-8 lg:pt-20">
+        <section className="hidden min-w-0 -translate-y-5 flex-col justify-center lg:flex">
+          <div className="w-full max-w-[620px]">
             <div className="mx-auto flex w-fit flex-col items-center text-center">
               <div className="relative mb-3">
                 <div className="absolute inset-3 rounded-full bg-[#d4a13a]/12 blur-2xl" aria-hidden="true" />
                 <img
                   src={ctaLogo}
                   alt="Brasão do 4º Centro de Telemática de Área"
-                  className="relative h-40 w-36 object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,.45)] xl:h-44 xl:w-40"
+                  className="relative h-52 w-44 object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,.5)] xl:h-56 xl:w-48"
                 />
               </div>
-              <p className="font-heading text-[5.35rem] font-extrabold leading-[.8] tracking-[.05em] text-[#ece9df] drop-shadow-[0_5px_12px_rgba(0,0,0,.7)] xl:text-[6rem]">
+              <p className="font-heading text-[6.4rem] font-extrabold leading-[.78] tracking-[.045em] text-[#ece9df] drop-shadow-[0_5px_12px_rgba(0,0,0,.72)] xl:text-[7rem]">
                 SAGEP
               </p>
-              <p className="mt-5 max-w-[360px] font-heading text-lg font-semibold uppercase leading-6 tracking-[.08em] text-[#b8a276]">
+              <p className="mt-6 max-w-[390px] font-heading text-[1.35rem] font-semibold uppercase leading-7 tracking-[.075em] text-[#b8a276]">
                 Sistema de Apoio à
                 <span className="block">Gestão de Projetos</span>
               </p>
@@ -240,7 +240,7 @@ export function LoginPage() {
         </section>
       </div>
 
-      <footer className="relative z-20 grid min-h-[72px] items-center gap-3 border-t border-[#d0aa4b]/15 bg-[#06110e]/76 px-6 py-4 text-[#d5d0c1] backdrop-blur-sm sm:grid-cols-2 lg:px-12 xl:px-16">
+      <footer className="relative z-20 grid min-h-[105px] items-center gap-3 border-t border-[#d0aa4b]/15 bg-[#06110e]/76 px-6 py-4 text-[#d5d0c1] backdrop-blur-sm sm:grid-cols-2 lg:px-[46px]">
         <div className="flex items-center gap-3">
           <RadioTower className="size-5 text-[#d5a032]" strokeWidth={1.5} aria-hidden="true" />
           <p className="text-xs tracking-[.04em] sm:text-sm">
