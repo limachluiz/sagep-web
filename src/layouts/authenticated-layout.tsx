@@ -9,7 +9,6 @@ import {
   ClipboardList,
   FileText,
   Files,
-  Gauge,
   Landmark,
   LayoutDashboard,
   ListTodo,
@@ -26,6 +25,7 @@ import {
   Users,
 } from "lucide-react"
 
+import ctaLogo from "@/assets/cta-logo.svg"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -235,8 +235,8 @@ export function AuthenticatedLayout() {
 
       <header className="fixed inset-x-0 top-0 z-40 flex h-16 items-center border-b border-border/70 bg-background/92 text-foreground shadow-sm backdrop-blur-xl">
         <div className={`hidden h-full shrink-0 items-center gap-3 border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width,padding] duration-200 lg:flex ${sidebarCollapsed ? "w-20 justify-center px-0" : "w-[248px] px-5"}`}>
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">
-            <Gauge className="size-5" />
+          <div className="flex h-12 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/95 p-1 shadow-sm">
+            <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-full w-full object-contain" />
           </div>
           <div className={sidebarCollapsed ? "hidden" : "min-w-0"}>
             <p className="font-heading text-lg font-extrabold tracking-[0.16em] text-sidebar-primary">SAGEP</p>
@@ -259,7 +259,7 @@ export function AuthenticatedLayout() {
           <Sheet>
             <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent hover:text-accent-foreground lg:hidden" aria-label="Abrir menu principal"><Menu className="size-5" /></Button></SheetTrigger>
             <SheetContent side="left" className="w-[min(88vw,320px)] gap-0 border-sidebar-border bg-sidebar p-0 text-sidebar-foreground">
-              <SheetHeader className="border-b border-sidebar-border px-5 py-5"><SheetTitle className="flex items-center gap-3 text-sidebar-foreground"><span className="flex size-10 items-center justify-center rounded-md border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary"><Gauge className="size-5" /></span><span><span className="block font-heading text-lg tracking-[0.16em] text-sidebar-primary">SAGEP</span><span className="block text-[10px] font-normal uppercase tracking-wider text-sidebar-foreground/70">4º CTA · Gestão de Projetos</span></span></SheetTitle></SheetHeader>
+              <SheetHeader className="border-b border-sidebar-border px-5 py-5"><SheetTitle className="flex items-center gap-3 text-sidebar-foreground"><span className="flex h-12 w-10 shrink-0 items-center justify-center rounded-lg border border-white/20 bg-white/95 p-1 shadow-sm"><img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-full w-full object-contain" /></span><span><span className="block font-heading text-lg tracking-[0.16em] text-sidebar-primary">SAGEP</span><span className="block text-[10px] font-normal uppercase tracking-wider text-sidebar-foreground/70">4º CTA · Gestão de Projetos</span></span></SheetTitle></SheetHeader>
               <nav className="min-h-0 flex-1 space-y-5 overflow-y-auto p-4" aria-label="Navegação móvel">
                 {visibleNavigation.map((group) => <div key={group.label}><p className="mb-1.5 px-3 text-[9px] font-bold uppercase tracking-[0.22em] text-sidebar-foreground/60">{group.label}</p>{group.items.map((item) => { const Icon = item.icon; return <SheetClose asChild key={item.href}><NavLink to={item.href} end={item.href === "/dashboard" || item.href === "/inicio"} className={({ isActive }) => ["flex items-center gap-3 rounded-md border-l-2 px-3 py-2.5 text-sm font-medium transition", isActive ? "border-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground" : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground"].join(" ")}><Icon className="size-4" />{item.label}</NavLink></SheetClose> })}</div>)}
               </nav>
@@ -277,7 +277,8 @@ export function AuthenticatedLayout() {
             </SheetContent>
           </Sheet>
 
-          <div className="mr-auto lg:hidden">
+          <div className="mr-auto flex items-center gap-2 lg:hidden">
+            <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-9 w-7 object-contain" />
             <p className="font-heading text-base font-extrabold tracking-[0.16em] text-primary">SAGEP</p>
           </div>
 
