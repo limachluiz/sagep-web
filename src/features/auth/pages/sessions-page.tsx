@@ -248,8 +248,8 @@ export function SessionsPage() {
       </div>
 
       <Card className="border-none shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><MonitorSmartphone className="size-5 text-primary" />Histórico de sessões</CardTitle><Badge variant="outline">{visibleSessions.length} registro(s)</Badge></CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center"><CardTitle className="flex items-center gap-2"><MonitorSmartphone className="size-5 text-primary" />Histórico de sessões</CardTitle><Badge variant="outline">{visibleSessions.length} registro(s)</Badge></CardHeader>
+        <CardContent>
           {sessionsQuery.isLoading ? <div className="space-y-3">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-16" />)}</div> : visibleSessions.length ? (
             <Table><TableHeader><TableRow><TableHead>Dispositivo</TableHead><TableHead>Status</TableHead><TableHead>Origem e atividade</TableHead><TableHead>Início</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader><TableBody>{visibleSessions.map((session) => <SessionRow key={session.id} session={session} onRevoke={setSelectedSession} pending={revokeMutation.isPending && selectedSession?.id === session.id} />)}</TableBody></Table>
           ) : <div className="py-12 text-center text-sm text-muted-foreground">Nenhuma sessão corresponde ao filtro selecionado.</div>}

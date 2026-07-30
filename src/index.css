@@ -151,9 +151,23 @@
     }
   html {
     @apply font-sans;
+    min-width: 320px;
+    scroll-padding-top: 5rem;
     }
   h1, h2, h3, h4 {
     @apply font-heading;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  button,
+  [role="button"],
+  a,
+  input,
+  select,
+  textarea {
+    -webkit-tap-highlight-color: transparent;
   }
 }
 
@@ -228,5 +242,30 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 639px) {
+  [data-slot="dialog-footer"] > * {
+    width: 100%;
+  }
+}
+
+@media print {
+  header,
+  aside,
+  [data-slot="dialog-overlay"],
+  button,
+  [role="button"] {
+    display: none !important;
+  }
+
+  main {
+    padding: 0 !important;
+  }
+
+  [data-slot="card"] {
+    break-inside: avoid;
+    box-shadow: none !important;
   }
 }

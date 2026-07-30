@@ -7,6 +7,7 @@ vi.mock("@/lib/api", () => ({
   api: {
     get: vi.fn(),
     post: vi.fn(),
+    patch: vi.fn(),
   },
 }))
 
@@ -14,6 +15,7 @@ describe("authService — administração de sessões", () => {
   beforeEach(() => {
     vi.mocked(api.get).mockReset()
     vi.mocked(api.post).mockReset()
+    vi.mocked(api.patch).mockReset()
   })
 
   it("consulta até cem sessões próprias ou de um usuário selecionado", () => {
@@ -34,6 +36,26 @@ describe("authService — administração de sessões", () => {
     expect(api.post).toHaveBeenNthCalledWith(3, "/auth/sessions/cleanup", {
       refreshTokenRetentionDays: 120,
       auditRetentionDays: 365,
+    })
+  })
+
+  it("usa endpoints pessoais sem expor a administração de usuários", () => {
+    authService.updateProfile({
+      name: "Usuário Atualizado",
+      themePreference: "SYSTEM",
+    })
+    authService.changePassword({
+      currentPassword: "senha-atual",
+      newPassword: "nova-senha-segura",
+    })
+
+    expect(api.patch).toHaveBeenCalledWith("/auth/profile", {
+      name: "Usuário Atualizado",
+      themePreference: "SYSTEM",
+    })
+    expect(api.post).toHaveBeenCalledWith("/auth/change-password", {
+      currentPassword: "senha-atual",
+      newPassword: "nova-senha-segura",
     })
   })
 })

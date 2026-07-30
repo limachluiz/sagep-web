@@ -102,6 +102,17 @@ export function maskCpf(cpf?: string | null) {
   return `***.${digits.slice(3, 6)}.${digits.slice(6, 9)}-**`
 }
 
+export function formatPhone(phone?: string | null) {
+  const digits = phone?.replace(/\D/g, "") ?? ""
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`
+  }
+  if (digits.length === 11) {
+    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  }
+  return "Não informado"
+}
+
 export function formatProfileDate(value?: string | null, includeTime = false) {
   if (!value) return "Não informado"
 

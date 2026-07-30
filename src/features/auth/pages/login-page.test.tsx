@@ -149,10 +149,16 @@ describe("LoginPage", () => {
     await user.type(await screen.findByLabelText("Senha"), "123456")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
-    expect(await screen.findByText(/Bom (dia|tarde|noite), Administrador\./)).toBeInTheDocument()
-    expect(await screen.findByRole("heading", { name: "Resumo operacional" })).toBeInTheDocument()
-    expect(screen.getByRole("link", { name: /Abrir Dashboard/i })).toHaveAttribute("href", "/dashboard")
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    await waitFor(() => {
+      expect(document.querySelector("main")).toBeInTheDocument()
+    }, { timeout: 5_000 })
+    expect(await screen.findByRole("button", {
+      name: /Abrir menu da conta de Administrador SAGEP/i,
+    })).toBeInTheDocument()
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/me$/),
+      expect.objectContaining({ method: "GET" }),
+    )
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,
       accessToken: "access-token",

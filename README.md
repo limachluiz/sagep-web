@@ -23,6 +23,8 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - seletores de vínculos com códigos amigáveis, títulos e OMs, mantendo IDs internos ocultos;
 - arquivamento, restauração e exclusão lógica conforme permissões;
 - ATAs e saldos, OMs, usuários, sessões, permissões e relatórios;
+- perfil pessoal com edição segura de dados, avatar, tema, avisos, troca de senha e gestão de dispositivos;
+- revisão responsiva para modais, tabelas, Kanban e Gantt, com estados de carregamento, vazio e erro;
 - React Query integrado aos contratos da API.
 - integração contínua no GitHub Actions com lint, testes e build de produção.
 
@@ -118,8 +120,9 @@ Kanban e Gantt serão módulos próprios, separados do dashboard.
 - [x] Tarefas com CRUD e ciclo de arquivamento
 - [x] Estimativas, NC, DIEx, NE, OS e conclusão
 - [x] ATAs, saldos, OMs, usuários e administração
+- [x] Perfil pessoal, preferências, senha e sessões
+- [x] Revisão final de responsividade e acessibilidade
 - [ ] Homologação com dados reais e testes de integração
-- [ ] Revisão final de responsividade e acessibilidade
 
 ## Backend
 

@@ -8,8 +8,11 @@ import {
   Clock3,
   Fingerprint,
   KeyRound,
+  LockKeyhole,
   Mail,
   MonitorSmartphone,
+  Phone,
+  Settings2,
   Search,
   ShieldCheck,
   UserRound,
@@ -18,7 +21,7 @@ import {
 import { Link } from "react-router"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -31,11 +34,17 @@ import { useAuthStore } from "@/features/auth/auth.store"
 import type { AccessPermissionGroup, AuthUser } from "@/features/auth/auth.types"
 import {
   formatProfileDate,
+  formatPhone,
   getAccessGroups,
   maskCpf,
   roleDescriptions,
   roleLabels,
 } from "@/features/users/user-profile.utils"
+import {
+  ChangeOwnPasswordDialog,
+  EditOwnProfileDialog,
+  UserPreferencesCard,
+} from "@/features/users/components/user-profile-actions"
 
 function getInitials(user: AuthUser) {
   const source = user.name?.trim() || user.email.split("@")[0]
@@ -94,6 +103,8 @@ export function UserProfilePage() {
   const currentUser = useAuthStore((state) => state.user)
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const [search, setSearch] = useState("")
+  const [editProfileOpen, setEditProfileOpen] = useState(false)
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false)
 
   const profileQuery = useQuery({
     queryKey: ["auth", "me"],
@@ -148,11 +159,19 @@ export function UserProfilePage() {
         description="Consulte seus dados, perfil funcional e todas as permissões efetivas da sessão atual."
         icon={UserRound}
         actions={
-          canManageSessions ? (
-            <Button asChild variant="outline">
-              <Link to="/sessions"><MonitorSmartphone className="size-4" />Minhas sessões</Link>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setEditProfileOpen(true)}>
+              <UserRound className="size-4" />Editar perfil
             </Button>
-          ) : undefined
+            <Button variant="outline" onClick={() => setChangePasswordOpen(true)}>
+              <LockKeyhole className="size-4" />Alterar senha
+            </Button>
+            {canManageSessions && (
+              <Button asChild variant="outline">
+                <Link to="/sessions"><MonitorSmartphone className="size-4" />Minhas sessões</Link>
+              </Button>
+            )}
+          </div>
         }
       />
 
@@ -168,6 +187,7 @@ export function UserProfilePage() {
         <div className="h-1.5 bg-primary" />
         <CardContent className="flex flex-col gap-5 p-5 sm:p-6 lg:flex-row lg:items-center">
           <Avatar className="size-20">
+            {user.avatarDataUrl && <AvatarImage src={user.avatarDataUrl} alt="" />}
             <AvatarFallback className="border-2 border-primary/25 bg-primary/10 text-xl font-bold text-primary">
               {getInitials(user)}
             </AvatarFallback>
@@ -198,6 +218,7 @@ export function UserProfilePage() {
       <Tabs defaultValue="overview" className="space-y-5">
         <TabsList className="h-auto w-full justify-start overflow-x-auto sm:w-auto">
           <TabsTrigger value="overview"><UserRound className="size-4" />Visão geral</TabsTrigger>
+          <TabsTrigger value="preferences"><Settings2 className="size-4" />Preferências</TabsTrigger>
           <TabsTrigger value="permissions"><ShieldCheck className="size-4" />Permissões ({permissionCount})</TabsTrigger>
         </TabsList>
 
@@ -211,6 +232,7 @@ export function UserProfilePage() {
               <CardContent className="grid gap-3 sm:grid-cols-2">
                 <ProfileField icon={Mail} label="E-mail institucional" value={user.email} />
                 <ProfileField icon={Fingerprint} label="CPF" value={maskCpf(user.cpf)} />
+                <ProfileField icon={Phone} label="Telefone" value={formatPhone(user.phone)} />
                 <ProfileField icon={CalendarDays} label="Membro desde" value={formatProfileDate(user.createdAt)} />
                 <ProfileField icon={Clock3} label="Último acesso" value={formatProfileDate(user.lastLoginAt, true)} />
               </CardContent>
@@ -260,6 +282,28 @@ export function UserProfilePage() {
                   <p className="mt-3 font-medium">Nenhum grupo de acesso disponível</p>
                   <p className="mt-1 text-sm text-muted-foreground">Seu perfil ainda não possui permissões efetivas.</p>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="preferences" className="space-y-5">
+          <UserPreferencesCard user={user} />
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle>Segurança da conta</CardTitle>
+              <CardDescription>
+                Atualize sua senha ou revise os dispositivos que ainda possuem acesso.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2 sm:flex-row">
+              <Button variant="outline" onClick={() => setChangePasswordOpen(true)}>
+                <LockKeyhole className="size-4" />Alterar senha
+              </Button>
+              {canManageSessions && (
+                <Button asChild variant="outline">
+                  <Link to="/sessions"><MonitorSmartphone className="size-4" />Ver sessões e dispositivos</Link>
+                </Button>
               )}
             </CardContent>
           </Card>
@@ -322,6 +366,20 @@ export function UserProfilePage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {editProfileOpen && (
+        <EditOwnProfileDialog
+          user={user}
+          open
+          onOpenChange={setEditProfileOpen}
+        />
+      )}
+      {changePasswordOpen && (
+        <ChangeOwnPasswordDialog
+          open
+          onOpenChange={setChangePasswordOpen}
+        />
+      )}
     </div>
   )
 }

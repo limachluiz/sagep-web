@@ -1,4 +1,5 @@
 export type UserRole = "ADMIN" | "GESTOR" | "PROJETISTA" | "CONSULTA"
+export type UserThemePreference = "LIGHT" | "DARK" | "SYSTEM"
 
 export type Permission =
   | "audit.view"
@@ -31,6 +32,14 @@ export type AuthUser = {
   email: string
   rank?: string | null
   cpf?: string | null
+  phone?: string | null
+  avatarDataUrl?: string | null
+  themePreference?: UserThemePreference
+  notifications?: {
+    taskAssignments: boolean
+    deadlines: boolean
+    workflowUpdates: boolean
+  }
   role: UserRole
   active?: boolean
   createdAt?: string
@@ -67,6 +76,31 @@ export type LoginResponse = {
   accessToken: string
   refreshToken: string
   user: AuthUser
+}
+
+export type UpdateOwnProfilePayload = {
+  name?: string
+  rank?: string | null
+  cpf?: string | null
+  phone?: string | null
+  avatarDataUrl?: string | null
+  themePreference?: UserThemePreference
+  notifications?: {
+    taskAssignments: boolean
+    deadlines: boolean
+    workflowUpdates: boolean
+  }
+}
+
+export type ChangeOwnPasswordPayload = {
+  currentPassword: string
+  newPassword: string
+}
+
+export type ChangeOwnPasswordResponse = {
+  message: string
+  revokedSessions: number
+  logoutRequired: true
 }
 
 export type RefreshResponse = {

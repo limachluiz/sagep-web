@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Building2,
@@ -26,7 +26,7 @@ import {
   Users,
 } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -45,6 +45,7 @@ import { authService } from "@/features/auth/auth.service"
 import type { Permission } from "@/features/auth/auth.types"
 import { GlobalSearchDialog } from "@/features/header/components/global-search-dialog"
 import { NotificationsMenu } from "@/features/header/components/notifications-menu"
+import { useTheme } from "next-themes"
 
 type NavigationItem = {
   label: string
@@ -186,6 +187,7 @@ function getInitials(nameOrEmail?: string) {
 
 export function AuthenticatedLayout() {
   const navigate = useNavigate()
+  const { setTheme } = useTheme()
   const { user, refreshToken, logout, hasAnyPermission } = useAuthStore()
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => typeof window !== "undefined" && window.localStorage.getItem("sagep:sidebar-collapsed") === "true",
@@ -194,6 +196,12 @@ export function AuthenticatedLayout() {
   const userDisplayName = user?.name ?? user?.email ?? "Usuário"
   const userRole = user?.role ?? "USUÁRIO"
   const initials = getInitials(userDisplayName)
+
+  useEffect(() => {
+    if (user?.themePreference) {
+      setTheme(user.themePreference.toLowerCase())
+    }
+  }, [setTheme, user?.themePreference])
 
   const visibleNavigation = navigation
     .map((group) => ({
@@ -258,7 +266,7 @@ export function AuthenticatedLayout() {
                 <div className="flex items-center gap-2">
                   <SheetClose asChild>
                     <NavLink to="/user" className="flex min-w-0 flex-1 items-center gap-3 rounded-md p-1 transition hover:bg-sidebar-accent">
-                      <Avatar><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar>
+                      <Avatar>{user?.avatarDataUrl && <AvatarImage src={user.avatarDataUrl} alt="" />}<AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-sidebar-primary">{initials}</AvatarFallback></Avatar>
                       <div className="min-w-0 flex-1"><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[10px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div>
                     </NavLink>
                   </SheetClose>
@@ -291,13 +299,13 @@ export function AuthenticatedLayout() {
                   aria-label={`Abrir menu da conta de ${userDisplayName}`}
                 >
                   <div className="hidden text-right sm:block"><p className="max-w-40 truncate text-xs font-medium text-foreground">{userDisplayName}</p><p className="text-[9px] uppercase tracking-wider text-muted-foreground">{userRole}</p></div>
-                  <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
+                  <Avatar className="size-9">{user?.avatarDataUrl && <AvatarImage src={user.avatarDataUrl} alt="" />}<AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
                   <ChevronDown className="hidden size-3.5 text-muted-foreground sm:block" aria-hidden="true" />
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-72">
                 <DropdownMenuLabel className="flex items-center gap-3 py-2">
-                  <Avatar className="size-9"><AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
+                  <Avatar className="size-9">{user?.avatarDataUrl && <AvatarImage src={user.avatarDataUrl} alt="" />}<AvatarFallback className="border border-primary/25 bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback></Avatar>
                   <span className="min-w-0">
                     <span className="block truncate text-sm font-semibold text-foreground">{userDisplayName}</span>
                     <span className="block truncate text-[10px] uppercase tracking-wider">{userRole}</span>
@@ -341,7 +349,7 @@ export function AuthenticatedLayout() {
               aria-label={sidebarCollapsed ? "Meu perfil" : undefined}
               className={`flex min-w-0 items-center rounded-md transition hover:bg-sidebar-accent ${sidebarCollapsed ? "justify-center" : "flex-1 gap-3 p-1"}`}
             >
-              <Avatar className="size-9"><AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">{initials}</AvatarFallback></Avatar>
+              <Avatar className="size-9">{user?.avatarDataUrl && <AvatarImage src={user.avatarDataUrl} alt="" />}<AvatarFallback className="border border-sidebar-primary/25 bg-sidebar-primary/10 text-xs font-bold text-sidebar-primary">{initials}</AvatarFallback></Avatar>
               <div className={sidebarCollapsed ? "sr-only" : "min-w-0 flex-1"}><p className="truncate text-sm font-medium">{userDisplayName}</p><p className="truncate text-[9px] uppercase tracking-wider text-sidebar-foreground/70">{userRole}</p></div>
             </NavLink>
             {!sidebarCollapsed && <Button size="icon" variant="ghost" className="text-sidebar-foreground/75 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground" onClick={handleLogout} title="Sair" aria-label="Sair do sistema"><LogOut className="size-4" /></Button>}
