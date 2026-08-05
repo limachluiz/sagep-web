@@ -34,6 +34,87 @@ const workflow = [
   { label: "Entrega", icon: CheckSquare2 },
 ]
 
+function CartographyEffects() {
+  return (
+    <svg
+      width="1920"
+      height="1080"
+      viewBox="0 0 1920 1080"
+      preserveAspectRatio="xMidYMid meet"
+      className="absolute max-h-full max-w-full object-contain object-center"
+      aria-hidden="true"
+    >
+      <defs>
+        <radialGradient id="capital-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#ffe2a0" stopOpacity=".95" />
+          <stop offset=".18" stopColor="#e8b94f" stopOpacity=".78" />
+          <stop offset=".48" stopColor="#c99128" stopOpacity=".26" />
+          <stop offset="1" stopColor="#c99128" stopOpacity="0" />
+        </radialGradient>
+        <radialGradient id="manaus-halo" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stopColor="#fff1bd" />
+          <stop offset=".14" stopColor="#f0c662" stopOpacity=".9" />
+          <stop offset=".42" stopColor="#d69e2d" stopOpacity=".34" />
+          <stop offset="1" stopColor="#d69e2d" stopOpacity="0" />
+        </radialGradient>
+        <linearGradient id="route" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#8d6a28" stopOpacity=".18" />
+          <stop offset=".5" stopColor="#e2b44f" stopOpacity=".72" />
+          <stop offset="1" stopColor="#8d6a28" stopOpacity=".18" />
+        </linearGradient>
+        <filter id="soft-glow" x="-150%" y="-150%" width="400%" height="400%">
+          <feGaussianBlur stdDeviation="4" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+        <filter id="route-glow" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.8" result="blur" />
+          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+
+      <g fill="none" stroke="url(#route)" strokeLinecap="round" filter="url(#route-glow)">
+        <path d="M825 294 C790 250 792 211 801 170" strokeWidth="1.3" />
+        <path d="M825 294 C750 335 671 366 587 397" strokeWidth="1.15" />
+        <path d="M825 294 C810 352 778 407 750 463" strokeWidth="1.25" />
+        <path d="M587 397 C640 425 692 448 750 463" strokeWidth=".9" strokeDasharray="5 9" />
+        <path d="M801 170 C785 273 767 367 750 463" strokeWidth=".8" strokeDasharray="4 10" opacity=".7" />
+      </g>
+
+      <g>
+        <circle cx="801" cy="170" r="30" fill="url(#capital-halo)" opacity=".74" />
+        <circle cx="587" cy="397" r="28" fill="url(#capital-halo)" opacity=".72" />
+        <circle cx="750" cy="463" r="29" fill="url(#capital-halo)" opacity=".72" />
+        <circle cx="825" cy="294" r="48" fill="url(#manaus-halo)" opacity=".9" />
+        <g fill="#f6cf72" stroke="#fff0b5" filter="url(#soft-glow)">
+          <circle cx="801" cy="170" r="3.5" strokeWidth=".8" />
+          <circle cx="587" cy="397" r="3.5" strokeWidth=".8" />
+          <circle cx="750" cy="463" r="3.5" strokeWidth=".8" />
+          <circle cx="825" cy="294" r="5" strokeWidth="1" />
+        </g>
+        <circle cx="825" cy="294" r="12" fill="none" stroke="#e3b34b" strokeWidth=".8" opacity=".48" />
+        <circle cx="825" cy="294" r="20" fill="none" stroke="#d39d31" strokeWidth=".55" opacity=".28" />
+      </g>
+
+      <g transform="translate(210 842)" fill="none" stroke="#b8903d" opacity=".72">
+        <circle r="54" strokeWidth=".8" opacity=".38" />
+        <circle r="39" strokeWidth=".6" opacity=".3" />
+        <path d="M0-66V66M-66 0H66" strokeWidth=".7" opacity=".42" />
+        <path d="M0-49 9-10 0 0-9-10Z" fill="#caa14a" fillOpacity=".55" strokeWidth=".7" />
+        <path d="M0 49 7 10 0 0-7 10Z" fill="#8a6d30" fillOpacity=".35" strokeWidth=".6" />
+        <path d="M49 0 10-7 0 0 10 7Z" fill="#9f7d34" fillOpacity=".38" strokeWidth=".6" />
+        <path d="M-49 0-10-7 0 0-10 7Z" fill="#9f7d34" fillOpacity=".38" strokeWidth=".6" />
+        <circle r="5" fill="#cda44b" fillOpacity=".5" strokeWidth=".7" />
+        <g fill="#c9a557" stroke="none" fontFamily="ui-sans-serif, system-ui, sans-serif" fontSize="15" fontWeight="600" textAnchor="middle">
+          <text x="0" y="-75">N</text>
+          <text x="0" y="87">S</text>
+          <text x="81" y="5">L</text>
+          <text x="-81" y="5">O</text>
+        </g>
+      </g>
+    </svg>
+  )
+}
+
 export function LoginPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -71,12 +152,14 @@ export function LoginPage() {
 
   return (
     <main className="sagep-login-shell relative min-h-screen overflow-hidden bg-[#06120e] text-[#f2efe5] selection:bg-[#c99b32] selection:text-[#152115]">
-      <img
-        src={loginMap}
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 size-full object-cover object-center opacity-95"
-      />
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden" aria-hidden="true">
+        <img
+          src={loginMap}
+          alt=""
+          className="absolute max-h-full max-w-full object-contain object-center opacity-95"
+        />
+        <CartographyEffects />
+      </div>
       <div className="sagep-login-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="sagep-login-grid pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" />
 
