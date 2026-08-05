@@ -23,7 +23,6 @@ import loginMap from "@/assets/sagep-login-cartography.webp"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { authService } from "@/features/auth/auth.service"
 import { useAuthStore } from "@/features/auth/auth.store"
 
@@ -151,7 +150,7 @@ export function LoginPage() {
   }
 
   return (
-    <main className="sagep-login-shell relative min-h-screen overflow-hidden bg-[#06120e] text-[#f2efe5] selection:bg-[#c99b32] selection:text-[#152115]">
+    <main className="sagep-login-shell relative flex min-h-svh flex-col overflow-x-hidden bg-[#06120e] text-[#f2efe5] selection:bg-[#c99b32] selection:text-[#152115]">
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden" aria-hidden="true">
         <img
           src={loginMap}
@@ -163,18 +162,15 @@ export function LoginPage() {
       <div className="sagep-login-vignette pointer-events-none absolute inset-0" aria-hidden="true" />
       <div className="sagep-login-grid pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" />
 
-      <div className="absolute right-4 top-4 z-30 flex items-center gap-2 sm:right-7 sm:top-6">
+      <div className="absolute right-3 top-3 z-30 sm:right-6 sm:top-5 lg:right-7 lg:top-6">
         <div className="hidden items-center gap-2 rounded-md border border-[#a9893d]/20 bg-[#07120f]/70 px-4 py-2 text-[9px] font-semibold uppercase tracking-[.2em] text-[#d8b45a] backdrop-blur-md sm:flex">
           <span className="size-2 rounded-full bg-[#e7b64b] shadow-[0_0_12px_#e7b64b]" />
           Sistema operacional
         </div>
-        <div className="rounded-md border border-[#a9893d]/20 bg-[#07120f]/70 text-[#d8b45a] backdrop-blur-md">
-          <ThemeToggle />
-        </div>
       </div>
 
-      <div className="relative z-10 grid min-h-[calc(100vh-105px)] w-full items-center gap-8 px-6 pb-10 pt-24 lg:grid-cols-[minmax(0,1fr)_520px] lg:gap-16 lg:px-[46px] lg:pb-8 lg:pt-20">
-        <section className="hidden min-w-0 -translate-y-5 flex-col justify-center lg:flex">
+      <div className="sagep-login-content relative z-10 grid w-full flex-1 items-center gap-8 px-4 pb-8 pt-20 sm:px-6 sm:pb-10 sm:pt-24 xl:grid-cols-[minmax(0,1fr)_minmax(440px,520px)] xl:gap-10 xl:px-[46px] xl:pb-8 xl:pt-20 2xl:gap-16">
+        <section className="sagep-login-identity hidden min-w-0 -translate-y-5 flex-col justify-center xl:flex">
           <div className="w-full max-w-[620px]">
             <div className="mx-auto flex w-fit flex-col items-center text-center">
               <div className="relative mb-3">
@@ -223,27 +219,27 @@ export function LoginPage() {
           </div>
         </section>
 
-        <section className="flex items-center justify-center">
-          <div className="sagep-login-card relative w-full max-w-[520px] bg-[#f1ede2] px-7 py-9 text-[#1d271d] shadow-[16px_22px_0_rgba(16,27,18,.64),0_28px_70px_rgba(0,0,0,.38)] sm:px-12 sm:py-11">
-            <div className="mb-7 flex items-center gap-3 lg:hidden">
-              <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-16 w-14 object-contain" />
+        <section className="flex min-w-0 items-center justify-center xl:justify-end">
+          <div className="sagep-login-card relative w-full max-w-[520px] bg-[#f1ede2] px-5 py-7 text-[#1d271d] shadow-[10px_14px_0_rgba(16,27,18,.58),0_24px_56px_rgba(0,0,0,.34)] sm:px-9 sm:py-9 lg:px-12 lg:py-11 xl:shadow-[16px_22px_0_rgba(16,27,18,.64),0_28px_70px_rgba(0,0,0,.38)]">
+            <div className="mb-5 flex items-center gap-3 sm:mb-7 xl:hidden">
+              <img src={ctaLogo} alt="Brasão do 4º Centro de Telemática de Área" className="h-14 w-12 shrink-0 object-contain sm:h-16 sm:w-14" />
               <div>
-                <p className="font-heading text-2xl font-extrabold tracking-[.12em]">SAGEP</p>
-                <p className="text-[9px] font-semibold uppercase tracking-[.09em] text-[#66705c]">Sistema de Apoio à Gestão de Projetos</p>
+                <p className="font-heading text-2xl font-extrabold tracking-[.12em] sm:text-[1.7rem]">SAGEP</p>
+                <p className="max-w-[260px] text-[8px] font-semibold uppercase leading-3 tracking-[.075em] text-[#66705c] sm:text-[9px] sm:tracking-[.09em]">Sistema de Apoio à Gestão de Projetos</p>
               </div>
             </div>
 
-            <div className="mb-7">
-              <div className="mb-5 flex items-center gap-3">
+            <div className="mb-5 sm:mb-7">
+              <div className="mb-4 flex items-center gap-3 sm:mb-5">
                 <p className="text-[9px] font-bold uppercase tracking-[.28em] text-[#42513b]">Acesso institucional</p>
                 <span className="h-px flex-1 bg-[#aa914f]/60" aria-hidden="true" />
                 <span className="size-1.5 rotate-45 border border-[#aa914f]" aria-hidden="true" />
               </div>
-              <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-[2.65rem]">Bem-vindo ao SAGEP</h1>
+              <h1 className="font-heading text-[2rem] font-bold leading-tight tracking-tight sm:text-[2.65rem]">Bem-vindo ao SAGEP</h1>
               <p className="mt-2 text-sm text-[#5e6758]">Entre com suas credenciais para continuar.</p>
             </div>
 
-            <form className="space-y-5" onSubmit={handleSubmit}>
+            <form className="space-y-4 sm:space-y-5" onSubmit={handleSubmit}>
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-semibold text-[#273126]">Usuário</Label>
                 <div className="group relative">
@@ -306,7 +302,7 @@ export function LoginPage() {
               <span>Ambiente seguro e monitorado</span>
             </div>
 
-            <div className="my-6 flex items-center gap-3 text-[#b7a66f]/65" aria-hidden="true">
+            <div className="my-5 flex items-center gap-3 text-[#b7a66f]/65 sm:my-6" aria-hidden="true">
               <span className="h-px flex-1 bg-current" />
               <span className="size-1.5 rotate-45 border border-[#a68c4b]" />
               <span className="h-px flex-1 bg-current" />
@@ -323,16 +319,16 @@ export function LoginPage() {
         </section>
       </div>
 
-      <footer className="relative z-20 grid min-h-[105px] items-center gap-3 border-t border-[#d0aa4b]/15 bg-[#06110e]/76 px-6 py-4 text-[#d5d0c1] backdrop-blur-sm sm:grid-cols-2 lg:px-[46px]">
-        <div className="flex items-center gap-3">
-          <RadioTower className="size-5 text-[#d5a032]" strokeWidth={1.5} aria-hidden="true" />
-          <p className="text-xs tracking-[.04em] sm:text-sm">
-            4º Centro de Telemática de Área <span className="px-2 text-[#9e823c]">•</span> Divisão Técnica
+      <footer className="relative z-20 grid min-h-[88px] items-center gap-3 border-t border-[#d0aa4b]/15 bg-[#06110e]/76 px-4 py-4 text-[#d5d0c1] backdrop-blur-sm sm:grid-cols-2 sm:px-6 lg:px-[46px] xl:min-h-[105px]">
+        <div className="flex items-center justify-center gap-2 text-center sm:justify-start sm:text-left">
+          <RadioTower className="size-5 shrink-0 text-[#d5a032]" strokeWidth={1.5} aria-hidden="true" />
+          <p className="text-[11px] leading-4 tracking-[.035em] sm:text-sm">
+            4º Centro de Telemática de Área <span className="px-1.5 text-[#9e823c] sm:px-2">•</span> Divisão Técnica
           </p>
         </div>
-        <div className="flex items-center gap-3 sm:justify-end">
-          <p className="text-[10px] tracking-[.06em] text-[#b39b56] sm:text-xs">Desenvolvido pelo 2º Ten Luiz - 4º CTA</p>
-          <img src={engineeringGear} alt="" aria-hidden="true" className="size-9 object-contain opacity-90" />
+        <div className="flex items-center justify-center gap-2 sm:justify-end sm:gap-3">
+          <p className="text-center text-[9px] tracking-[.045em] text-[#b39b56] sm:text-right sm:text-xs sm:tracking-[.06em]">Desenvolvido pelo 2º Ten Luiz - 4º CTA</p>
+          <img src={engineeringGear} alt="" aria-hidden="true" className="size-8 shrink-0 object-contain opacity-90 sm:size-9" />
         </div>
       </footer>
     </main>
