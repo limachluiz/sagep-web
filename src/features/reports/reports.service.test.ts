@@ -56,4 +56,19 @@ describe("reportsService", () => {
       "CFTV",
     )
   })
+
+  it("gera relatório consolidado combinando finalidade e escopo", () => {
+    reportsService.consolidatedProjectsPdf("financial", {
+      staleDays: 30,
+      projectType: "CFTV",
+    })
+
+    const url = vi.mocked(api.getBlob).mock.calls[0][0]
+    const query = new URL(url, "https://sagep.test").searchParams
+
+    expect(url).toContain("/reports/projects/consolidated-summary.pdf")
+    expect(query.get("reportType")).toBe("financial")
+    expect(query.get("projectType")).toBe("CFTV")
+    expect(query.get("staleDays")).toBe("30")
+  })
 })

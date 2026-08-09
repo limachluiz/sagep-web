@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { AlertTriangle, BarChart3, Download, FileChartColumn, FileSpreadsheet, FolderOpen, Presentation, RefreshCw, Search, ShieldCheck } from "lucide-react"
+import { AlertTriangle, BarChart3, Download, FileChartColumn, FileSpreadsheet, FolderOpen, Landmark, ListChecks, Presentation, RefreshCw, Search, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -17,7 +17,7 @@ import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
 import type { ProjectStatus } from "@/features/projects/projects.types"
 import { reportsService } from "@/features/reports/reports.service"
-import type { ProjectExportFilters } from "@/features/reports/reports.types"
+import type { ConsolidatedReportType, ProjectExportFilters } from "@/features/reports/reports.types"
 import { cn } from "@/lib/utils"
 
 const statusLabels: Record<ProjectStatus, string> = {
@@ -42,6 +42,36 @@ const stageLabels: Record<ProjectStage, string> = {
   SERVICO_CONCLUIDO: "Serviço concluído",
   CANCELADO: "Cancelado",
 }
+
+const reportOptions: Array<{
+  type: ConsolidatedReportType
+  title: string
+  audience: string
+  description: string
+  icon: typeof Presentation
+}> = [
+  {
+    type: "executive",
+    title: "Executivo",
+    audience: "Comando e Chefia",
+    description: "Carteira, entregas, valores, riscos e pontos para decisão.",
+    icon: Presentation,
+  },
+  {
+    type: "operational",
+    title: "Operacional",
+    audience: "Seção de Projetos",
+    description: "Gargalos, tarefas, prazos, responsáveis e próximas ações.",
+    icon: ListChecks,
+  },
+  {
+    type: "financial",
+    title: "Financeiro",
+    audience: "Gestão de recursos",
+    description: "Carteira estimada, empenhada, formalizada em OS e concluída.",
+    icon: Landmark,
+  },
+]
 
 function downloadBlob(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob)
@@ -69,7 +99,8 @@ export function ReportsPage() {
   const [includeArchived, setIncludeArchived] = useState(false)
   const [projectId, setProjectId] = useState("")
   const [staleDays, setStaleDays] = useState("15")
-  const [executiveScope, setExecutiveScope] = useState<
+  const [reportType, setReportType] = useState<ConsolidatedReportType>("executive")
+  const [portfolioScope, setPortfolioScope] = useState<
     "all" | "CFTV" | "FIBRA_OPTICA_PONTO_LOGICO"
   >("all")
 
@@ -113,25 +144,26 @@ export function ReportsPage() {
     },
     onError: (error) => toast.error(error.message),
   })
-  const executivePdfMutation = useMutation({
+  const consolidatedPdfMutation = useMutation({
     mutationFn: () =>
-      reportsService.executiveProjectsPdf({
+      reportsService.consolidatedProjectsPdf(reportType, {
         staleDays: Number(staleDays),
-        projectType: executiveScope === "all" ? undefined : executiveScope,
+        projectType: portfolioScope === "all" ? undefined : portfolioScope,
       }),
     onSuccess: (blob) => {
       downloadBlob(
         blob,
-        `relatorio-executivo-projetos-${new Date().toISOString().slice(0, 10)}.pdf`,
+        `relatorio-${reportType}-projetos-${new Date().toISOString().slice(0, 10)}.pdf`,
       )
-      toast.success("Relatório executivo gerado com sucesso.")
+      const label = reportOptions.find((option) => option.type === reportType)?.title
+      toast.success(`Relatório ${label?.toLowerCase()} gerado com sucesso.`)
     },
     onError: (error) => toast.error(error.message),
   })
 
   const projects = projectsQuery.data?.items ?? []
   const canIncludeArchived = hasPermission("projects.view_all")
-  const canGenerateExecutiveReport = hasPermission("dashboard.view_executive")
+  const canGenerateConsolidatedReport = hasPermission("reports.export")
   const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStatus("all"); setStage("all"); setIncludeArchived(false) }
 
   return <div className="space-y-6">
@@ -139,34 +171,67 @@ export function ReportsPage() {
 
     <div className="grid gap-4 md:grid-cols-3"><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Projetos encontrados</p><p className="mt-2 text-2xl font-semibold">{projectsQuery.isLoading ? "—" : projectsQuery.data?.meta.totalItems ?? 0}</p></div><FolderOpen className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Formato consolidado</p><p className="mt-2 text-lg font-semibold">Excel (.xlsx)</p></div><FileSpreadsheet className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Dossiê individual</p><p className="mt-2 text-lg font-semibold">PDF auditável</p></div><ShieldCheck className="size-6 text-primary" /></CardContent></Card></div>
 
-    {canGenerateExecutiveReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
-      <div className="grid lg:grid-cols-[1.3fr_.7fr]">
-        <CardContent className="relative overflow-hidden bg-gradient-to-br from-[#27321f] via-[#3f4d2a] to-[#66733c] p-6 text-white lg:p-8">
-          <div className="absolute -right-16 -top-20 size-64 rounded-full border border-white/10 bg-white/5" />
-          <div className="relative max-w-2xl">
-            <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/10">Relatório para o Comando</Badge>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight">O coração da Seção de Projetos</h2>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-white/75">PDF executivo com carteira geral, entregas, valores em andamento, concluídos e empenhados, saúde dos prazos e o resumo dos projetos abertos.</p>
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><Presentation className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Leitura rápida</p><p className="mt-1 text-[11px] text-white/65">Síntese para decisão</p></div>
-              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><BarChart3 className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Saúde da carteira</p><p className="mt-1 text-[11px] text-white/65">Etapas, valores e prazos</p></div>
-              <div className="rounded-xl border border-white/15 bg-white/10 p-3"><ShieldCheck className="size-4 text-[#d8c27c]" /><p className="mt-2 text-xs font-medium">Dados do SAGEP</p><p className="mt-1 text-[11px] text-white/65">Gerado no momento</p></div>
-            </div>
+    {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
+      <CardContent className="relative overflow-hidden bg-gradient-to-br from-[#27321f] via-[#3f4d2a] to-[#66733c] p-6 text-white lg:p-8">
+        <div className="absolute -right-16 -top-24 size-72 rounded-full border border-white/10 bg-white/5" />
+        <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+          <div className="max-w-3xl">
+            <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/10">Centro de inteligência da carteira</Badge>
+            <h2 className="mt-4 text-2xl font-semibold tracking-tight lg:text-3xl">Relatórios consolidados para decisão e controle</h2>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">Combine a finalidade do documento com o recorte Geral, CFTV ou Fibra Óptica. Cada PDF reorganiza cards, gráficos, indicadores e detalhamento para o público que irá utilizá-lo.</p>
           </div>
-        </CardContent>
-        <CardContent className="flex flex-col justify-center p-6 lg:p-8">
-          <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Escopo do relatório</p>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">Escolha a visão geral da seção ou gere um recorte por tipo de projeto.</p>
-          <Select value={executiveScope} onValueChange={(value) => setExecutiveScope(value as typeof executiveScope)}>
-            <SelectTrigger className="mt-5 w-full"><SelectValue /></SelectTrigger>
+          <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-black/10 px-4 py-3">
+            <BarChart3 className="size-5 text-[#d8c27c]" />
+            <div><p className="text-xs font-semibold">Dados no momento da emissão</p><p className="text-[11px] text-white/60">Fonte única: SAGEP</p></div>
+          </div>
+        </div>
+      </CardContent>
+
+      <CardContent className="grid gap-7 p-6 lg:grid-cols-[1fr_320px] lg:p-8">
+        <div>
+          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">1 · Escolha a finalidade</p>
+          <div className="mt-4 grid gap-3 md:grid-cols-3">
+            {reportOptions.map((option) => {
+              const Icon = option.icon
+              const selected = reportType === option.type
+              return <button
+                key={option.type}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => setReportType(option.type)}
+                className={cn(
+                  "group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+                  selected ? "border-primary bg-primary/8 shadow-sm ring-1 ring-primary/20" : "border-border bg-card",
+                )}
+              >
+                <span className={cn("flex size-10 items-center justify-center rounded-lg", selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-primary")}><Icon className="size-5" /></span>
+                <span className="mt-4 flex items-center justify-between gap-2"><strong className="text-base">{option.title}</strong>{selected && <Badge>Selecionado</Badge>}</span>
+                <span className="mt-1 block text-xs font-medium text-primary">{option.audience}</span>
+                <span className="mt-3 block text-sm leading-5 text-muted-foreground">{option.description}</span>
+              </button>
+            })}
+          </div>
+          <div className="mt-4 grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-3">
+            <div><p className="text-xs font-semibold">Cards gerenciais</p><p className="mt-1 text-xs text-muted-foreground">Indicadores adequados à finalidade</p></div>
+            <div><p className="text-xs font-semibold">Gráficos consolidados</p><p className="mt-1 text-xs text-muted-foreground">Etapa, UF, saúde, carga ou valores</p></div>
+            <div><p className="text-xs font-semibold">Carteira detalhada</p><p className="mt-1 text-xs text-muted-foreground">Projetos, responsáveis e ações</p></div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border bg-muted/15 p-5">
+          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">2 · Configure a emissão</p>
+          <label className="mt-5 block text-sm font-medium" htmlFor="report-scope">Recorte da carteira</label>
+          <Select value={portfolioScope} onValueChange={(value) => setPortfolioScope(value as typeof portfolioScope)}>
+            <SelectTrigger id="report-scope" className="mt-2 w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">Relatório geral</SelectItem>
+              <SelectItem value="all">Geral · toda a Seção</SelectItem>
               <SelectItem value="CFTV">Somente CFTV</SelectItem>
               <SelectItem value="FIBRA_OPTICA_PONTO_LOGICO">Somente Fibra Óptica</SelectItem>
             </SelectContent>
           </Select>
+          <label className="mt-4 block text-sm font-medium" htmlFor="report-stale-days">Critério de atenção</label>
           <Select value={staleDays} onValueChange={setStaleDays}>
-            <SelectTrigger className="mt-3 w-full"><SelectValue /></SelectTrigger>
+            <SelectTrigger id="report-stale-days" className="mt-2 w-full"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="7">7 dias sem atualização</SelectItem>
               <SelectItem value="15">15 dias sem atualização</SelectItem>
@@ -174,13 +239,18 @@ export function ReportsPage() {
               <SelectItem value="45">45 dias sem atualização</SelectItem>
             </SelectContent>
           </Select>
-          <Button className="mt-4 w-full" size="lg" onClick={() => executivePdfMutation.mutate()} disabled={executivePdfMutation.isPending}>
+          <div className="mt-5 rounded-lg border border-primary/15 bg-primary/5 p-3">
+            <p className="text-xs text-muted-foreground">Documento selecionado</p>
+            <p className="mt-1 font-semibold">Relatório {reportOptions.find((option) => option.type === reportType)?.title}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{portfolioScope === "all" ? "Carteira geral" : portfolioScope === "CFTV" ? "Projetos de CFTV" : "Projetos de Fibra Óptica"}</p>
+          </div>
+          <Button className="mt-4 w-full" size="lg" onClick={() => consolidatedPdfMutation.mutate()} disabled={consolidatedPdfMutation.isPending}>
             <Download className="size-4" />
-            {executivePdfMutation.isPending ? "Montando relatório..." : "Baixar relatório executivo"}
+            {consolidatedPdfMutation.isPending ? "Montando relatório..." : "Gerar PDF profissional"}
           </Button>
-          <p className="mt-3 text-center text-xs text-muted-foreground">Os cards consolidam andamento e concluídos; a carteira detalha os projetos abertos.</p>
-        </CardContent>
-      </div>
+          <p className="mt-3 text-center text-xs text-muted-foreground">PDF A4 paisagem com identidade institucional do 4º CTA.</p>
+        </div>
+      </CardContent>
     </Card>}
 
     <Card className="border-none shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-5 text-primary" />Planilha do portfólio</CardTitle><CardDescription>Os filtros abaixo são aplicados diretamente à geração do arquivo.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_260px_auto]"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Título ou descrição do projeto..." /></div><Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os status</SelectItem>{Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><Select value={stage} onValueChange={(value) => setStage(value as ProjectStage | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as etapas</SelectItem>{Object.entries(stageLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><div className="flex gap-2"><Button variant="outline" onClick={clearFilters}>Limpar</Button><Button onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}><Download className="size-4" />{exportMutation.isPending ? "Gerando..." : "Exportar"}</Button></div></div>{canIncludeArchived && <label className="flex w-fit cursor-pointer items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />Incluir projetos arquivados na planilha</label>}</CardContent></Card>

@@ -13,6 +13,8 @@ export type ExecutiveProjectsReportFilters = DashboardExecutiveFilters & {
   staleDays?: number
 }
 
+export type ConsolidatedReportType = "executive" | "operational" | "financial"
+
 export type ProjectDossier = {
   generatedAt: string
   project: ProjectDetailsResponse["project"]

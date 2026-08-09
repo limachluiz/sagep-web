@@ -1,6 +1,7 @@
 import { api } from "@/lib/api"
 import type {
   ExecutiveProjectsReportFilters,
+  ConsolidatedReportType,
   ProjectDossier,
   ProjectExportFilters,
 } from "./reports.types"
@@ -14,7 +15,9 @@ function exportQuery(filters: ProjectExportFilters) {
   return query.size ? `?${query.toString()}` : ""
 }
 
-function executiveQuery(filters: ExecutiveProjectsReportFilters) {
+function executiveQuery(
+  filters: ExecutiveProjectsReportFilters & { reportType?: ConsolidatedReportType },
+) {
   const query = new URLSearchParams()
   Object.entries(filters).forEach(([key, value]) => {
     if (value !== undefined && value !== "") query.set(key, String(value))
@@ -38,6 +41,18 @@ export const reportsService = {
   executiveProjectsPdf(filters: ExecutiveProjectsReportFilters = {}) {
     return api.getBlob(
       `/reports/projects/executive-summary.pdf${executiveQuery(filters)}`,
+    )
+  },
+
+  consolidatedProjectsPdf(
+    reportType: ConsolidatedReportType,
+    filters: ExecutiveProjectsReportFilters = {},
+  ) {
+    return api.getBlob(
+      `/reports/projects/consolidated-summary.pdf${executiveQuery({
+        ...filters,
+        reportType,
+      })}`,
     )
   },
 }
