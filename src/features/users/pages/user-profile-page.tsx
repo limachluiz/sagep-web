@@ -260,7 +260,7 @@ export function UserProfilePage() {
                 )}
                 {canViewPermissions && (
                   <Button asChild variant="outline" className="w-full justify-start">
-                    <Link to="/settings"><ShieldCheck className="size-4" />Governança de acessos</Link>
+                    <Link to="/settings/access"><ShieldCheck className="size-4" />Governança de acessos</Link>
                   </Button>
                 )}
                 {!canManageSessions && !canManageUsers && !canViewPermissions && (

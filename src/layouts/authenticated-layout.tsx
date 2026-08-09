@@ -153,7 +153,7 @@ const navigation: NavigationGroup[] = [
     label: "Configurações",
     href: "/settings",
     icon: Settings,
-    anyOf: ["permissions.view"],
+    anyOf: ["system_health.view", "permissions.view"],
   },
   {
     label: "Auditoria",

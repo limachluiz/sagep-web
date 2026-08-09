@@ -15,6 +15,7 @@ import type { UserRole } from "@/features/auth/auth.types"
 import { permissionsService } from "@/features/permissions/permissions.service"
 import type { PermissionCatalogItem, UserPermissionItem } from "@/features/permissions/permissions.types"
 import { cn } from "@/lib/utils"
+import { SettingsNavigation } from "@/features/system-health/components/settings-navigation"
 
 const roles: UserRole[] = ["ADMIN", "GESTOR", "PROJETISTA", "CONSULTA"]
 const roleLabels: Record<UserRole, string> = {
@@ -48,6 +49,7 @@ export function PermissionsSettingsPage() {
 
   return (
     <div className="space-y-6">
+      <SettingsNavigation />
       <div>
         <Badge className="mb-3">Governança</Badge>
         <h1 className="text-3xl font-semibold tracking-tight">Configurações de acesso</h1>

@@ -32,6 +32,7 @@ const UsersPage = lazy(() => import("@/features/users/pages/users-page").then((m
 const PermissionsSettingsPage = lazy(() => import("@/features/permissions/pages/permissions-settings-page").then((module) => ({ default: module.PermissionsSettingsPage })))
 const ReportsPage = lazy(() => import("@/features/reports/pages/reports-page").then((module) => ({ default: module.ReportsPage })))
 const AuditPage = lazy(() => import("@/features/audit/pages/audit-page").then((module) => ({ default: module.AuditPage })))
+const SystemHealthPage = lazy(() => import("@/features/system-health/pages/system-health-page").then((module) => ({ default: module.SystemHealthPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -218,6 +219,14 @@ export default function App() {
           />
           <Route
             path="/settings"
+            element={
+              <PermissionRoute anyOf={["system_health.view"]}>
+                <SystemHealthPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/settings/access"
             element={
               <PermissionRoute anyOf={["permissions.view"]}>
                 <PermissionsSettingsPage />
