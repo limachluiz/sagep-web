@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 export function SettingsNavigation() {
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const items = [
-    { label: "Saúde do sistema", href: "/settings", icon: Activity, visible: hasPermission("system_health.view") },
+    { label: "Saúde do sistema", href: "/settings", icon: Activity, visible: true },
     { label: "Acessos e permissões", href: "/settings/access", icon: ShieldCheck, visible: hasPermission("permissions.view") },
   ].filter((item) => item.visible)
 

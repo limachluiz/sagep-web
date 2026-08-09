@@ -219,11 +219,7 @@ export default function App() {
           />
           <Route
             path="/settings"
-            element={
-              <PermissionRoute anyOf={["system_health.view"]}>
-                <SystemHealthPage />
-              </PermissionRoute>
-            }
+            element={<SystemHealthPage />}
           />
           <Route
             path="/settings/access"
