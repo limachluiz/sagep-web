@@ -25,6 +25,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { authService } from "@/features/auth/auth.service"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { PublicSystemStatus } from "@/features/auth/components/public-system-status"
 
 const workflow = [
   { label: "Planejamento", icon: ClipboardList },
@@ -163,10 +164,7 @@ export function LoginPage() {
       <div className="sagep-login-grid pointer-events-none absolute inset-0 opacity-30" aria-hidden="true" />
 
       <div className="absolute right-3 top-3 z-30 sm:right-6 sm:top-5 lg:right-7 lg:top-6">
-        <div className="hidden items-center gap-2 rounded-md border border-[#a9893d]/20 bg-[#07120f]/70 px-4 py-2 text-[9px] font-semibold uppercase tracking-[.2em] text-[#d8b45a] backdrop-blur-md sm:flex">
-          <span className="size-2 rounded-full bg-[#e7b64b] shadow-[0_0_12px_#e7b64b]" />
-          Sistema operacional
-        </div>
+        <PublicSystemStatus />
       </div>
 
       <div className="sagep-login-content relative z-10 grid w-full flex-1 items-center gap-8 px-4 pb-8 pt-20 sm:px-6 sm:pb-10 sm:pt-24 xl:grid-cols-[minmax(0,1fr)_minmax(440px,520px)] xl:gap-10 xl:px-[46px] xl:pb-8 xl:pt-20 2xl:gap-16">
