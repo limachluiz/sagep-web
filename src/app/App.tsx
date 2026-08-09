@@ -11,8 +11,8 @@ const AtasPage = lazy(() => import("@/features/atas/pages/atas-page").then((modu
 const AccessDeniedPage = lazy(() => import("@/features/auth/pages/access-denied-page").then((module) => ({ default: module.AccessDeniedPage })))
 const SessionsPage = lazy(() => import("@/features/auth/pages/sessions-page").then((module) => ({ default: module.SessionsPage })))
 const LoginPage = lazy(() => import("@/features/auth/pages/login-page").then((module) => ({ default: module.LoginPage })))
-const OperationalDashboardPage = lazy(() => import("@/features/dashboard/pages/operational-dashboard-page").then((module) => ({ default: module.OperationalDashboardPage })))
-const ExecutiveDashboardPage = lazy(() => import("@/features/dashboard/pages/executive-dashboard-page").then((module) => ({ default: module.ExecutiveDashboardPage })))
+const HomePage = lazy(() => import("@/features/home/pages/home-page").then((module) => ({ default: module.HomePage })))
+const DashboardPage = lazy(() => import("@/features/dashboard/pages/dashboard-page").then((module) => ({ default: module.DashboardPage })))
 const DiexDetailsPage = lazy(() => import("@/features/diex/pages/diex-details-page").then((module) => ({ default: module.DiexDetailsPage })))
 const DiexListPage = lazy(() => import("@/features/diex/pages/diex-list-page").then((module) => ({ default: module.DiexListPage })))
 const EstimateDetailsPage = lazy(() => import("@/features/estimates/pages/estimate-details-page").then((module) => ({ default: module.EstimateDetailsPage })))
@@ -27,10 +27,12 @@ const ServiceOrderDetailsPage = lazy(() => import("@/features/service-orders/pag
 const ServiceOrdersListPage = lazy(() => import("@/features/service-orders/pages/service-orders-list-page").then((module) => ({ default: module.ServiceOrdersListPage })))
 const TaskDetailsPage = lazy(() => import("@/features/tasks/pages/task-details-page").then((module) => ({ default: module.TaskDetailsPage })))
 const TasksListPage = lazy(() => import("@/features/tasks/pages/tasks-list-page").then((module) => ({ default: module.TasksListPage })))
+const UserProfilePage = lazy(() => import("@/features/users/pages/user-profile-page").then((module) => ({ default: module.UserProfilePage })))
 const UsersPage = lazy(() => import("@/features/users/pages/users-page").then((module) => ({ default: module.UsersPage })))
 const PermissionsSettingsPage = lazy(() => import("@/features/permissions/pages/permissions-settings-page").then((module) => ({ default: module.PermissionsSettingsPage })))
 const ReportsPage = lazy(() => import("@/features/reports/pages/reports-page").then((module) => ({ default: module.ReportsPage })))
 const AuditPage = lazy(() => import("@/features/audit/pages/audit-page").then((module) => ({ default: module.AuditPage })))
+const SystemHealthPage = lazy(() => import("@/features/system-health/pages/system-health-page").then((module) => ({ default: module.SystemHealthPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -39,16 +41,18 @@ function PageFallback() {
 export default function App() {
   return (
     <Suspense fallback={<PageFallback />}><Routes>
-      <Route path="/" element={<Navigate to="/dashboard" replace />} />
+      <Route path="/" element={<Navigate to="/inicio" replace />} />
       <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedLayout />}>
+          <Route path="/inicio" element={<HomePage />} />
+          <Route path="/user" element={<UserProfilePage />} />
           <Route
             path="/dashboard"
             element={
-              <PermissionRoute anyOf={["dashboard.view_operational"]}>
-                <OperationalDashboardPage />
+              <PermissionRoute anyOf={["dashboard.financial_view", "dashboard.view_operational", "dashboard.view_executive"]}>
+                <DashboardPage />
               </PermissionRoute>
             }
           />
@@ -56,7 +60,15 @@ export default function App() {
             path="/dashboard/executive"
             element={
               <PermissionRoute anyOf={["dashboard.view_executive"]}>
-                <ExecutiveDashboardPage />
+                <Navigate to="/dashboard?view=executive" replace />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/dashboard/operational"
+            element={
+              <PermissionRoute anyOf={["dashboard.view_operational"]}>
+                <Navigate to="/dashboard?view=operational" replace />
               </PermissionRoute>
             }
           />
@@ -207,6 +219,10 @@ export default function App() {
           />
           <Route
             path="/settings"
+            element={<SystemHealthPage />}
+          />
+          <Route
+            path="/settings/access"
             element={
               <PermissionRoute anyOf={["permissions.view"]}>
                 <PermissionsSettingsPage />
@@ -232,7 +248,7 @@ export default function App() {
         </Route>
       </Route>
 
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/inicio" replace />} />
     </Routes></Suspense>
   )
 }

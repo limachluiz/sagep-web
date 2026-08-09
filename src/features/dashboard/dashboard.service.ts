@@ -3,9 +3,22 @@ import type {
   DashboardExecutiveFilters,
   DashboardExecutiveResponse,
   DashboardOperationalResponse,
+  DashboardOverviewFilters,
+  DashboardOverviewResponse,
 } from "./dashboard.types"
 
 export const dashboardService = {
+  overview(filters: DashboardOverviewFilters) {
+    const query = new URLSearchParams()
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) query.set(key, value)
+    })
+
+    const suffix = query.size ? `?${query.toString()}` : ""
+    return api.get<DashboardOverviewResponse>(`/dashboard${suffix}`)
+  },
+
   operational(staleDays: number) {
     const query = new URLSearchParams({
       staleDays: String(staleDays),

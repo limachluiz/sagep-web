@@ -1,4 +1,5 @@
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
+import type { DashboardExecutiveFilters } from "@/features/dashboard/dashboard.types"
 import type { ProjectDetailsResponse, ProjectStatus } from "@/features/projects/projects.types"
 
 export type ProjectExportFilters = {
@@ -7,6 +8,12 @@ export type ProjectExportFilters = {
   stage?: ProjectStage
   includeArchived?: boolean
 }
+
+export type ExecutiveProjectsReportFilters = DashboardExecutiveFilters & {
+  staleDays?: number
+}
+
+export type ConsolidatedReportType = "executive" | "operational" | "financial"
 
 export type ProjectDossier = {
   generatedAt: string

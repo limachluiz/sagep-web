@@ -1,5 +1,10 @@
 import { api } from "@/lib/api"
-import type { ProjectDossier, ProjectExportFilters } from "./reports.types"
+import type {
+  ExecutiveProjectsReportFilters,
+  ConsolidatedReportType,
+  ProjectDossier,
+  ProjectExportFilters,
+} from "./reports.types"
 
 function exportQuery(filters: ProjectExportFilters) {
   const query = new URLSearchParams()
@@ -7,6 +12,16 @@ function exportQuery(filters: ProjectExportFilters) {
   if (filters.status) query.set("status", filters.status)
   if (filters.stage) query.set("stage", filters.stage)
   if (filters.includeArchived) query.set("includeArchived", "true")
+  return query.size ? `?${query.toString()}` : ""
+}
+
+function executiveQuery(
+  filters: ExecutiveProjectsReportFilters & { reportType?: ConsolidatedReportType },
+) {
+  const query = new URLSearchParams()
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== "") query.set(key, String(value))
+  })
   return query.size ? `?${query.toString()}` : ""
 }
 
@@ -21,5 +36,23 @@ export const reportsService = {
 
   projectDossierPdf(projectId: string) {
     return api.getBlob(`/reports/projects/${projectId}/dossier.pdf`)
+  },
+
+  executiveProjectsPdf(filters: ExecutiveProjectsReportFilters = {}) {
+    return api.getBlob(
+      `/reports/projects/executive-summary.pdf${executiveQuery(filters)}`,
+    )
+  },
+
+  consolidatedProjectsPdf(
+    reportType: ConsolidatedReportType,
+    filters: ExecutiveProjectsReportFilters = {},
+  ) {
+    return api.getBlob(
+      `/reports/projects/consolidated-summary.pdf${executiveQuery({
+        ...filters,
+        reportType,
+      })}`,
+    )
   },
 }

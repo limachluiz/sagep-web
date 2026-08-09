@@ -89,6 +89,7 @@ export function ProjectsListPage() {
   const initialSearch = searchParams.get("search") ?? ""
   const initialStatus = searchParams.get("status")
   const initialStage = searchParams.get("stage")
+  const shouldOpenCreateForm = searchParams.get("new") === "1"
   const [search, setSearch] = useState(initialSearch)
   const [debouncedSearch, setDebouncedSearch] = useState(initialSearch)
   const [status, setStatus] = useState<ProjectStatus | "all">(
@@ -100,7 +101,9 @@ export function ProjectsListPage() {
   const [visibility, setVisibility] = useState<"active" | "archived">("active")
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [createOpen, setCreateOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(
+    () => shouldOpenCreateForm && canCreate,
+  )
 
   const createMutation = useMutation({
     mutationFn: (payload: ProjectMutationPayload) => projectsService.create(payload),
@@ -162,6 +165,15 @@ export function ProjectsListPage() {
     setStage("all")
     setVisibility("active")
     setPage(1)
+  }
+
+  const handleCreateOpenChange = (open: boolean) => {
+    setCreateOpen(open)
+    if (open || !searchParams.has("new")) return
+
+    const next = new URLSearchParams(searchParams)
+    next.delete("new")
+    setSearchParams(next, { replace: true })
   }
 
   const meta = projectsQuery.data?.meta
@@ -352,7 +364,7 @@ export function ProjectsListPage() {
 
       <ProjectFormSheet
         open={createOpen}
-        onOpenChange={setCreateOpen}
+        onOpenChange={handleCreateOpenChange}
         pending={createMutation.isPending}
         onSubmit={async (payload) => { await createMutation.mutateAsync(payload) }}
       />

@@ -1,11 +1,14 @@
 import { api } from "@/lib/api"
 import type {
   AuthUser,
+  ChangeOwnPasswordPayload,
+  ChangeOwnPasswordResponse,
   LoginPayload,
   LoginResponse,
   SessionCleanupResponse,
   SessionMutationResponse,
   SessionsResponse,
+  UpdateOwnProfilePayload,
 } from "./auth.types"
 
 export const authService = {
@@ -17,6 +20,14 @@ export const authService = {
 
   me() {
     return api.get<AuthUser>("/auth/me")
+  },
+
+  updateProfile(payload: UpdateOwnProfilePayload) {
+    return api.patch<AuthUser>("/auth/profile", payload)
+  },
+
+  changePassword(payload: ChangeOwnPasswordPayload) {
+    return api.post<ChangeOwnPasswordResponse>("/auth/change-password", payload)
   },
 
   logout(refreshToken: string) {

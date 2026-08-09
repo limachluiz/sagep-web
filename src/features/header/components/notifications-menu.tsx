@@ -30,7 +30,7 @@ export function NotificationsMenu() {
         {alerts.slice(0, 8).map((alert) => <DropdownMenuItem key={alert.id} className="mb-1 cursor-pointer items-start rounded-lg border p-3" onSelect={() => navigate(alert.detailsPath)}><AlertTriangle className={alert.severity === "CRITICAL" ? "mt-0.5 size-4 text-destructive" : "mt-0.5 size-4 text-status-warning"} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="truncate font-medium">{alert.title}</span><Badge variant={alert.severity === "CRITICAL" ? "destructive" : "outline"}>{alert.severity === "CRITICAL" ? "Crítico" : "Atenção"}</Badge></span><span className="mt-1 line-clamp-2 text-xs text-muted-foreground">{alert.description}</span></span></DropdownMenuItem>)}
         {stockCount > 0 && <DropdownMenuItem className="cursor-pointer items-start rounded-lg border p-3" onSelect={() => navigate("/atas")}><Boxes className="mt-0.5 size-4 text-status-warning" /><span><span className="block font-medium">{stockCount} item(ns) de ATA com saldo crítico</span><span className="mt-1 block text-xs text-muted-foreground">Abra ATAs e Saldos para revisar a disponibilidade.</span></span></DropdownMenuItem>}
       </div>
-      <DropdownMenuSeparator className="m-0" /><DropdownMenuItem className="cursor-pointer justify-center rounded-none py-3 text-primary" onSelect={() => navigate("/dashboard")}>Ver dashboard operacional</DropdownMenuItem>
+      <DropdownMenuSeparator className="m-0" /><DropdownMenuItem className="cursor-pointer justify-center rounded-none py-3 text-primary" onSelect={() => navigate("/dashboard?view=operational")}>Ver painel operacional</DropdownMenuItem>
     </DropdownMenuContent>
   </DropdownMenu>
 }

@@ -174,6 +174,13 @@ function ExecutiveContent({
 
   const metrics = [
     {
+      label: "Projetos concluídos",
+      value: formatCurrency(data.summary.totalCompletedProjectsAmount),
+      helper: `${data.summary.projectsCompleted} projetos finalizados`,
+      icon: BadgeCheck,
+      to: "/projects?status=CONCLUIDO",
+    },
+    {
       label: "Valor estimado",
       value: formatCurrency(data.summary.totalEstimatedAmount),
       helper: `${data.summary.estimatesFinalized} estimativas finalizadas`,
@@ -186,13 +193,6 @@ function ExecutiveContent({
       helper: "Projetos com Nota de Empenho",
       icon: Landmark,
       to: "/projects",
-    },
-    {
-      label: "Projetos concluídos",
-      value: formatCurrency(data.summary.totalCompletedProjectsAmount),
-      helper: `${data.summary.projectsCompleted} projetos finalizados`,
-      icon: BadgeCheck,
-      to: "/projects?status=CONCLUIDO",
     },
     {
       label: "Valor em Ordens de Serviço",
@@ -401,7 +401,7 @@ function ExecutiveContent({
   )
 }
 
-export function ExecutiveDashboardPage() {
+export function ExecutiveDashboardPage({ embedded = false }: { embedded?: boolean }) {
   const [mode, setMode] = useState<ExecutiveFilterMode>("year")
   const [referenceDate, setReferenceDate] = useState(today())
   const [startDate, setStartDate] = useState(firstDayOfMonth())
@@ -456,17 +456,35 @@ export function ExecutiveDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
-        eyebrow="Dashboard executivo"
-        title="Visão gerencial do portfólio"
-        description="Indicadores consolidados de projetos, documentos, investimentos e saldos das ATAs."
-        icon={BarChart3}
-        meta={dashboardQuery.data ? `${dashboardQuery.data.filter.label} · Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}` : undefined}
-        actions={<Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()} disabled={dashboardQuery.isFetching || isInvalidInterval}>
-          {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-          Atualizar
-        </Button>}
-      />
+      {embedded ? (
+        <Card>
+          <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-semibold tracking-[.16em] text-primary uppercase">Perspectiva executiva</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Indicadores financeiros e gerenciais do portfólio.
+                {dashboardQuery.data ? ` ${dashboardQuery.data.filter.label} · Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}.` : ""}
+              </p>
+            </div>
+            <Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()} disabled={dashboardQuery.isFetching || isInvalidInterval}>
+              {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+              Atualizar
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <PageHeader
+          eyebrow="Dashboard executivo"
+          title="Visão gerencial do portfólio"
+          description="Indicadores consolidados de projetos, documentos, investimentos e saldos das ATAs."
+          icon={BarChart3}
+          meta={dashboardQuery.data ? `${dashboardQuery.data.filter.label} · Atualizado em ${formatDate(dashboardQuery.data.generatedAt)}` : undefined}
+          actions={<Button variant="outline" className="gap-2" onClick={() => dashboardQuery.refetch()} disabled={dashboardQuery.isFetching || isInvalidInterval}>
+            {dashboardQuery.isFetching ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
+            Atualizar
+          </Button>}
+        />
+      )}
 
       <FilterToolbar className="gap-4 xl:grid-cols-4">
           <div className="space-y-2">

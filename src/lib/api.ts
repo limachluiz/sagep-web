@@ -24,9 +24,21 @@ export class ApiError extends Error {
 
 let refreshRequest: Promise<{ accessToken: string; refreshToken?: string }> | null = null
 
+async function fetchApi(path: string, options: RequestInit) {
+  try {
+    return await fetch(`${env.apiUrl}${path}`, options)
+  } catch (error) {
+    throw new ApiError(
+      "Não foi possível conectar ao servidor do SAGEP. Verifique se o backend está em execução.",
+      0,
+      error,
+    )
+  }
+}
+
 async function refreshSession(refreshToken: string) {
   if (!refreshRequest) {
-    refreshRequest = fetch(`${env.apiUrl}/auth/refresh`, {
+    refreshRequest = fetchApi("/auth/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -61,7 +73,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set("Authorization", `Bearer ${accessToken}`)
   }
 
-  let response = await fetch(`${env.apiUrl}${path}`, {
+  let response = await fetchApi(path, {
     ...options,
     headers,
   })
@@ -83,7 +95,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
     headers.set("Authorization", `Bearer ${refreshed.accessToken}`)
 
-    response = await fetch(`${env.apiUrl}${path}`, {
+    response = await fetchApi(path, {
       ...options,
       headers,
     })
@@ -93,7 +105,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     const error = await response.json().catch(() => null)
 
     throw new ApiError(
-      error?.message ?? error?.error ?? `Erro na requisição: ${response.status}`,
+      error?.message ??
+        error?.error ??
+        (response.status >= 500
+          ? "O servidor do SAGEP está indisponível no momento."
+          : `Erro na requisição: ${response.status}`),
       response.status,
       error,
     )

@@ -11,6 +11,8 @@ import { useAuthStore } from "@/features/auth/auth.store"
 const authenticatedUser = {
   id: "user-admin",
   name: "Administrador SAGEP",
+  warName: "Lima",
+  rank: "3º Sgt",
   email: "admin@sagep.com",
   role: "ADMIN" as const,
   permissions: ["dashboard.view_operational", "sessions.manage_own"],
@@ -46,7 +48,7 @@ describe("LoginPage", () => {
     vi.restoreAllMocks()
   })
 
-  it("autentica, valida o usuário e abre o dashboard", async () => {
+  it("autentica, valida o usuário e abre a página inicial", async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input)
 
@@ -149,8 +151,21 @@ describe("LoginPage", () => {
     await user.type(await screen.findByLabelText("Senha"), "123456")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
-    expect(await screen.findByText("Visão geral da operação")).toBeInTheDocument()
-    expect(fetchMock).toHaveBeenCalledTimes(4)
+    await waitFor(() => {
+      expect(document.querySelector("main")).toBeInTheDocument()
+    }, { timeout: 5_000 })
+    expect(await screen.findByRole("button", {
+      name: /Abrir menu da conta de 3º Sgt Lima/i,
+    })).toBeInTheDocument()
+    expect(
+      screen.getAllByRole("img", {
+        name: /Brasão do 4º Centro de Telemática de Área/i,
+      }).length,
+    ).toBeGreaterThan(0)
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/me$/),
+      expect.objectContaining({ method: "GET" }),
+    )
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,
       accessToken: "access-token",
@@ -172,11 +187,23 @@ describe("LoginPage", () => {
     const user = userEvent.setup()
     renderApplication()
 
+    expect(
+      screen.getAllByRole("img", {
+        name: /Brasão do 4º Centro de Telemática de Área/i,
+      }).length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getAllByText("Sistema de Apoio à Gestão de Projetos").length,
+    ).toBeGreaterThan(0)
+    expect(
+      screen.getByText("Desenvolvido pelo 2º Ten Luiz - 4º CTA"),
+    ).toBeInTheDocument()
+
     await user.type(await screen.findByLabelText("Senha"), "senha-errada")
     await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
 
     expect(await screen.findByText("E-mail ou senha inválidos")).toBeInTheDocument()
-    expect(screen.getByRole("heading", { name: "Acesso ao sistema" })).toBeInTheDocument()
+    expect(screen.getByRole("heading", { name: "Bem-vindo ao SAGEP" })).toBeInTheDocument()
 
     await waitFor(() => {
       expect(useAuthStore.getState().isAuthenticated).toBe(false)

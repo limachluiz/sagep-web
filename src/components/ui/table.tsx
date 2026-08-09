@@ -17,7 +17,7 @@ function Table({
       role="region"
       aria-label={containerLabel}
       tabIndex={0}
-      className="relative w-full overflow-x-auto rounded-lg border border-primary/10 bg-card/45 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--foreground)_3%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+      className="relative w-full overflow-x-auto overscroll-x-contain rounded-lg border border-primary/10 bg-card/45 shadow-[inset_0_1px_0_color-mix(in_oklab,var(--foreground)_3%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       <table
         data-slot="table"
@@ -92,7 +92,7 @@ function TableCell({ className, ...props }: React.ComponentProps<"td">) {
     <td
       data-slot="table-cell"
       className={cn(
-        "px-3 py-2.5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
+        "max-w-[30rem] px-3 py-2.5 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0",
         className
       )}
       {...props}

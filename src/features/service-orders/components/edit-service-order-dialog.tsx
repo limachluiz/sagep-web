@@ -44,7 +44,7 @@ export function EditServiceOrderDialog({ order, open, onOpenChange, onSaved }: P
     <div className="space-y-2"><Label htmlFor="edit-os-date">Emissão</Label><Input id="edit-os-date" type="date" value={issuedAt} onChange={(e) => setIssuedAt(e.target.value)} /></div>
     <div className="space-y-2 sm:col-span-2"><Label htmlFor="edit-os-cnpj">CNPJ da contratada</Label><Input id="edit-os-cnpj" value={cnpj} onChange={(e) => setCnpj(e.target.value)} /></div>
     <div className="space-y-2"><Label htmlFor="edit-os-requester">Fiscal/requisitante</Label><Input id="edit-os-requester" value={requesterName} onChange={(e) => setRequesterName(e.target.value)} /></div>
-    <div className="space-y-2"><Label htmlFor="edit-os-rank">Posto/graduação</Label><Input id="edit-os-rank" value={requesterRank} onChange={(e) => setRequesterRank(e.target.value)} /></div>
+    <div className="space-y-2"><Label htmlFor="edit-os-rank">P/G</Label><Input id="edit-os-rank" value={requesterRank} onChange={(e) => setRequesterRank(e.target.value)} /></div>
     <div className="space-y-2"><Label htmlFor="edit-os-start">Início planejado</Label><Input id="edit-os-start" type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
     <div className="space-y-2"><Label htmlFor="edit-os-end">Entrega planejada</Label><Input id="edit-os-end" type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
     <div className="space-y-2 sm:col-span-2"><Label htmlFor="edit-os-location">Local de execução</Label><Input id="edit-os-location" value={location} onChange={(e) => setLocation(e.target.value)} /></div>
