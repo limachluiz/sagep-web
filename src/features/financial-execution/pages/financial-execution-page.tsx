@@ -34,6 +34,15 @@ function dateTime(value?: string | null) {
   return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "—"
 }
 
+function synchronizationFreshness(value?: string | null) {
+  if (!value) return { label: "Nunca consultada", stale: true }
+  const elapsedHours = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 3_600_000))
+  if (elapsedHours < 1) return { label: "Atualizada há menos de 1h", stale: false }
+  if (elapsedHours < 24) return { label: `Atualizada há ${elapsedHours}h`, stale: false }
+  const elapsedDays = Math.floor(elapsedHours / 24)
+  return { label: `Atualizada há ${elapsedDays} dia(s)`, stale: elapsedHours >= 26 }
+}
+
 function statusBadge(note: CommitmentNote) {
   if (note.syncStatus === "ERRO") return <Badge variant="destructive">Erro de consulta</Badge>
   if (note.syncStatus === "DIVERGENTE") return <Badge variant="destructive">Divergência</Badge>
@@ -73,6 +82,18 @@ export function FinancialExecutionPage() {
     onError: (error) => toast.error(error.message),
   })
 
+  const syncOne = useMutation({
+    mutationFn: financialExecutionService.sync,
+    onSuccess: async (note) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["financial-execution"] }),
+        queryClient.invalidateQueries({ queryKey: ["header", "operational-alerts"] }),
+      ])
+      toast.success(`NE ${note.number} atualizada. Situação: ${financialLabels[note.financialStatus]}.`)
+    },
+    onError: (error) => toast.error(error.message),
+  })
+
   const totals = query.data?.summary.totals
   const cards = useMemo(() => [
     { label: "Empenhado atual", value: money(totals?.committed ?? 0), icon: Landmark, helper: `${query.data?.summary.total ?? 0} NE(s) ativa(s)` },
@@ -90,7 +111,7 @@ export function FinancialExecutionPage() {
     <section className="relative overflow-hidden rounded-2xl bg-sidebar p-6 text-sidebar-foreground shadow-lg">
       <div className="absolute -right-16 -top-24 size-72 rounded-full bg-sidebar-primary/15 blur-3xl" />
       <div className="relative flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
-        <div><p className="text-xs font-bold uppercase tracking-[.22em] text-sidebar-primary">Execução orçamentária e financeira</p><h1 className="mt-2 text-3xl font-semibold">Rastreamento de Notas de Empenho</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">Validação oficial, liquidação, pagamento e conferência de NFe conectados ao andamento real de cada projeto.</p></div>
+        <div><p className="text-xs font-bold uppercase tracking-[.22em] text-sidebar-primary">Execução orçamentária e financeira</p><h1 className="mt-2 text-3xl font-semibold">Rastreamento de Notas de Empenho</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-sidebar-foreground/70">Validação oficial, liquidação, pagamento e conferência de NFe conectados ao andamento real de cada projeto. A carteira é atualizada ao iniciar o SAGEP e, depois, a cada 24 horas.</p></div>
         {canSync && <Button className="bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90" onClick={() => syncAll.mutate()} disabled={syncAll.isPending}>{syncAll.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar carteira</Button>}
       </div>
     </section>
@@ -110,7 +131,7 @@ export function FinancialExecutionPage() {
       </CardContent>
     </Card>
 
-    <Dialog open={Boolean(activeNote)} onOpenChange={(open) => !open && closeDetails()}><DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto"><DialogHeader><DialogTitle className="flex items-center gap-2"><CircleDollarSign className="size-5 text-primary" />NE {activeNote?.number}</DialogTitle><DialogDescription>{activeNote ? `Projeto PRJ-${activeNote.project.projectCode} · dados oficiais consultados em ${dateTime(activeNote.lastSyncAt)}` : "Carregando..."}</DialogDescription></DialogHeader>{activeNote && <div className="space-y-5"><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Empenhado atual</p><p className="mt-1 text-lg font-semibold">{money(activeNote.currentAmount)}</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Liquidado</p><p className="mt-1 text-lg font-semibold">{money(activeNote.liquidatedAmount)}</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Pago</p><p className="mt-1 text-lg font-semibold">{money(activeNote.paidAmount)}</p></div></div>{activeNote.divergenceReason && <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive"><strong>Divergência:</strong> {activeNote.divergenceReason}</div>}<div><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Documentos relacionados</h3>{canManage && <Button size="sm" onClick={() => setInvoiceOpen(true)}><FileCheck2 className="size-4" />Registrar NFe</Button>}</div>{activeNote.documents?.length ? <div className="space-y-2">{activeNote.documents.map((document) => <div key={document.externalCode} className="flex flex-col justify-between gap-2 rounded-lg border p-3 sm:flex-row sm:items-center"><div><p className="font-medium">{document.number}</p><p className="text-xs text-muted-foreground">{document.phase} · {document.species ?? "Documento SIAFI"}</p></div><div className="text-right"><p className="font-medium">{money(document.amount)}</p><p className="text-xs text-muted-foreground">{document.issuedAt ? dateTime(document.issuedAt) : "Data não informada"}</p></div></div>)}</div> : <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">Abra novamente a NE após uma sincronização para visualizar os documentos relacionados.</p>}</div></div>}</DialogContent></Dialog>
+    <Dialog open={Boolean(activeNote)} onOpenChange={(open) => !open && closeDetails()}><DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto"><DialogHeader><div className="flex flex-col justify-between gap-3 pr-7 sm:flex-row sm:items-start"><div><DialogTitle className="flex items-center gap-2"><CircleDollarSign className="size-5 text-primary" />NE {activeNote?.number}</DialogTitle><DialogDescription>{activeNote ? `Projeto PRJ-${activeNote.project.projectCode} · consulta oficial em ${dateTime(activeNote.lastSyncAt)}` : "Carregando..."}</DialogDescription></div>{activeNote && canSync && <Button variant="outline" size="sm" onClick={() => syncOne.mutate(activeNote.id)} disabled={syncOne.isPending}>{syncOne.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Verificar agora</Button>}</div></DialogHeader>{activeNote && <div className="space-y-5"><div className={`flex items-center justify-between gap-3 rounded-xl border p-3 text-sm ${synchronizationFreshness(activeNote.lastSyncAt).stale ? "border-status-warning/30 bg-status-warning/10" : "border-primary/20 bg-primary/5"}`}><span>{synchronizationFreshness(activeNote.lastSyncAt).label}</span><Badge variant={synchronizationFreshness(activeNote.lastSyncAt).stale ? "outline" : "default"}>{activeNote.syncStatus === "VALIDADO" ? "Dados oficiais" : activeNote.syncStatus}</Badge></div><div className="grid gap-3 sm:grid-cols-3"><div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Empenhado atual</p><p className="mt-1 text-lg font-semibold">{money(activeNote.currentAmount)}</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Liquidado</p><p className="mt-1 text-lg font-semibold">{money(activeNote.liquidatedAmount)}</p></div><div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Pago</p><p className="mt-1 text-lg font-semibold">{money(activeNote.paidAmount)}</p></div></div>{activeNote.divergenceReason && <div className="rounded-xl bg-destructive/10 p-4 text-sm text-destructive"><strong>Divergência:</strong> {activeNote.divergenceReason}</div>}<div><div className="mb-3 flex items-center justify-between"><h3 className="font-semibold">Documentos relacionados</h3>{canManage && <Button size="sm" onClick={() => setInvoiceOpen(true)}><FileCheck2 className="size-4" />Registrar NFe</Button>}</div>{activeNote.documents?.length ? <div className="space-y-2">{activeNote.documents.map((document) => <div key={document.externalCode} className="flex flex-col justify-between gap-2 rounded-lg border p-3 sm:flex-row sm:items-center"><div><p className="font-medium">{document.number}</p><p className="text-xs text-muted-foreground">{document.phase} · {document.species ?? "Documento financeiro"}</p></div><div className="text-right"><p className="font-medium">{money(document.amount)}</p><p className="text-xs text-muted-foreground">{document.issuedAt ? dateTime(document.issuedAt) : "Data não informada"}</p></div></div>)}</div> : <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">Nenhum documento de liquidação ou pagamento foi localizado na última consulta.</p>}</div></div>}</DialogContent></Dialog>
     <CreateInvoiceDialog key={`${activeNote?.id ?? "none"}-${invoiceOpen}`} note={activeNote} open={invoiceOpen} onOpenChange={setInvoiceOpen} onSaved={() => { queryClient.invalidateQueries({ queryKey: ["financial-execution"] }); setSelected(null) }} />
   </div>
 }
