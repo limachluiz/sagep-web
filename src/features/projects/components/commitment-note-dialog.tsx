@@ -68,7 +68,7 @@ export function CommitmentNoteDialog({ projectId, projectCode, open, onOpenChang
   const canRegister = Boolean(preview && receivedAt && financialImpactConfirmed && (preview.validation.status !== "DIVERGENTE" || divergenceConfirmed))
 
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+    <DialogContent className="max-h-[90vh] sm:!max-w-2xl overflow-y-auto">
       <DialogHeader><DialogTitle className="flex items-center gap-2"><Landmark className="size-5 text-primary" />Validar e registrar Nota de Empenho</DialogTitle><DialogDescription>O SAGEP consultará o documento oficial, comparará fornecedor e valor e só então consumirá o saldo reservado e liberará a OS do projeto PRJ-{projectCode}.</DialogDescription></DialogHeader>
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-[1fr_180px]"><div className="space-y-2"><Label htmlFor="commitment-note-number">Número da Nota de Empenho</Label><Input id="commitment-note-number" value={number} onChange={(event) => { setNumber(event.target.value.toUpperCase()); setPreview(null) }} placeholder="2026NE000534" autoFocus /></div><div className="space-y-2"><Label htmlFor="commitment-note-received-at">Data de recebimento</Label><Input id="commitment-note-received-at" type="date" value={receivedAt} onChange={(event) => setReceivedAt(event.target.value)} /></div></div>

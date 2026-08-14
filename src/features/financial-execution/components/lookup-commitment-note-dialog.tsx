@@ -28,9 +28,19 @@ function money(value: number) {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
 
-function date(value?: string | null) {
+function dateTime(value?: string | null) {
   return value ? new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short" }).format(new Date(value)) : "—"
 }
+
+function documentDate(value?: string | null) {
+  if (!value) return "—"
+  const parsed = new Date(value)
+  const dateOnly = /T00:00:00(?:\.000)?Z$/.test(value)
+  return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", ...(dateOnly ? { timeZone: "UTC" } : {}) }).format(parsed)
+}
+
+const phaseLabels = { EMPENHO: "Empenho", LIQUIDACAO: "Liquidação", PAGAMENTO: "Pagamento", ANULACAO: "Anulação", OUTRO: "Outro" } as const
+const phasePaths = { EMPENHO: "empenho", LIQUIDACAO: "liquidacao", PAGAMENTO: "pagamento", ANULACAO: "empenho", OUTRO: "empenho" } as const
 
 export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
   const [number, setNumber] = useState("")
@@ -45,7 +55,7 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
   })
   const result = mutation.data
   const snapshot = result?.snapshot
-  const financialProgress = useMemo(() => snapshot?.currentAmount ? Math.min(100, (snapshot.paidAmount / snapshot.currentAmount) * 100) : 0, [snapshot])
+  const financialProgress = useMemo(() => snapshot?.financialStatus === "PAGA" ? 100 : snapshot?.currentAmount ? Math.min(100, (snapshot.paidAmount / snapshot.currentAmount) * 100) : 0, [snapshot])
 
   const changeOpen = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -56,14 +66,14 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
   }
 
   return <Dialog open={open} onOpenChange={changeOpen}>
-    <DialogContent className="max-h-[92vh] max-w-4xl overflow-y-auto">
+    <DialogContent className="max-h-[92vh] sm:!max-w-5xl overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2"><FileSearch className="size-5 text-primary" />Consultar Nota de Empenho avulsa</DialogTitle>
         <DialogDescription>Consulte uma NE diretamente na fonte oficial sem cadastrá-la, vinculá-la a projeto ou movimentar saldo e workflow.</DialogDescription>
       </DialogHeader>
 
       <div className="space-y-5">
-        <div className="grid gap-4 sm:grid-cols-[1fr_150px_130px]">
+        <div className="grid gap-4 md:grid-cols-[minmax(260px,1fr)_180px_160px]">
           <div className="space-y-2"><Label htmlFor="standalone-ne-number">Número da NE</Label><Input id="standalone-ne-number" value={number} onChange={(event) => { setNumber(event.target.value.toUpperCase()); mutation.reset() }} placeholder="2026NE000534" autoFocus /></div>
           <div className="space-y-2"><Label htmlFor="standalone-ne-ug">UG emitente</Label><Input id="standalone-ne-ug" value={managementUnit} onChange={(event) => { setManagementUnit(event.target.value.replace(/\D/g, "").slice(0, 6)); mutation.reset() }} inputMode="numeric" placeholder="Padrão da OM" /></div>
           <div className="space-y-2"><Label htmlFor="standalone-ne-management">Gestão</Label><Input id="standalone-ne-management" value={management} onChange={(event) => { setManagement(event.target.value.replace(/\D/g, "").slice(0, 5)); mutation.reset() }} inputMode="numeric" placeholder="Padrão da OM" /></div>
@@ -73,7 +83,7 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
 
         {snapshot && <div className="space-y-4">
           <div className="flex flex-col justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center">
-            <div className="flex items-center gap-3"><CheckCircle2 className="size-5 text-primary" /><div><p className="font-semibold">NE {snapshot.number} localizada</p><p className="text-xs text-muted-foreground">Consulta realizada em {date(snapshot.fetchedAt)} · código {snapshot.externalCode}</p></div></div>
+            <div className="flex min-w-0 items-center gap-3"><CheckCircle2 className="size-5 shrink-0 text-primary" /><div className="min-w-0"><p className="font-semibold">NE {snapshot.number} localizada</p><p className="break-all text-xs text-muted-foreground">Consulta realizada em {dateTime(snapshot.fetchedAt)} · código {snapshot.externalCode}</p></div></div>
             <Badge variant={snapshot.financialStatus === "PAGA" ? "default" : "outline"}>{statusLabels[snapshot.financialStatus]}</Badge>
           </div>
 
@@ -81,7 +91,7 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-xl border p-4 sm:col-span-2"><p className="text-xs text-muted-foreground">Favorecido</p><p className="mt-1 font-semibold">{snapshot.supplierName ?? "Não informado"}</p><p className="text-xs text-muted-foreground">{snapshot.supplierCnpj ?? "CNPJ não informado"}</p></div>
-            <div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Emissão</p><p className="mt-1 font-semibold">{date(snapshot.issuedAt)}</p><p className="text-xs text-muted-foreground">UG {snapshot.managementUnit} · Gestão {snapshot.management}</p></div>
+            <div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Emissão</p><p className="mt-1 font-semibold">{documentDate(snapshot.issuedAt)}</p><p className="text-xs text-muted-foreground">UG {snapshot.managementUnit} · Gestão {snapshot.management}</p></div>
             <div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Valor original</p><p className="mt-1 font-semibold">{money(snapshot.originalAmount)}</p><p className="text-xs text-muted-foreground">Atual: {money(snapshot.currentAmount)}</p></div>
           </div>
 
@@ -91,7 +101,7 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
             <div className="rounded-xl border p-4"><p className="text-xs text-muted-foreground">Anulado</p><p className="mt-1 text-lg font-semibold">{money(snapshot.cancelledAmount)}</p></div>
           </div>
 
-          <div><h3 className="mb-3 flex items-center gap-2 font-semibold"><Landmark className="size-4 text-primary" />Documentos relacionados</h3>{snapshot.documents.length ? <div className="space-y-2">{snapshot.documents.map((document) => <div key={document.externalCode} className="flex flex-col justify-between gap-2 rounded-lg border p-3 sm:flex-row sm:items-center"><div><p className="font-medium">{document.number}</p><p className="text-xs text-muted-foreground">{document.phase.replaceAll("_", " ")} · {document.species ?? "Documento financeiro"}</p></div><div className="sm:text-right"><p className="font-medium">{money(document.amount)}</p><p className="text-xs text-muted-foreground">{date(document.issuedAt)}</p></div></div>)}</div> : <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">Nenhum documento relacionado foi localizado.</p>}</div>
+          <div><h3 className="mb-3 flex items-center gap-2 font-semibold"><Landmark className="size-4 text-primary" />Linha financeira oficial</h3>{snapshot.documents.length ? <div className="space-y-2">{snapshot.documents.map((document) => <div key={document.externalCode} className="flex flex-col justify-between gap-3 rounded-lg border p-3 sm:flex-row sm:items-center"><div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-medium">{document.number}</p><Badge variant="outline">{phaseLabels[document.phase]}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{document.species ?? "Documento financeiro oficial"}</p></div><div className="flex items-center justify-between gap-4 sm:justify-end"><div className="sm:text-right"><p className="font-medium">{document.amount > 0 ? money(document.amount) : "Valor não informado"}</p><p className="text-xs text-muted-foreground">{documentDate(document.issuedAt)}</p></div>{/^\d{6}\d{5}\d{4}(?:NE|NS|OB)\d{6}$/i.test(document.externalCode) && <Button variant="ghost" size="icon-sm" asChild><a href={`https://portaldatransparencia.gov.br/despesas/${phasePaths[document.phase]}/${document.externalCode}`} target="_blank" rel="noreferrer" aria-label={`Abrir ${document.number} no Portal da Transparência`}><ExternalLink className="size-4" /></a></Button>}</div></div>)}</div> : <p className="rounded-lg border border-dashed p-5 text-sm text-muted-foreground">Nenhum documento relacionado foi localizado.</p>}</div>
         </div>}
       </div>
 

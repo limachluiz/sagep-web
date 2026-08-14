@@ -47,7 +47,7 @@ export function CreateInvoiceDialog({ note, open, onOpenChange, onSaved }: Props
   const valid = Boolean(note && number.trim() && supplierCnpj.replace(/\D/g, "").length === 14 && issuedAt && Number(grossAmount) > 0 && (!accessKey || accessKey.replace(/\D/g, "").length === 44))
 
   return <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-w-2xl">
+    <DialogContent className="sm:!max-w-2xl">
       <DialogHeader><DialogTitle className="flex items-center gap-2"><FileCheck2 className="size-5 text-primary" />Registrar Nota Fiscal</DialogTitle><DialogDescription>Vincule a NFe à NE {note?.number}. O SAGEP confrontará fornecedor, valor, liquidação e pagamento.</DialogDescription></DialogHeader>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2"><Label>Número da NFe</Label><Input value={number} onChange={(event) => setNumber(event.target.value)} autoFocus /></div>
