@@ -213,10 +213,10 @@ export function TaskDetailsPage() {
           <CardHeader><CardTitle>Descrição</CardTitle></CardHeader>
           <CardContent><p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{task.description || "Nenhuma descrição cadastrada."}</p></CardContent>
         </Card>
-        <Card className="border-none shadow-sm">
+        <Card className="min-w-0 border-none shadow-sm">
           <CardHeader><CardTitle>Vínculos e registro</CardTitle></CardHeader>
-          <CardContent className="space-y-4 text-sm">
-            <div><p className="text-xs text-muted-foreground">Projeto</p><Button asChild variant="link" className="h-auto p-0"><Link to={`/projects/${task.project.id}`}>PRJ-{task.project.projectCode} · {task.project.title}</Link></Button></div>
+          <CardContent className="min-w-0 space-y-4 text-sm">
+            <div className="min-w-0"><p className="text-xs text-muted-foreground">Projeto</p><Button asChild variant="link" className="h-auto max-w-full min-w-0 justify-start whitespace-normal p-0 text-left leading-5 [overflow-wrap:anywhere]"><Link to={`/projects/${task.project.id}`}>PRJ-{task.project.projectCode} · {task.project.title}</Link></Button></div>
             <div><p className="text-xs text-muted-foreground">Criada em</p><p>{formatDate(task.createdAt, true)}</p></div>
             <div><p className="text-xs text-muted-foreground">Última atualização</p><p>{formatDate(task.updatedAt, true)}</p></div>
             {task.status === "CONCLUIDA" && <div className="space-y-1 rounded-xl bg-primary/10 p-3 text-primary"><div className="flex items-center gap-2"><CheckCircle2 className="size-5" /><span className="font-medium">Atividade concluída</span></div><p className="pl-7 text-xs">{formatDate(task.completedAt ?? null, true)}{task.completedBy ? ` · por ${task.completedBy.name}` : ""}</p></div>}
