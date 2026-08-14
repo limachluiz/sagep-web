@@ -21,6 +21,9 @@ export type Permission =
   | "dashboard.view_operational"
   | "dashboard.view_executive"
   | "dashboard.financial_view"
+  | "financial_execution.view"
+  | "financial_execution.manage"
+  | "financial_execution.sync"
   | "reports.export"
   | "users.manage"
   | (string & {})

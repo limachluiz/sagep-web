@@ -23,6 +23,7 @@ export type GlobalSearchResponse = {
 
 export type HeaderAlert = {
   id: string
+  sourceUpdatedAt?: string
   category: string
   severity: "CRITICAL" | "WARNING" | "INFO"
   title: string
@@ -30,6 +31,10 @@ export type HeaderAlert = {
   detailsPath: string
   project: { id: string; projectCode: number; title: string }
   nextAction: { code: string; label: string; description: string }
+}
+
+export type DismissAlertsResponse = {
+  dismissed: number
 }
 
 export type OperationalAlertsResponse = {

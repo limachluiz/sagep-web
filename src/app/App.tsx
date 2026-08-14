@@ -33,6 +33,7 @@ const PermissionsSettingsPage = lazy(() => import("@/features/permissions/pages/
 const ReportsPage = lazy(() => import("@/features/reports/pages/reports-page").then((module) => ({ default: module.ReportsPage })))
 const AuditPage = lazy(() => import("@/features/audit/pages/audit-page").then((module) => ({ default: module.AuditPage })))
 const SystemHealthPage = lazy(() => import("@/features/system-health/pages/system-health-page").then((module) => ({ default: module.SystemHealthPage })))
+const FinancialExecutionPage = lazy(() => import("@/features/financial-execution/pages/financial-execution-page").then((module) => ({ default: module.FinancialExecutionPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -134,6 +135,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["service_orders.issue", "projects.view_all"]}>
                 <ServiceOrderDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/financial-execution"
+            element={
+              <PermissionRoute anyOf={["financial_execution.view"]}>
+                <FinancialExecutionPage />
               </PermissionRoute>
             }
           />

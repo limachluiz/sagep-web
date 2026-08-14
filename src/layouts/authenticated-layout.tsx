@@ -23,6 +23,7 @@ import {
   Settings,
   ShieldCheck,
   Users,
+  WalletCards,
 } from "lucide-react"
 
 import ctaLogo from "@/assets/cta-logo.svg"
@@ -114,6 +115,12 @@ const navigation: NavigationGroup[] = [
     href: "/service-orders",
     icon: ShieldCheck,
     anyOf: ["service_orders.issue", "projects.view_all"],
+  },
+  {
+    label: "Execução Financeira",
+    href: "/financial-execution",
+    icon: WalletCards,
+    anyOf: ["financial_execution.view"],
   },
   ]},
   { label: "Catálogo e saldo", items: [
