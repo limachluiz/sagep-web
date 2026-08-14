@@ -17,6 +17,15 @@ describe("financialExecutionService", () => {
     expect(api.post).toHaveBeenCalledWith("/financial-execution/commitment-notes/ne-1/sync")
   })
 
+  it("consulta uma NE avulsa sem exigir projeto", () => {
+    financialExecutionService.lookup({ number: "2026NE000534" })
+
+    expect(api.post).toHaveBeenCalledWith(
+      "/financial-execution/commitment-notes/lookup",
+      { number: "2026NE000534" },
+    )
+  })
+
   it("permite atualizar toda a carteira financeira", () => {
     financialExecutionService.syncAll()
 

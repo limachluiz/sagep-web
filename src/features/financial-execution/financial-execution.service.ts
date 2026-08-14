@@ -1,7 +1,11 @@
 import { api } from "@/lib/api"
-import type { CommitmentNote, CommitmentNotesResponse, CommitmentPreview } from "./financial-execution.types"
+import type { CommitmentNote, CommitmentNotesResponse, CommitmentPreview, StandaloneCommitmentLookup } from "./financial-execution.types"
 
 export const financialExecutionService = {
+  lookup(payload: { number: string; managementUnit?: string; management?: string }) {
+    return api.post<StandaloneCommitmentLookup>("/financial-execution/commitment-notes/lookup", payload)
+  },
+
   list(params: { page?: number; pageSize?: number; search?: string; financialStatus?: string; syncStatus?: string } = {}) {
     const query = new URLSearchParams({ page: String(params.page ?? 1), pageSize: String(params.pageSize ?? 50) })
     if (params.search) query.set("search", params.search)

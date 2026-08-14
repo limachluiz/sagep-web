@@ -61,31 +61,45 @@ export type CommitmentNote = {
   _count?: { documents: number; invoices: number }
 }
 
+export type PortalCommitmentSnapshot = {
+  source: string
+  externalCode: string
+  number: string
+  managementUnit: string
+  management: string
+  supplierName: string | null
+  supplierCnpj: string | null
+  issuedAt: string | null
+  originalAmount: number
+  currentAmount: number
+  liquidatedAmount: number
+  paidAmount: number
+  cancelledAmount: number
+  financialStatus: CommitmentFinancialStatus
+  fetchedAt: string
+  documents: FinancialDocument[]
+}
+
 export type CommitmentPreview = {
-  snapshot: {
-    source: string
-    externalCode: string
-    number: string
-    managementUnit: string
-    management: string
-    supplierName: string | null
-    supplierCnpj: string | null
-    issuedAt: string | null
-    originalAmount: number
-    currentAmount: number
-    liquidatedAmount: number
-    paidAmount: number
-    cancelledAmount: number
-    financialStatus: CommitmentFinancialStatus
-    fetchedAt: string
-    documents: FinancialDocument[]
-  }
+  snapshot: PortalCommitmentSnapshot
   validation: {
     status: "VALIDADO" | "DIVERGENTE"
     divergences: string[]
     expected: { supplierName: string | null; supplierCnpj: string | null; amount: number }
   }
   project: { id: string; projectCode: number; title: string; stage: string }
+}
+
+export type StandaloneCommitmentLookup = {
+  snapshot: PortalCommitmentSnapshot
+  registered: null | {
+    id: string
+    active: boolean
+    financialStatus: CommitmentFinancialStatus
+    syncStatus: CommitmentSyncStatus
+    lastSyncAt: string
+    project: { id: string; projectCode: number; title: string; stage: string; status: string }
+  }
 }
 
 export type FinancialSummary = {
