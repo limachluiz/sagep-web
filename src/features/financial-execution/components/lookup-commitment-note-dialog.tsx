@@ -34,13 +34,13 @@ function date(value?: string | null) {
 
 export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
   const [number, setNumber] = useState("")
-  const [managementUnit, setManagementUnit] = useState("160016")
-  const [management, setManagement] = useState("00001")
+  const [managementUnit, setManagementUnit] = useState("")
+  const [management, setManagement] = useState("")
   const normalizedNumber = number.toUpperCase().replace(/[^A-Z0-9]/g, "")
-  const valid = /^\d{4}NE\d{6}$/.test(normalizedNumber) && /^\d{6}$/.test(managementUnit) && /^\d{5}$/.test(management)
+  const valid = /^\d{4}NE\d{6}$/.test(normalizedNumber) && (!managementUnit || /^\d{6}$/.test(managementUnit)) && (!management || /^\d{5}$/.test(management))
 
   const mutation = useMutation({
-    mutationFn: () => financialExecutionService.lookup({ number: normalizedNumber, managementUnit, management }),
+    mutationFn: () => financialExecutionService.lookup({ number: normalizedNumber, managementUnit: managementUnit || undefined, management: management || undefined }),
     onError: (error) => toast.error(error.message),
   })
   const result = mutation.data
@@ -65,8 +65,8 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
       <div className="space-y-5">
         <div className="grid gap-4 sm:grid-cols-[1fr_150px_130px]">
           <div className="space-y-2"><Label htmlFor="standalone-ne-number">Número da NE</Label><Input id="standalone-ne-number" value={number} onChange={(event) => { setNumber(event.target.value.toUpperCase()); mutation.reset() }} placeholder="2026NE000534" autoFocus /></div>
-          <div className="space-y-2"><Label htmlFor="standalone-ne-ug">UG emitente</Label><Input id="standalone-ne-ug" value={managementUnit} onChange={(event) => { setManagementUnit(event.target.value.replace(/\D/g, "").slice(0, 6)); mutation.reset() }} inputMode="numeric" /></div>
-          <div className="space-y-2"><Label htmlFor="standalone-ne-management">Gestão</Label><Input id="standalone-ne-management" value={management} onChange={(event) => { setManagement(event.target.value.replace(/\D/g, "").slice(0, 5)); mutation.reset() }} inputMode="numeric" /></div>
+          <div className="space-y-2"><Label htmlFor="standalone-ne-ug">UG emitente</Label><Input id="standalone-ne-ug" value={managementUnit} onChange={(event) => { setManagementUnit(event.target.value.replace(/\D/g, "").slice(0, 6)); mutation.reset() }} inputMode="numeric" placeholder="Padrão da OM" /></div>
+          <div className="space-y-2"><Label htmlFor="standalone-ne-management">Gestão</Label><Input id="standalone-ne-management" value={management} onChange={(event) => { setManagement(event.target.value.replace(/\D/g, "").slice(0, 5)); mutation.reset() }} inputMode="numeric" placeholder="Padrão da OM" /></div>
         </div>
 
         {!result && <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground"><p className="font-medium text-foreground">Consulta somente para conferência</p><p className="mt-1">A operação não salva a NE. Para vinculá-la, informe o documento na etapa correspondente do projeto.</p></div>}

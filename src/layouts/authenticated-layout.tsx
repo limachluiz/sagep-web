@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import { useQuery } from "@tanstack/react-query"
 import { NavLink, Outlet, useNavigate } from "react-router"
 import {
   Building2,
@@ -48,6 +49,7 @@ import { GlobalSearchDialog } from "@/features/header/components/global-search-d
 import { NotificationsMenu } from "@/features/header/components/notifications-menu"
 import { getUserDisplayName } from "@/features/users/user-profile.utils"
 import { useTheme } from "next-themes"
+import { systemSettingsService } from "@/features/system-settings/system-settings.service"
 
 type NavigationItem = {
   label: string
@@ -197,6 +199,7 @@ export function AuthenticatedLayout() {
   const navigate = useNavigate()
   const { setTheme } = useTheme()
   const { user, refreshToken, logout, hasAnyPermission } = useAuthStore()
+  const settingsQuery = useQuery({ queryKey: ["system-settings"], queryFn: systemSettingsService.get })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => typeof window !== "undefined" && window.localStorage.getItem("sagep:sidebar-collapsed") === "true",
   )
@@ -296,7 +299,7 @@ export function AuthenticatedLayout() {
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <Badge variant="outline" className="hidden rounded-sm border-primary/20 bg-primary/5 font-mono text-[10px] tracking-wider text-primary md:inline-flex">
-              UASG 160016
+              UASG {settingsQuery.data?.uasg ?? "—"}
             </Badge>
             <NotificationsMenu />
             <ThemeToggle />

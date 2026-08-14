@@ -46,8 +46,8 @@ describe("consulta de NE avulsa", () => {
     expect(await screen.findByText("NE 2026NE000534 localizada")).toBeInTheDocument()
     expect(financialExecutionService.lookup).toHaveBeenCalledWith({
       number: "2026NE000534",
-      managementUnit: "160016",
-      management: "00001",
+      managementUnit: undefined,
+      management: undefined,
     })
   })
 })

@@ -1,4 +1,4 @@
-import { Activity, ShieldCheck } from "lucide-react"
+import { Activity, Settings2, ShieldCheck } from "lucide-react"
 import { NavLink } from "react-router"
 
 import { useAuthStore } from "@/features/auth/auth.store"
@@ -8,6 +8,7 @@ export function SettingsNavigation() {
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const items = [
     { label: "Saúde do sistema", href: "/settings", icon: Activity, visible: true },
+    { label: "Integrações e parâmetros", href: "/settings/integrations", icon: Settings2, visible: hasPermission("settings.view") },
     { label: "Acessos e permissões", href: "/settings/access", icon: ShieldCheck, visible: hasPermission("permissions.view") },
   ].filter((item) => item.visible)
 
