@@ -14,6 +14,18 @@ export type TaskPerson = {
   active?: boolean
 }
 
+export type TaskActivityType = "NOTE" | "STATUS_CHANGE" | "COMPLETION" | "REOPENED"
+
+export type TaskActivity = {
+  id: string
+  type: TaskActivityType
+  content: string
+  fromStatus: TaskStatus | null
+  toStatus: TaskStatus | null
+  author: TaskPerson | null
+  createdAt: string
+}
+
 export type Task = {
   id: string
   taskCode: number
@@ -23,7 +35,9 @@ export type Task = {
   priority: number
   projectId: string
   assigneeId: string | null
+  completedById?: string | null
   dueDate: string | null
+  completedAt?: string | null
   archivedAt: string | null
   deletedAt: string | null
   createdAt: string
@@ -37,6 +51,8 @@ export type Task = {
     owner?: TaskPerson
   }
   assignee: TaskPerson | null
+  completedBy?: TaskPerson | null
+  activities?: TaskActivity[]
   archiveContext?: {
     archivedAt: string
     summary: string | null

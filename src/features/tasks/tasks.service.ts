@@ -41,6 +41,14 @@ export const tasksService = {
     return api.patch<Task>(`/tasks/${taskId}/status`, { status })
   },
 
+  addActivity(taskId: string, content: string) {
+    return api.post<Task>(`/tasks/${taskId}/activities`, { content })
+  },
+
+  complete(taskId: string, content?: string) {
+    return api.post<Task>(`/tasks/${taskId}/complete`, content?.trim() ? { content } : {})
+  },
+
   archive(taskId: string) {
     return api.delete<{ message: string; task: Task }>(`/tasks/${taskId}`)
   },
@@ -53,4 +61,3 @@ export const tasksService = {
     return api.delete<{ message: string; deletedAt: string }>(`/tasks/${taskId}/permanent`)
   },
 }
-
