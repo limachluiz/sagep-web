@@ -1,4 +1,4 @@
-export type IntegrationProvider = "DATABASE" | "PORTAL_TRANSPARENCIA" | "COMPRAS_GOV"
+export type IntegrationProvider = "DATABASE" | "PORTAL_TRANSPARENCIA" | "COMPRAS_GOV" | "PNCP"
 export type ConnectionStatus = "OPERATIONAL" | "DEGRADED" | "UNAVAILABLE" | "NOT_CONFIGURED"
 
 export type ConnectionCheck = {
@@ -23,6 +23,7 @@ export type SystemSettings = {
   portalSyncIntervalMinutes: number
   portalSyncOnStartup: boolean
   comprasGovBaseUrl: string
+  pncpBaseUrl: string
   defaultBiddingNumber: string | null
   defaultBiddingYear: number | null
   defaultImmediateCommitment: boolean

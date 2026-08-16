@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 import type { FederativeUnit } from "@/features/projects/projects.types"
-import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ExternalConsumptionPayload, ExternalConsumptionResponse, ListEnvelope } from "./atas.types"
+import type { Ata, AtaExternalBalance, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ExternalBalanceComparisonItem, ExternalConsumptionPayload, ExternalConsumptionResponse, ListEnvelope } from "./atas.types"
 
 export const atasService = {
   list(filters: { page?: number; pageSize?: number; search?: string; type?: AtaType; stateUf?: FederativeUnit; active?: boolean } = {}) {
@@ -16,6 +16,8 @@ export const atasService = {
   create(payload: AtaPayload) { return api.post<Ata>("/atas", payload) },
   update(ataId: string, payload: AtaUpdatePayload) { return api.patch<Ata>(`/atas/${ataId}`, payload) },
   remove(ataId: string) { return api.delete<{ message: string }>(`/atas/${ataId}`) },
+  externalBalance(ataId: string) { return api.get<AtaExternalBalance>(`/atas/${ataId}/external-balance`) },
+  syncExternalBalance(ataId: string) { return api.post<AtaExternalBalance>(`/atas/${ataId}/sync-external-balance`) },
 
   listItems(ataId: string, filters: { page?: number; pageSize?: number; search?: string; active?: boolean } = {}) {
     const query = new URLSearchParams({ page: String(filters.page ?? 1), pageSize: String(filters.pageSize ?? 25) })
@@ -28,6 +30,8 @@ export const atasService = {
   updateItem(itemId: string, payload: Partial<AtaItemPayload> & { isActive?: boolean }) { return api.patch<AtaItem>(`/ata-items/${itemId}`, payload) },
   listItemMovements(itemId: string) { return api.get<AtaItemMovement[]>(`/ata-items/${itemId}/movements`) },
   registerExternalConsumption(itemId: string, payload: ExternalConsumptionPayload) { return api.post<ExternalConsumptionResponse>(`/ata-items/${itemId}/register-external-consumption`, payload) },
+  itemBalanceComparison(itemId: string) { return api.get<ExternalBalanceComparisonItem>(`/ata-items/${itemId}/balance-comparison`) },
+  syncItemExternalBalance(itemId: string) { return api.post<ExternalBalanceComparisonItem>(`/ata-items/${itemId}/sync-external-balance`) },
 
   previewComprasGov(filters: { uasg: string; numeroPregao: string; anoPregao: string; numeroAta?: string }) {
     const query = new URLSearchParams({ uasg: filters.uasg, numeroPregao: filters.numeroPregao, anoPregao: filters.anoPregao })

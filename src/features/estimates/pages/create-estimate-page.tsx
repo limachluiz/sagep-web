@@ -43,6 +43,14 @@ function cityMatches(first: string, second: string) {
   return first.trim().localeCompare(second.trim(), "pt-BR", { sensitivity: "base" }) === 0
 }
 
+function projectedAvailable(item: AtaItem) {
+  const local = Number(item.balance.availableQuantity)
+  const officialRaw = item.latestExternalBalanceSnapshot?.externalBalance?.availableQuantity
+  if (officialRaw === undefined || officialRaw === null || officialRaw === "") return local
+  const official = Number(officialRaw)
+  return Number.isFinite(official) ? Math.max(0, Math.min(local, official)) : local
+}
+
 export function CreateEstimatePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -107,7 +115,7 @@ export function CreateEstimatePage() {
   const validationError = useMemo(() => {
     for (const item of selectedItems) {
       const quantity = Number(quantities[item.id])
-      const available = Number(item.balance.availableQuantity)
+      const available = projectedAvailable(item)
       if (!Number.isFinite(quantity) || quantity <= 0) return `Informe uma quantidade válida para o item ${item.referenceCode}.`
       if (quantity > available) return `A quantidade do item ${item.referenceCode} excede o saldo disponível.`
     }
@@ -149,7 +157,7 @@ export function CreateEstimatePage() {
   }
 
   const addItem = (item: AtaItem) => {
-    if (Number(item.balance.availableQuantity) <= 0) return
+    if (projectedAvailable(item) <= 0) return
     setQuantities((current) => ({ ...current, [item.id]: "1" }))
   }
 
@@ -301,7 +309,9 @@ export function CreateEstimatePage() {
                   <TableHead>Descrição</TableHead>
                   <TableHead>Unidade</TableHead>
                   <TableHead>Valor unitário</TableHead>
-                  <TableHead>Saldo</TableHead>
+                  <TableHead>Saldo SAGEP</TableHead>
+                  <TableHead>Saldo oficial</TableHead>
+                  <TableHead>Disponível projetado</TableHead>
                   <TableHead>Quantidade</TableHead>
                   <TableHead className="text-right">Ação</TableHead>
                 </TableRow>
@@ -309,7 +319,9 @@ export function CreateEstimatePage() {
               <TableBody>
                 {visibleItems.map((item) => {
                   const selected = quantities[item.id] !== undefined
-                  const unavailable = Number(item.balance.availableQuantity) <= 0
+                  const projected = projectedAvailable(item)
+                  const official = item.latestExternalBalanceSnapshot?.externalBalance?.availableQuantity
+                  const unavailable = projected <= 0
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.referenceCode}</TableCell>
@@ -317,7 +329,15 @@ export function CreateEstimatePage() {
                       <TableCell>{item.unit}</TableCell>
                       <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
                       <TableCell>
-                        <span className={unavailable ? "font-medium text-destructive" : ""}>{formatQuantity(item.balance.availableQuantity)}</span>
+                        {formatQuantity(item.balance.availableQuantity)}
+                      </TableCell>
+                      <TableCell>
+                        {official !== undefined && official !== null
+                          ? <div><span>{formatQuantity(official)}</span><p className="text-xs text-muted-foreground">{item.latestExternalBalanceSnapshot?.status === "OK" ? "Confirmado" : "Requer atenção"}</p></div>
+                          : <span className="text-xs text-muted-foreground">Não consultado</span>}
+                      </TableCell>
+                      <TableCell>
+                        <span className={unavailable ? "font-medium text-destructive" : "font-medium"}>{formatQuantity(projected)}</span>
                       </TableCell>
                       <TableCell className="w-36">
                         {selected ? (
@@ -325,7 +345,7 @@ export function CreateEstimatePage() {
                             type="number"
                             min="0.01"
                             step="0.01"
-                            max={item.balance.availableQuantity}
+                            max={projected}
                             value={quantities[item.id]}
                             onChange={(event) => setQuantities((current) => ({ ...current, [item.id]: event.target.value }))}
                           />

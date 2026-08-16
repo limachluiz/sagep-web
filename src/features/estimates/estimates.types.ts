@@ -147,6 +147,11 @@ export type AtaItem = {
   isActive: boolean
   coverageGroup: Ata["coverageGroups"][number]
   balance: EstimateBalance
+  latestExternalBalanceSnapshot?: {
+    status: string
+    externalBalance: { availableQuantity?: string; lastUpdatedAt?: string | null } | null
+    lastSyncAt: string
+  } | null
 }
 
 export type ListEnvelope<T> = {

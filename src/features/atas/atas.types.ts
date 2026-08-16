@@ -31,7 +31,9 @@ export type Ata = {
   isActive: boolean
   externalSource?: string | null
   externalUasg?: string | null
+  externalPncpControlNumber?: string | null
   externalLastSyncAt?: string | null
+  pncpLastSyncAt?: string | null
   coverageGroups: AtaCoverageGroup[]
   createdAt?: string
   updatedAt?: string
@@ -101,6 +103,72 @@ export type AtaItem = {
   updatedAt: string
   ata: Pick<Ata, "id" | "ataCode" | "number" | "type" | "vendorName" | "isActive" | "externalUasg">
   coverageGroup: AtaCoverageGroup
+}
+
+export type ExternalBalanceStatus =
+  | "OK"
+  | "DIVERGENTE"
+  | "CONSUMO_OFICIAL_DETECTADO"
+  | "NAO_SINCRONIZADO"
+  | "NAO_ENCONTRADO"
+  | "ERRO_CONSULTA_EXTERNA"
+  | "RATE_LIMIT_COMPRAS_GOV"
+
+export type ExternalBalanceComparisonItem = {
+  item: Pick<AtaItem, "id" | "ataItemCode" | "referenceCode" | "description"> & {
+    externalItemId: string | null
+    externalItemNumber: string | null
+  }
+  localBalance: AtaBalance
+  externalBalance: {
+    externalItemNumber: string
+    source: string
+    registeredQuantity: string
+    committedQuantity: string
+    availableQuantity: string
+    commitments: Array<Record<string, unknown>>
+    lastUpdatedAt: string | null
+    rawRecords: number
+  } | null
+  difference: string | null
+  lastSyncAt: string | null
+  status: ExternalBalanceStatus
+  warnings?: string[]
+}
+
+export type AtaExternalBalance = {
+  source: "COMPRAS_GOV"
+  comparedAt: string
+  syncedAt?: string | null
+  updatedItems?: number
+  summary: {
+    totalItems: number
+    ok: number
+    divergent: number
+    externalConsumptionDetected: number
+    naoSincronizado: number
+    notFound: number
+    externalQueryErrors: number
+    rateLimitErrors: number
+  }
+  items: ExternalBalanceComparisonItem[]
+  warnings: string[]
+  retryAfterSeconds: number | null
+  pncp: {
+    status: "SINCRONIZADO" | "NAO_SINCRONIZADO" | "NAO_VINCULADO"
+    controlNumber: string | null
+    lastSyncAt: string | null
+    snapshot: {
+      controlNumber: string
+      validFrom: string | null
+      validUntil: string | null
+      cancelled: boolean
+      allowsAdhesion: boolean | null
+      managingUnit: { code: string | null; name: string | null; city: string | null; state: string | null }
+      linkedContracts: { total: number; records: Array<Record<string, unknown>> }
+      sourceUpdatedAt: string | null
+    } | null
+  }
 }
 
 export type AtaItemPayload = {

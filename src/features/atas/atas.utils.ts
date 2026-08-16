@@ -27,6 +27,15 @@ export function getAtaItemBalanceStatus(
   return "AVAILABLE"
 }
 
+export function getProjectedAvailableQuantity(item: Pick<AtaItem, "balance" | "latestExternalBalanceSnapshot">) {
+  const localAvailable = Number(item.balance.availableQuantity)
+  const officialValue = item.latestExternalBalanceSnapshot?.externalBalance?.availableQuantity
+  if (officialValue === null || officialValue === undefined || officialValue === "") return localAvailable
+  const officialAvailable = Number(officialValue)
+  if (!Number.isFinite(officialAvailable)) return localAvailable
+  return Math.max(0, Math.min(localAvailable, officialAvailable))
+}
+
 export function summarizeAtaItems(items: AtaItem[]) {
   const summary = items.reduce(
     (accumulator, item) => {
@@ -42,7 +51,7 @@ export function summarizeAtaItems(items: AtaItem[]) {
       const snapshot = item.latestExternalBalanceSnapshot
       if (snapshot) {
         accumulator.synchronizedCount += 1
-        if (snapshot.status !== "MATCHED" || Number(snapshot.difference ?? 0) !== 0) {
+        if (snapshot.status !== "OK" || Number(snapshot.difference ?? 0) !== 0) {
           accumulator.divergentCount += 1
         }
       }
