@@ -83,18 +83,9 @@ describe("ATA item balances", () => {
     expect(getAtaItemBalanceStatus(item({ balance: { availableQuantity: "1", lowStock: true } }))).toBe("LOW")
   })
 
-  it("consolidates financial allocation and reconciliation indicators", () => {
+  it("consolidates internal financial allocation indicators", () => {
     const result = summarizeAtaItems([
-      item({
-        latestExternalBalanceSnapshot: {
-          source: "COMPRAS_GOV",
-          status: "DIVERGENT",
-          externalBalance: { availableQuantity: "4" },
-          difference: "1",
-          lastSyncAt: "2026-07-25T12:00:00.000Z",
-          warnings: [],
-        },
-      }),
+      item(),
       item({
         id: "item-2",
         balance: {
@@ -110,8 +101,6 @@ describe("ATA item balances", () => {
     expect(result.initialAmount).toBe(300)
     expect(result.allocatedAmount).toBe(150)
     expect(result.utilizationPercentage).toBe(50)
-    expect(result.synchronizedCount).toBe(1)
-    expect(result.divergentCount).toBe(1)
     expect(result.lastMovementAt).toBe("2026-07-27T12:00:00.000Z")
   })
 })

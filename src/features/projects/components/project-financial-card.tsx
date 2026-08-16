@@ -96,7 +96,7 @@ export function ProjectFinancialCard({
             </p>
           </div>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Valor indicativo para conferência. O saldo oficial permanece vinculado aos itens da ATA.
+            Valor indicativo calculado pelas movimentações internas do SAGEP.
           </p>
         </div>
       </CardContent>

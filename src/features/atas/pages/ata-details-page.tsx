@@ -6,8 +6,8 @@ import {
   ArrowLeft,
   Boxes,
   CircleDollarSign,
-  Cloud,
   History,
+  Landmark,
   MapPin,
   Pencil,
   Plus,
@@ -33,7 +33,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AtaDialog } from "@/features/atas/components/ata-dialog"
 import { AtaItemDialog } from "@/features/atas/components/ata-item-dialog"
 import { AtaItemMovementsDialog } from "@/features/atas/components/ata-item-movements-dialog"
-import { ExternalConsumptionDialog } from "@/features/atas/components/external-consumption-dialog"
 import { atasService } from "@/features/atas/atas.service"
 import type {
   AtaItem,
@@ -83,7 +82,6 @@ export function AtaDetailsPage() {
   const [itemOpen, setItemOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<AtaItem | null>(null)
   const [movementItem, setMovementItem] = useState<AtaItem | null>(null)
-  const [externalConsumptionItem, setExternalConsumptionItem] = useState<AtaItem | null>(null)
   const [referenceTime] = useState(() => Date.now())
 
   const ataQuery = useQuery({
@@ -96,12 +94,6 @@ export function AtaDetailsPage() {
     queryFn: () => atasService.listItems(ataId!, { page: 1, pageSize: 100 }),
     enabled: Boolean(ataId),
   })
-  const externalBalanceQuery = useQuery({
-    queryKey: ["atas", "external-balance", ataId],
-    queryFn: () => atasService.externalBalance(ataId!),
-    enabled: Boolean(ataId && ataQuery.data?.externalSource === "COMPRAS_GOV"),
-  })
-
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["atas"] })
     queryClient.invalidateQueries({ queryKey: ["dashboard"] })
@@ -137,23 +129,11 @@ export function AtaDetailsPage() {
     },
     onError: (error) => toast.error(error.message),
   })
-  const syncExternalMutation = useMutation({
-    mutationFn: () => atasService.syncExternalBalance(ataId!),
-    onSuccess: (result) => {
-      queryClient.setQueryData(["atas", "external-balance", ataId], result)
+  const syncPncpMutation = useMutation({
+    mutationFn: () => atasService.syncPncp(ataId!),
+    onSuccess: () => {
       invalidate()
-      toast.success(`${result.updatedItems ?? 0} item(ns) conferido(s) no Compras.gov.br e PNCP.`)
-      result.warnings.forEach((warning) => toast.warning(warning))
-    },
-    onError: (error) => toast.error(error.message),
-  })
-  const syncItemMutation = useMutation({
-    mutationFn: (itemId: string) => atasService.syncItemExternalBalance(itemId),
-    onSuccess: (_result, itemId) => {
-      invalidate()
-      queryClient.invalidateQueries({ queryKey: ["atas", "external-balance", ataId] })
-      toast.success(`Saldo oficial do item conferido.`)
-      queryClient.invalidateQueries({ queryKey: ["ata-items", itemId] })
+      toast.success("Dados da ATA atualizados no PNCP.")
     },
     onError: (error) => toast.error(error.message),
   })
@@ -215,7 +195,6 @@ export function AtaDetailsPage() {
   const refresh = () => {
     ataQuery.refetch()
     itemsQuery.refetch()
-    externalBalanceQuery.refetch()
   }
 
   return (
@@ -253,14 +232,14 @@ export function AtaDetailsPage() {
             <div className="flex flex-wrap items-start gap-2">
               {canManage && (
                 <>
-                  {ata.externalSource === "COMPRAS_GOV" && (
+                  {ata.externalPncpControlNumber && (
                     <Button
                       className="bg-sidebar-primary text-sidebar-primary-foreground"
-                      onClick={() => syncExternalMutation.mutate()}
-                      disabled={syncExternalMutation.isPending}
+                      onClick={() => syncPncpMutation.mutate()}
+                      disabled={syncPncpMutation.isPending}
                     >
-                      <Cloud className={syncExternalMutation.isPending ? "size-4 animate-pulse" : "size-4"} />
-                      {syncExternalMutation.isPending ? "Consultando fontes..." : "Sincronizar saldos"}
+                      <Landmark className={syncPncpMutation.isPending ? "size-4 animate-pulse" : "size-4"} />
+                      {syncPncpMutation.isPending ? "Consultando PNCP..." : "Atualizar PNCP"}
                     </Button>
                   )}
                   <Button
@@ -359,35 +338,34 @@ export function AtaDetailsPage() {
         <Card className="border-primary/10 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Cloud className="size-5 text-primary" />
-              Conciliação externa
+              <Landmark className="size-5 text-primary" />
+              Dados oficiais da ATA
             </CardTitle>
           </CardHeader>
           <CardContent>
             {ata.externalSource === "COMPRAS_GOV" ? (
               <>
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-muted-foreground">Itens conferidos</p>
-                    <p className="mt-2 text-2xl font-semibold tabular-nums">{externalBalanceQuery.data ? externalBalanceQuery.data.summary.totalItems - externalBalanceQuery.data.summary.naoSincronizado : totals.synchronizedCount}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Com divergência</p>
-                    <p className="mt-2 text-2xl font-semibold tabular-nums">{externalBalanceQuery.data?.summary.divergent ?? totals.divergentCount}</p>
+                    <p className="text-sm text-muted-foreground">Origem cadastral</p>
+                    <p className="mt-2 font-semibold">Compras.gov.br</p>
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Contratos PNCP</p>
-                    <p className="mt-2 text-2xl font-semibold tabular-nums">{externalBalanceQuery.data?.pncp.snapshot?.linkedContracts.total ?? "—"}</p>
+                    <p className="mt-2 text-2xl font-semibold tabular-nums">{ata.pncpSnapshot?.linkedContracts.total ?? "—"}</p>
                   </div>
                 </div>
                 <p className="mt-4 text-xs leading-5 text-muted-foreground">
-                  Compras.gov.br: {formatAtaDate(externalBalanceQuery.data?.comparedAt ?? ata.externalLastSyncAt ?? null, true)} · PNCP: {formatAtaDate(externalBalanceQuery.data?.pncp.lastSyncAt ?? null, true)}
+                  Cadastro importado: {formatAtaDate(ata.externalLastSyncAt ?? null, true)} · PNCP: {formatAtaDate(ata.pncpLastSyncAt ?? null, true)}
                 </p>
-                {externalBalanceQuery.data?.pncp.controlNumber && <p className="mt-1 break-all text-xs text-muted-foreground">Controle PNCP: {externalBalanceQuery.data.pncp.controlNumber}</p>}
+                {ata.externalPncpControlNumber && <p className="mt-1 break-all text-xs text-muted-foreground">Controle PNCP: {ata.externalPncpControlNumber}</p>}
+                <p className="mt-3 text-xs leading-5 text-muted-foreground">
+                  O saldo dos itens é controlado exclusivamente pelas movimentações internas do SAGEP.
+                </p>
               </>
             ) : (
               <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-                Esta ATA foi cadastrada manualmente e não possui conciliação com fonte externa.
+                Esta ATA foi cadastrada manualmente. O saldo é controlado pelas movimentações internas do SAGEP.
               </div>
             )}
           </CardContent>
@@ -463,14 +441,6 @@ export function AtaDetailsPage() {
           <AlertDescription>{itemsQuery.error.message}</AlertDescription>
         </Alert>
       )}
-      {externalBalanceQuery.isError && (
-        <Alert variant="destructive">
-          <AlertTriangle />
-          <AlertTitle>Não foi possível carregar a conciliação oficial</AlertTitle>
-          <AlertDescription>{externalBalanceQuery.error.message}</AlertDescription>
-        </Alert>
-      )}
-
       <Card className="border-none shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between gap-4">
           <div>
@@ -485,18 +455,6 @@ export function AtaDetailsPage() {
           {totals.riskCount > 0 && <Badge variant="destructive">{totals.riskCount} saldo(s) crítico(s)</Badge>}
         </CardHeader>
         <CardContent className="space-y-4 overflow-x-auto">
-          {ata.externalSource === "COMPRAS_GOV" && (
-            <Alert>
-              <Cloud />
-              <AlertTitle>Origem do saldo oficial</AlertTitle>
-              <AlertDescription>
-                Quando publicado, o saldo de empenho vem do Compras.gov.br. Se a fonte retornar
-                apenas a quantidade registrada, o SAGEP exibirá “Não informado pela fonte” e
-                manterá seu saldo operacional projetado. O PNCP complementa a conferência com
-                vigência, cancelamento e contratos vinculados, mas não publica o saldo quantitativo.
-              </AlertDescription>
-            </Alert>
-          )}
           {itemsQuery.isLoading ? (
             <DataTableSkeleton />
           ) : filteredItems.length ? (
@@ -507,9 +465,7 @@ export function AtaDetailsPage() {
                   <TableHead>Grupo</TableHead>
                   <TableHead>Preço unitário</TableHead>
                   <TableHead>Composição do saldo</TableHead>
-                  <TableHead>Saldo oficial publicado</TableHead>
-                  <TableHead>Disponível projetado</TableHead>
-                  <TableHead>Conciliação</TableHead>
+                  <TableHead>Saldo disponível</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -523,18 +479,7 @@ export function AtaDetailsPage() {
                     Number(item.balance.reservedQuantity) + Number(item.balance.consumedQuantity)
                   const allocationPercentage =
                     initialQuantity > 0 ? Math.min(100, (allocatedQuantity / initialQuantity) * 100) : 0
-                  const snapshot = item.latestExternalBalanceSnapshot
-                  const comparison = externalBalanceQuery.data?.items.find((entry) => entry.item.id === item.id)
-                  const externalBalance = comparison?.externalBalance ?? snapshot?.externalBalance ?? null
-                  const externalStatus = comparison?.status ?? snapshot?.status ?? "NAO_SINCRONIZADO"
-                  const officialAvailable = externalStatus === "NAO_ENCONTRADO"
-                    ? null
-                    : externalBalance?.availableQuantity
-                  const externalWarnings = comparison?.warnings ?? snapshot?.warnings ?? []
                   const localAvailable = Number(item.balance.availableQuantity)
-                  const projectedAvailable = officialAvailable === undefined || officialAvailable === null
-                    ? localAvailable
-                    : Math.max(0, Math.min(localAvailable, Number(officialAvailable)))
 
                   return (
                     <TableRow key={item.id}>
@@ -558,35 +503,8 @@ export function AtaDetailsPage() {
                         </p>
                       </TableCell>
                       <TableCell>
-                        {officialAvailable !== undefined && officialAvailable !== null ? (
-                          <div>
-                            <p className="font-semibold tabular-nums">{formatAtaQuantity(officialAvailable)} {item.unit}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">{formatAtaQuantity(externalBalance?.committedQuantity ?? 0)} empenhado</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="text-xs font-medium text-muted-foreground">Não informado pela fonte</span>
-                            {externalWarnings[0] && <p className="mt-1 max-w-56 text-[11px] text-muted-foreground">{externalWarnings[0]}</p>}
-                          </div>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <p className="font-semibold tabular-nums">{formatAtaQuantity(projectedAvailable)} {item.unit}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">Saldo operacional SAGEP: {formatAtaQuantity(localAvailable)}</p>
-                      </TableCell>
-                      <TableCell>
-                        {externalStatus !== "NAO_SINCRONIZADO" ? (
-                          <div>
-                            <Badge variant={externalStatus === "OK" ? "default" : externalStatus === "ERRO_CONSULTA_EXTERNA" ? "destructive" : "outline"}>
-                              {externalStatus === "OK" ? "Conciliado" : externalStatus === "NAO_ENCONTRADO" ? "Sem dado oficial" : externalStatus === "CONSUMO_OFICIAL_DETECTADO" ? "Consumo detectado" : "Requer atenção"}
-                            </Badge>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {formatAtaDate(comparison?.lastSyncAt ?? snapshot?.lastSyncAt ?? null, true)}
-                            </p>
-                          </div>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">Sem conferência externa</span>
-                        )}
+                        <p className="font-semibold tabular-nums">{formatAtaQuantity(localAvailable)} {item.unit}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{formatAtaCurrency(item.balance.availableAmount)}</p>
                       </TableCell>
                       <TableCell><Badge variant={presentation.variant}>{presentation.label}</Badge></TableCell>
                       <TableCell>
@@ -602,28 +520,6 @@ export function AtaDetailsPage() {
                           </Button>
                           {canManage && (
                             <>
-                              {ata.externalSource === "COMPRAS_GOV" && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  title="Consultar saldo oficial deste item"
-                                  aria-label={`Consultar saldo oficial do item ${item.referenceCode}`}
-                                  disabled={syncItemMutation.isPending}
-                                  onClick={() => syncItemMutation.mutate(item.id)}
-                                >
-                                  <RefreshCw className={syncItemMutation.isPending && syncItemMutation.variables === item.id ? "size-4 animate-spin" : "size-4"} />
-                                </Button>
-                              )}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                title="Registrar consumo externo"
-                                aria-label={`Registrar consumo externo do item ${item.referenceCode}`}
-                                disabled={!item.isActive || Number(item.balance.availableQuantity) <= 0}
-                                onClick={() => setExternalConsumptionItem(item)}
-                              >
-                                <ArrowDownToLine className="size-4" />
-                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
@@ -687,19 +583,6 @@ export function AtaDetailsPage() {
           item={movementItem}
           open={Boolean(movementItem)}
           onOpenChange={(open) => !open && setMovementItem(null)}
-        />
-      )}
-      {externalConsumptionItem && (
-        <ExternalConsumptionDialog
-          item={externalConsumptionItem}
-          open={Boolean(externalConsumptionItem)}
-          onOpenChange={(open) => !open && setExternalConsumptionItem(null)}
-          onSaved={() => {
-            invalidate()
-            queryClient.invalidateQueries({
-              queryKey: ["ata-items", externalConsumptionItem.id, "movements"],
-            })
-          }}
         />
       )}
     </div>
