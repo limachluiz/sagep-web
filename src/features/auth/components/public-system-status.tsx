@@ -55,10 +55,10 @@ export function PublicSystemStatus({ variant = "dark" }: { variant?: "dark" | "l
 
   return (
     <div
-      className={`flex items-center gap-2 border px-3 py-2 text-[8px] font-semibold uppercase tracking-[.16em] sm:px-4 sm:text-[9px] sm:tracking-[.2em] ${
+      className={`flex items-center gap-2 border ${
         variant === "light"
-          ? presentation.lightContainerClass
-          : `rounded-md bg-[#07120f]/70 backdrop-blur-md ${presentation.containerClass}`
+          ? `px-0 py-2 text-sm font-medium normal-case tracking-normal ${presentation.lightContainerClass}`
+          : `rounded-md bg-[#07120f]/70 px-3 py-2 text-[8px] font-semibold uppercase tracking-[.16em] backdrop-blur-md sm:px-4 sm:text-[9px] sm:tracking-[.2em] ${presentation.containerClass}`
       }`}
       role="status"
       aria-live="polite"
