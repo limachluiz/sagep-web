@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Building2, ChevronLeft, ChevronRight, MapPin, Pencil, Plus, Power, RefreshCw, Search, X } from "lucide-react"
+import { AlertTriangle, Building2, ChevronLeft, ChevronRight, FileUp, MapPin, Pencil, Plus, Power, RefreshCw, Search, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MilitaryOrganizationDialog } from "@/features/military-organizations/components/military-organization-dialog"
+import { MilitaryOrganizationsImportDialog } from "@/features/military-organizations/components/military-organizations-import-dialog"
 import { militaryOrganizationsService, type MilitaryOrganizationPayload } from "@/features/projects/military-organizations.service"
 import type { FederativeUnit, MilitaryOrganization } from "@/features/projects/projects.types"
 
@@ -28,6 +29,7 @@ export function MilitaryOrganizationsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<MilitaryOrganization | null>(null)
   const [toggleTarget, setToggleTarget] = useState<MilitaryOrganization | null>(null)
+  const [importOpen, setImportOpen] = useState(false)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1) }, 350)
@@ -93,8 +95,9 @@ export function MilitaryOrganizationsPage() {
           <h1 className="text-3xl font-semibold tracking-tight">Organizações Militares</h1>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">Gerencie as OMs disponíveis para classificação, estimativas e execução dos projetos nos quatro estados atendidos.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" onClick={() => { listQuery.refetch(); summaryQuery.refetch() }} disabled={listQuery.isFetching}><RefreshCw className={listQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Atualizar</Button>
+          <Button variant="outline" onClick={() => setImportOpen(true)}><FileUp className="size-4" />Importar CSV</Button>
           <Button onClick={openCreate}><Plus className="size-4" />Nova OM</Button>
         </div>
       </div>
@@ -134,6 +137,7 @@ export function MilitaryOrganizationsPage() {
       </Card>
 
       <MilitaryOrganizationDialog open={formOpen} onOpenChange={(open) => { setFormOpen(open); if (!open) setSelected(null) }} organization={selected} pending={saveMutation.isPending} onSubmit={async (payload) => { await saveMutation.mutateAsync(payload) }} />
+      <MilitaryOrganizationsImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={invalidate} />
 
       <Dialog open={Boolean(toggleTarget)} onOpenChange={(open) => !open && setToggleTarget(null)}><DialogContent><DialogHeader><DialogTitle>{toggleTarget?.isActive ? "Inativar" : "Ativar"} Organização Militar?</DialogTitle><DialogDescription>{toggleTarget?.isActive ? `${toggleTarget.sigla} deixará de aparecer em novos projetos e estimativas, mas os vínculos históricos serão preservados.` : `${toggleTarget?.sigla} voltará a ficar disponível nos fluxos operacionais.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setToggleTarget(null)} disabled={toggleMutation.isPending}>Cancelar</Button><Button variant={toggleTarget?.isActive ? "destructive" : "default"} onClick={() => toggleTarget && toggleMutation.mutate(toggleTarget)} disabled={!toggleTarget || toggleMutation.isPending}>{toggleTarget?.isActive ? "Confirmar inativação" : "Confirmar ativação"}</Button></DialogFooter></DialogContent></Dialog>
     </div>

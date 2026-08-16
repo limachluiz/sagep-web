@@ -29,6 +29,24 @@ export type MilitaryOrganizationPayload = {
   stateUf: FederativeUnit
 }
 
+export type MilitaryOrganizationImportMode = "CREATE_ONLY" | "UPSERT"
+export type MilitaryOrganizationImportAction = "CREATE" | "UPDATE" | "UNCHANGED" | "SKIP" | "INVALID"
+export type MilitaryOrganizationImportPreview = {
+  mode: MilitaryOrganizationImportMode
+  rows: Array<{
+    line: number
+    sigla: string
+    name: string
+    cityName: string
+    stateUf: string
+    isActive: boolean
+    issues: string[]
+    action: MilitaryOrganizationImportAction
+    existingId: string | null
+  }>
+  summary: { total: number; valid: number; create: number; update: number; unchanged: number; skipped: number; invalid: number }
+}
+
 export const militaryOrganizationsService = {
   list({ page = 1, pageSize = 100, stateUf, cityName, search, active }: MilitaryOrganizationsFilters = {}) {
     const query = new URLSearchParams({
@@ -51,4 +69,12 @@ export const militaryOrganizationsService = {
   update(id: string, payload: Partial<MilitaryOrganizationPayload> & { isActive?: boolean }) {
     return api.patch<MilitaryOrganization>(`/military-organizations/${id}`, payload)
   },
+
+  template: () => api.getBlob("/military-organizations/import/template"),
+
+  previewImport: (content: string, mode: MilitaryOrganizationImportMode) =>
+    api.post<MilitaryOrganizationImportPreview>("/military-organizations/import/preview", { content, mode }),
+
+  importCsv: (content: string, mode: MilitaryOrganizationImportMode) =>
+    api.post<{ message: string; imported: number; create: number; update: number }>("/military-organizations/import", { content, mode }),
 }
