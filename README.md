@@ -9,6 +9,7 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - aplicação React 19 com TypeScript e Vite;
 - design system com Tailwind CSS 4 e componentes shadcn/ui;
 - identidade institucional em verde-oliva;
+- login cartográfico responsivo com status público do sistema e identidade do 4º CTA;
 - autenticação JWT integrada ao backend;
 - renovação automática de access token por refresh token;
 - controle de sessão com Zustand;
@@ -23,6 +24,12 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - seletores de vínculos com códigos amigáveis, títulos e OMs, mantendo IDs internos ocultos;
 - arquivamento, restauração e exclusão lógica conforme permissões;
 - ATAs e saldos, OMs, usuários, sessões, permissões e relatórios;
+- saldo das ATAs mantido exclusivamente pelo razão interno do SAGEP após a importação inicial;
+- importação CSV de até 1.000 OMs, com modelo, prévia por linha e modos de criação ou atualização;
+- administração de backups com criação, download, importação, exclusão, exportação seletiva e restauração protegida;
+- execução financeira com consulta de NE, acompanhamento de liquidação/pagamento e registro de NFe;
+- configurações de integrações e parâmetros operacionais;
+- tarefas com histórico de notas, data/hora e encerramento;
 - perfil pessoal com edição segura de dados, avatar, tema, avisos, troca de senha e gestão de dispositivos;
 - revisão responsiva para modais, tabelas, Kanban e Gantt, com estados de carregamento, vazio e erro;
 - React Query integrado aos contratos da API.
@@ -96,18 +103,20 @@ src/
 ├── config/           # variáveis e configuração do ambiente
 ├── features/         # módulos funcionais por domínio
 │   ├── auth/         # autenticação, sessão e proteção de rotas
+│   ├── backups/      # backup, exportação e restauração do banco
 │   ├── dashboard/    # dashboards operacional e executivo
-│   └── tasks/        # tarefas, responsáveis, prioridades e prazos
+│   ├── military-organizations/ # cadastro e importação CSV de OMs
+│   └── tasks/        # tarefas, responsáveis, notas e encerramento
 ├── layouts/          # estruturas de página compartilhadas
 ├── lib/              # cliente HTTP e utilitários
 └── index.css         # tokens visuais e estilos globais
 ```
 
-## Fluxo funcional previsto
+## Fluxo funcional oficial
 
 `Estimativa → NC → DIEx → NE → OS → Execução → As-Built → Atesto da NF → Conclusão`
 
-Kanban e Gantt serão módulos próprios, separados do dashboard.
+Kanban e Gantt são módulos próprios, separados do dashboard.
 
 ## Roadmap
 
@@ -120,6 +129,9 @@ Kanban e Gantt serão módulos próprios, separados do dashboard.
 - [x] Tarefas com CRUD e ciclo de arquivamento
 - [x] Estimativas, NC, DIEx, NE, OS e conclusão
 - [x] ATAs, saldos, OMs, usuários e administração
+- [x] Backup, exportação e restauração segura do banco
+- [x] Importação CSV em escala de Organizações Militares
+- [x] Execução financeira e rastreamento de Nota de Empenho
 - [x] Perfil pessoal, preferências, senha e sessões
 - [x] Revisão final de responsividade e acessibilidade
 - [ ] Homologação com dados reais e testes de integração
