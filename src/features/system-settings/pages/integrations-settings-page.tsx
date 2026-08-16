@@ -19,8 +19,8 @@ import type { ConnectionCheck, ConnectionStatus, IntegrationProvider, SystemSett
 const providers: Array<{ id: IntegrationProvider; title: string; description: string; icon: typeof Database }> = [
   { id: "DATABASE", title: "Banco de dados", description: "PostgreSQL usado pelo SAGEP", icon: Database },
   { id: "PORTAL_TRANSPARENCIA", title: "Portal da Transparência", description: "Validação e atualização das NE", icon: ShieldCheck },
-  { id: "COMPRAS_GOV", title: "Compras.gov.br", description: "Atas, pregões e saldos", icon: Server },
-  { id: "PNCP", title: "PNCP", description: "Vigência e contratos vinculados às atas", icon: Landmark },
+  { id: "COMPRAS_GOV", title: "Compras.gov.br", description: "Atas e saldo quantitativo dos itens", icon: Server },
+  { id: "PNCP", title: "PNCP", description: "Vigência, cancelamento e contratos; não fornece saldo", icon: Landmark },
 ]
 
 const statusMeta: Record<ConnectionStatus, { label: string; style: string }> = {

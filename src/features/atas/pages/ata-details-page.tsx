@@ -484,7 +484,18 @@ export function AtaDetailsPage() {
           </div>
           {totals.riskCount > 0 && <Badge variant="destructive">{totals.riskCount} saldo(s) crítico(s)</Badge>}
         </CardHeader>
-        <CardContent className="overflow-x-auto">
+        <CardContent className="space-y-4 overflow-x-auto">
+          {ata.externalSource === "COMPRAS_GOV" && (
+            <Alert>
+              <Cloud />
+              <AlertTitle>Origem do saldo oficial</AlertTitle>
+              <AlertDescription>
+                Quantidades registradas, empenhadas e disponíveis vêm do Compras.gov.br. O PNCP
+                complementa a conferência com vigência, cancelamento e contratos vinculados, mas
+                não publica o saldo quantitativo de cada item.
+              </AlertDescription>
+            </Alert>
+          )}
           {itemsQuery.isLoading ? (
             <DataTableSkeleton />
           ) : filteredItems.length ? (
@@ -495,7 +506,7 @@ export function AtaDetailsPage() {
                   <TableHead>Grupo</TableHead>
                   <TableHead>Preço unitário</TableHead>
                   <TableHead>Composição do saldo</TableHead>
-                  <TableHead>Saldo oficial</TableHead>
+                  <TableHead>Saldo oficial (Compras.gov.br)</TableHead>
                   <TableHead>Disponível projetado</TableHead>
                   <TableHead>Conciliação</TableHead>
                   <TableHead>Status</TableHead>
