@@ -13,18 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { PublicSystemStatus } from "@/features/auth/components/public-system-status"
-
-export type LoginViewProps = {
-  email: string
-  password: string
-  showPassword: boolean
-  pending: boolean
-  onEmailChange: (value: string) => void
-  onPasswordChange: (value: string) => void
-  onTogglePassword: () => void
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void
-  onAccessHelp: () => void
-}
+import type { LoginViewProps } from "@/features/auth/components/login-view.types"
 
 const radialMarks = Array.from({ length: 24 }, (_, index) => index * 15)
 

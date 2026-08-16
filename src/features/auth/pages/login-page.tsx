@@ -3,7 +3,7 @@ import { Navigate, useLocation, useNavigate } from "react-router"
 import { useMutation } from "@tanstack/react-query"
 import { toast } from "sonner"
 
-import { LoginVersionThree } from "@/features/auth/components/login-version-three"
+import { LoginVersionTwo } from "@/features/auth/components/login-version-two"
 import { authService } from "@/features/auth/auth.service"
 import { useAuthStore } from "@/features/auth/auth.store"
 
@@ -43,7 +43,7 @@ export function LoginPage() {
   }
 
   return (
-    <LoginVersionThree
+    <LoginVersionTwo
       email={email}
       password={password}
       showPassword={showPassword}
