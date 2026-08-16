@@ -40,8 +40,8 @@ function CartographyEffects() {
       width="1920"
       height="1080"
       viewBox="0 0 1920 1080"
-      preserveAspectRatio="xMidYMid meet"
-      className="absolute max-h-full max-w-full object-contain object-center"
+      preserveAspectRatio="xMidYMid slice"
+      className="absolute inset-0 h-full w-full"
       aria-hidden="true"
     >
       <defs>
@@ -156,7 +156,7 @@ export function LoginPage() {
         <img
           src={loginMap}
           alt=""
-          className="absolute max-h-full max-w-full object-contain object-center opacity-95"
+          className="absolute inset-0 h-full w-full object-cover object-center opacity-95"
         />
         <CartographyEffects />
       </div>
