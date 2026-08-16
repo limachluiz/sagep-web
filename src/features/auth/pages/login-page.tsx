@@ -18,7 +18,7 @@ import {
 import { toast } from "sonner"
 
 import ctaLogo from "@/assets/cta-logo.svg"
-import engineeringGear from "@/assets/engineering-gear.svg"
+import engineeringInsignia from "@/assets/engineering-insignia.png"
 import loginMap from "@/assets/sagep-login-cartography.webp"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -326,7 +326,7 @@ export function LoginPage() {
         </div>
         <div className="flex items-center justify-center gap-2 sm:justify-end sm:gap-3">
           <p className="text-center text-[9px] tracking-[.045em] text-[#b39b56] sm:text-right sm:text-xs sm:tracking-[.06em]">Desenvolvido pelo 2º Ten Luiz - 4º CTA</p>
-          <img src={engineeringGear} alt="" aria-hidden="true" className="size-8 shrink-0 object-contain opacity-90 sm:size-9" />
+          <img src={engineeringInsignia} alt="" aria-hidden="true" className="size-8 shrink-0 object-contain opacity-90 sm:size-9" />
         </div>
       </footer>
     </main>
