@@ -67,7 +67,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const { accessToken, refreshToken, setTokens, logout } = useAuthStore.getState()
 
   const headers = new Headers(options.headers)
-  headers.set("Content-Type", "application/json")
+  if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json")
 
   if (!options.skipAuth && accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`)
@@ -138,6 +138,26 @@ export const api = {
       ...options,
       method: "POST",
       body: body ? JSON.stringify(body) : undefined,
+    }),
+
+  postBlob: (path: string, body?: unknown, options?: RequestOptions) =>
+    request<Blob>(path, {
+      ...options,
+      method: "POST",
+      body: body ? JSON.stringify(body) : undefined,
+      responseType: "blob",
+    }),
+
+  upload: <T>(path: string, body: Blob, filename: string, options?: RequestOptions) =>
+    request<T>(path, {
+      ...options,
+      method: "POST",
+      body,
+      headers: {
+        ...Object.fromEntries(new Headers(options?.headers).entries()),
+        "Content-Type": "application/octet-stream",
+        "X-Backup-Filename": encodeURIComponent(filename),
+      },
     }),
 
   put: <T>(path: string, body?: unknown, options?: RequestOptions) =>

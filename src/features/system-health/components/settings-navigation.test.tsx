@@ -32,5 +32,18 @@ describe("SettingsNavigation", () => {
 
     expect(screen.getByRole("link", { name: /saúde do sistema/i })).toHaveAttribute("href", "/settings")
     expect(screen.queryByRole("link", { name: /acessos e permissões/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /backup e restauração/i })).not.toBeInTheDocument()
+  })
+
+  it("exibe backup somente com a permissão crítica", () => {
+    useAuthStore.getState().setAuth({
+      user: { id: "admin-1", email: "admin@sagep.test", role: "ADMIN", permissions: ["backups.manage"] },
+      accessToken: "access-token",
+      refreshToken: "refresh-token",
+    })
+
+    render(<MemoryRouter><SettingsNavigation /></MemoryRouter>)
+
+    expect(screen.getByRole("link", { name: /backup e restauração/i })).toHaveAttribute("href", "/settings/backups")
   })
 })
