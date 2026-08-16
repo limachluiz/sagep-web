@@ -490,9 +490,10 @@ export function AtaDetailsPage() {
               <Cloud />
               <AlertTitle>Origem do saldo oficial</AlertTitle>
               <AlertDescription>
-                Quantidades registradas, empenhadas e disponíveis vêm do Compras.gov.br. O PNCP
-                complementa a conferência com vigência, cancelamento e contratos vinculados, mas
-                não publica o saldo quantitativo de cada item.
+                Quando publicado, o saldo de empenho vem do Compras.gov.br. Se a fonte retornar
+                apenas a quantidade registrada, o SAGEP exibirá “Não informado pela fonte” e
+                manterá seu saldo operacional projetado. O PNCP complementa a conferência com
+                vigência, cancelamento e contratos vinculados, mas não publica o saldo quantitativo.
               </AlertDescription>
             </Alert>
           )}
@@ -506,7 +507,7 @@ export function AtaDetailsPage() {
                   <TableHead>Grupo</TableHead>
                   <TableHead>Preço unitário</TableHead>
                   <TableHead>Composição do saldo</TableHead>
-                  <TableHead>Saldo oficial (Compras.gov.br)</TableHead>
+                  <TableHead>Saldo oficial publicado</TableHead>
                   <TableHead>Disponível projetado</TableHead>
                   <TableHead>Conciliação</TableHead>
                   <TableHead>Status</TableHead>
@@ -526,7 +527,10 @@ export function AtaDetailsPage() {
                   const comparison = externalBalanceQuery.data?.items.find((entry) => entry.item.id === item.id)
                   const externalBalance = comparison?.externalBalance ?? snapshot?.externalBalance ?? null
                   const externalStatus = comparison?.status ?? snapshot?.status ?? "NAO_SINCRONIZADO"
-                  const officialAvailable = externalBalance?.availableQuantity
+                  const officialAvailable = externalStatus === "NAO_ENCONTRADO"
+                    ? null
+                    : externalBalance?.availableQuantity
+                  const externalWarnings = comparison?.warnings ?? snapshot?.warnings ?? []
                   const localAvailable = Number(item.balance.availableQuantity)
                   const projectedAvailable = officialAvailable === undefined || officialAvailable === null
                     ? localAvailable
@@ -554,11 +558,21 @@ export function AtaDetailsPage() {
                         </p>
                       </TableCell>
                       <TableCell>
-                        {officialAvailable !== undefined && officialAvailable !== null ? <div><p className="font-semibold tabular-nums">{formatAtaQuantity(officialAvailable)} {item.unit}</p><p className="mt-1 text-xs text-muted-foreground">{formatAtaQuantity(externalBalance?.committedQuantity ?? 0)} empenhado</p></div> : <span className="text-xs text-muted-foreground">Não informado pela fonte</span>}
+                        {officialAvailable !== undefined && officialAvailable !== null ? (
+                          <div>
+                            <p className="font-semibold tabular-nums">{formatAtaQuantity(officialAvailable)} {item.unit}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{formatAtaQuantity(externalBalance?.committedQuantity ?? 0)} empenhado</p>
+                          </div>
+                        ) : (
+                          <div>
+                            <span className="text-xs font-medium text-muted-foreground">Não informado pela fonte</span>
+                            {externalWarnings[0] && <p className="mt-1 max-w-56 text-[11px] text-muted-foreground">{externalWarnings[0]}</p>}
+                          </div>
+                        )}
                       </TableCell>
                       <TableCell>
                         <p className="font-semibold tabular-nums">{formatAtaQuantity(projectedAvailable)} {item.unit}</p>
-                        <p className="mt-1 text-xs text-muted-foreground">SAGEP: {formatAtaQuantity(localAvailable)}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Saldo operacional SAGEP: {formatAtaQuantity(localAvailable)}</p>
                       </TableCell>
                       <TableCell>
                         {externalStatus !== "NAO_SINCRONIZADO" ? (
