@@ -28,7 +28,6 @@ describe("auth.store permissions", () => {
     useAuthStore.getState().setAuth({
       user: user("GESTOR", ["projects.view_all", "estimates.view_all"]),
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
 
     expect(useAuthStore.getState().hasPermission("projects.view_all")).toBe(true)
@@ -40,7 +39,6 @@ describe("auth.store permissions", () => {
     useAuthStore.getState().setAuth({
       user: user("ADMIN", ["dashboard.view_operational"]),
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
 
     expect(useAuthStore.getState().hasPermission("dashboard.view_operational")).toBe(true)

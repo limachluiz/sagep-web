@@ -11,8 +11,8 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - identidade institucional em verde-oliva;
 - login cartográfico responsivo com status público do sistema e identidade do 4º CTA;
 - autenticação JWT integrada ao backend;
-- renovação automática de access token por refresh token;
-- controle de sessão com Zustand;
+- renovação automática por refresh token rotativo em cookie HttpOnly;
+- access token e estado de sessão mantidos somente em memória pelo Zustand;
 - rotas públicas e protegidas;
 - layout responsivo autenticado;
 - fundamentos de acessibilidade com navegação por teclado, movimento reduzido e testes Axe;
@@ -82,6 +82,7 @@ na configuração do backend:
 
 ```env
 CORS_ALLOWED_ORIGINS="http://localhost:4200,http://localhost:5173"
+CORS_ALLOW_CREDENTIALS=true
 ```
 
 ## Scripts
@@ -93,6 +94,12 @@ npm test         # suíte automatizada
 npm run build    # verificação TypeScript e build de produção
 npm run preview  # visualização local do build
 ```
+
+## Segurança da sessão
+
+O frontend não grava tokens de autenticação no `localStorage` ou no `sessionStorage`. O access token de curta duração existe apenas em memória; ao recarregar a página, a API valida e rotaciona o refresh token armazenado em cookie `HttpOnly`. Todas as chamadas usam credenciais de mesma origem ou uma origem explicitamente autorizada pelo backend.
+
+Na publicação, sirva o frontend e a API por HTTPS, configure `AUTH_COOKIE_SECURE=true` no backend e aplique no proxy reverso uma CSP compatível com os domínios realmente utilizados. Não inclua curingas na lista CORS.
 
 ## Estrutura principal
 

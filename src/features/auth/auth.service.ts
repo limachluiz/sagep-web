@@ -30,10 +30,10 @@ export const authService = {
     return api.post<ChangeOwnPasswordResponse>("/auth/change-password", payload)
   },
 
-  logout(refreshToken: string) {
+  logout() {
     return api.post<{ message: string }>(
       "/auth/logout",
-      { refreshToken },
+      undefined,
       {
         skipAuth: true,
       },

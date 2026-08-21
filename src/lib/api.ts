@@ -22,11 +22,11 @@ export class ApiError extends Error {
   }
 }
 
-let refreshRequest: Promise<{ accessToken: string; refreshToken?: string }> | null = null
+let refreshRequest: Promise<{ accessToken: string }> | null = null
 
 async function fetchApi(path: string, options: RequestInit) {
   try {
-    return await fetch(`${env.apiUrl}${path}`, options)
+    return await fetch(`${env.apiUrl}${path}`, { ...options, credentials: "include" })
   } catch (error) {
     throw new ApiError(
       "Não foi possível conectar ao servidor do SAGEP. Verifique se o backend está em execução.",
@@ -36,12 +36,11 @@ async function fetchApi(path: string, options: RequestInit) {
   }
 }
 
-async function refreshSession(refreshToken: string) {
+async function refreshSession() {
   if (!refreshRequest) {
     refreshRequest = fetchApi("/auth/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken }),
     })
       .then(async (response) => {
         if (!response.ok) {
@@ -64,7 +63,7 @@ async function refreshSession(refreshToken: string) {
 }
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { accessToken, refreshToken, setTokens, logout } = useAuthStore.getState()
+  const { accessToken, setTokens, logout } = useAuthStore.getState()
 
   const headers = new Headers(options.headers)
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json")
@@ -78,11 +77,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers,
   })
 
-  if (response.status === 401 && !options.skipAuth && refreshToken) {
-    let refreshed: { accessToken: string; refreshToken?: string }
+  if (response.status === 401 && !options.skipAuth) {
+    let refreshed: { accessToken: string }
 
     try {
-      refreshed = await refreshSession(refreshToken)
+      refreshed = await refreshSession()
     } catch (error) {
       logout()
       throw error
@@ -90,7 +89,6 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
     setTokens({
       accessToken: refreshed.accessToken,
-      refreshToken: refreshed.refreshToken ?? refreshToken,
     })
 
     headers.set("Authorization", `Bearer ${refreshed.accessToken}`)

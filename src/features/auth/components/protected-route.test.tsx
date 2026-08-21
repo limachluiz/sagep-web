@@ -43,7 +43,6 @@ describe("ProtectedRoute", () => {
     useAuthStore.getState().setAuth({
       user: authenticatedUser,
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
   })
 

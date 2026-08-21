@@ -53,6 +53,7 @@ describe("LoginPage", () => {
       const url = String(input)
 
       if (url.endsWith("/auth/login") && init?.method === "POST") {
+        expect(init.credentials).toBe("include")
         expect(JSON.parse(String(init.body))).toEqual({
           email: "admin@sagep.com",
           password: "123456",
@@ -61,7 +62,6 @@ describe("LoginPage", () => {
         return new Response(
           JSON.stringify({
             accessToken: "access-token",
-            refreshToken: "refresh-token",
             user: authenticatedUser,
           }),
           { status: 200, headers: { "Content-Type": "application/json" } },
@@ -169,8 +169,8 @@ describe("LoginPage", () => {
     expect(useAuthStore.getState()).toMatchObject({
       isAuthenticated: true,
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
+    expect(localStorage.getItem("sagep-auth")).toBeNull()
   })
 
   it("mantém o usuário no login quando as credenciais são inválidas", async () => {

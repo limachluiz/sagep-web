@@ -47,7 +47,6 @@ describe("ProjectsListPage", () => {
     useAuthStore.getState().setAuth({
       user: { id: "user-1", name: "Gestor", email: "gestor@sagep.test", role: "GESTOR", permissions: ["projects.view_all", "projects.edit_own"] },
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
     vi.mocked(projectsService.list).mockResolvedValue(response)
   })

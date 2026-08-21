@@ -129,7 +129,6 @@ export function LoginPage() {
       setAuth({
         user: data.user,
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
       })
 
       toast.success("Login realizado com sucesso.")

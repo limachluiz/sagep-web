@@ -21,7 +21,6 @@ describe("SettingsNavigation", () => {
         permissions: [],
       },
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
 
     render(
@@ -39,7 +38,6 @@ describe("SettingsNavigation", () => {
     useAuthStore.getState().setAuth({
       user: { id: "admin-1", email: "admin@sagep.test", role: "ADMIN", permissions: ["backups.manage"] },
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
 
     render(<MemoryRouter><SettingsNavigation /></MemoryRouter>)

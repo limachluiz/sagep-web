@@ -10,13 +10,12 @@ import { ApiError } from "@/lib/api"
 
 export function ProtectedRoute() {
   const location = useLocation()
-  const { accessToken, refreshToken, isAuthenticated, setUser, logout } =
-    useAuthStore()
+  const { accessToken, isAuthenticated, setUser, logout } = useAuthStore()
 
   const meQuery = useQuery({
     queryKey: ["auth", "me"],
     queryFn: authService.me,
-    enabled: Boolean(accessToken && refreshToken && isAuthenticated),
+    enabled: true,
     retry: false,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
@@ -37,10 +36,6 @@ export function ProtectedRoute() {
       logout()
     }
   }, [meQuery.error, logout])
-
-  if (!accessToken || !refreshToken || !isAuthenticated) {
-    return <Navigate to="/login" replace state={{ from: location }} />
-  }
 
   if (meQuery.isPending) {
     return (
@@ -98,6 +93,10 @@ export function ProtectedRoute() {
         </div>
       </div>
     )
+  }
+
+  if (!accessToken || !isAuthenticated) {
+    return <Navigate to="/login" replace state={{ from: location }} />
   }
 
   return <Outlet />

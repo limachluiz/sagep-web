@@ -1,16 +1,13 @@
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
 import type { AuthUser, Permission } from "./auth.types"
 
 type TokenPayload = {
   accessToken: string
-  refreshToken: string
 }
 
 type AuthState = {
   user: AuthUser | null
   accessToken: string | null
-  refreshToken: string | null
   isAuthenticated: boolean
   setAuth: (payload: TokenPayload & { user: AuthUser }) => void
   setUser: (user: AuthUser | null) => void
@@ -21,18 +18,15 @@ type AuthState = {
 }
 
 export const useAuthStore = create<AuthState>()(
-  persist(
     (set, get) => ({
       user: null,
       accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
 
-      setAuth: ({ user, accessToken, refreshToken }) =>
+      setAuth: ({ user, accessToken }) =>
         set({
           user,
           accessToken,
-          refreshToken,
           isAuthenticated: true,
         }),
 
@@ -42,10 +36,9 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: Boolean(user && get().accessToken),
         }),
 
-      setTokens: ({ accessToken, refreshToken }) =>
+      setTokens: ({ accessToken }) =>
         set({
           accessToken,
-          refreshToken,
           isAuthenticated: Boolean(accessToken),
         }),
 
@@ -53,7 +46,6 @@ export const useAuthStore = create<AuthState>()(
         set({
           user: null,
           accessToken: null,
-          refreshToken: null,
           isAuthenticated: false,
         }),
 
@@ -67,14 +59,4 @@ export const useAuthStore = create<AuthState>()(
       hasAnyPermission: (permissions) =>
         permissions.some((permission) => get().hasPermission(permission)),
     }),
-    {
-      name: "sagep-auth",
-      partialize: (state) => ({
-        user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated,
-      }),
-    },
-  ),
 )

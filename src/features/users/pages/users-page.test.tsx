@@ -64,7 +64,6 @@ describe("UsersPage", () => {
     useAuthStore.getState().setAuth({
       user: currentUser,
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
   })
 

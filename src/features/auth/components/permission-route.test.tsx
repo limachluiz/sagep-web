@@ -10,7 +10,6 @@ function authenticate(permissions: Permission[], role: AuthUser["role"] = "GESTO
   useAuthStore.getState().setAuth({
     user: { id: "user-1", name: "Usuário", email: "usuario@sagep.test", role, permissions },
     accessToken: "access-token",
-    refreshToken: "refresh-token",
   })
 }
 

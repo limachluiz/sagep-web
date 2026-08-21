@@ -78,7 +78,6 @@ export type LoginPayload = {
 
 export type LoginResponse = {
   accessToken: string
-  refreshToken: string
   user: AuthUser
 }
 
@@ -110,7 +109,6 @@ export type ChangeOwnPasswordResponse = {
 
 export type RefreshResponse = {
   accessToken: string
-  refreshToken?: string
 }
 
 export type SessionStatus = "ACTIVE" | "REVOKED" | "EXPIRED"

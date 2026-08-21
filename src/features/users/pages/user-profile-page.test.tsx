@@ -75,7 +75,6 @@ describe("UserProfilePage", () => {
     useAuthStore.getState().setAuth({
       user: profile,
       accessToken: "access-token",
-      refreshToken: "refresh-token",
     })
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify(profile), {
       status: 200,

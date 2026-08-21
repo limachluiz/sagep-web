@@ -198,7 +198,7 @@ function getInitials(nameOrEmail?: string) {
 export function AuthenticatedLayout() {
   const navigate = useNavigate()
   const { setTheme } = useTheme()
-  const { user, refreshToken, logout, hasAnyPermission } = useAuthStore()
+  const { user, logout, hasAnyPermission } = useAuthStore()
   const settingsQuery = useQuery({ queryKey: ["system-settings"], queryFn: systemSettingsService.get })
   const [sidebarCollapsed, setSidebarCollapsed] = useState(
     () => typeof window !== "undefined" && window.localStorage.getItem("sagep:sidebar-collapsed") === "true",
@@ -222,13 +222,9 @@ export function AuthenticatedLayout() {
     .filter((group) => group.items.length > 0)
 
   const handleLogout = async () => {
-    const tokenToRevoke = refreshToken
     logout()
     navigate("/login", { replace: true })
-
-    if (tokenToRevoke) {
-      await authService.logout(tokenToRevoke).catch(() => undefined)
-    }
+    await authService.logout().catch(() => undefined)
   }
 
   const toggleSidebar = () => {
