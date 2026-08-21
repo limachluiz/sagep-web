@@ -1,9 +1,12 @@
 import { env } from "@/config/env"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { requestStepUpToken } from "@/features/auth/step-up.manager"
 
 type RequestOptions = RequestInit & {
   skipAuth?: boolean
   responseType?: "json" | "blob"
+  skipRefresh?: boolean
+  skipStepUp?: boolean
 }
 
 export class ApiError extends Error {
@@ -64,20 +67,27 @@ async function refreshSession() {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const { accessToken, setTokens, logout } = useAuthStore.getState()
+  const {
+    skipAuth = false,
+    responseType = "json",
+    skipRefresh = false,
+    skipStepUp = false,
+    ...fetchOptions
+  } = options
 
-  const headers = new Headers(options.headers)
+  const headers = new Headers(fetchOptions.headers)
   if (!headers.has("Content-Type")) headers.set("Content-Type", "application/json")
 
-  if (!options.skipAuth && accessToken) {
+  if (!skipAuth && accessToken) {
     headers.set("Authorization", `Bearer ${accessToken}`)
   }
 
   let response = await fetchApi(path, {
-    ...options,
+    ...fetchOptions,
     headers,
   })
 
-  if (response.status === 401 && !options.skipAuth) {
+  if (response.status === 401 && !skipAuth && !skipRefresh) {
     let refreshed: { accessToken: string }
 
     try {
@@ -94,9 +104,17 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set("Authorization", `Bearer ${refreshed.accessToken}`)
 
     response = await fetchApi(path, {
-      ...options,
+      ...fetchOptions,
       headers,
     })
+  }
+
+  if (response.status === 428 && !skipStepUp) {
+    for (let attempt = 0; attempt < 2 && response.status === 428; attempt += 1) {
+      const stepUpToken = await requestStepUpToken(attempt > 0)
+      headers.set("X-SAGEP-Reauth", stepUpToken)
+      response = await fetchApi(path, { ...fetchOptions, headers })
+    }
   }
 
   if (!response.ok) {
@@ -117,7 +135,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     return undefined as T
   }
 
-  if (options.responseType === "blob") {
+  if (responseType === "blob") {
     return response.blob() as Promise<T>
   }
 

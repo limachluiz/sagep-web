@@ -58,4 +58,14 @@ describe("authService — administração de sessões", () => {
       newPassword: "nova-senha-segura",
     })
   })
+
+  it("confirma a senha sem renovar sessão nem recursar a barreira", () => {
+    authService.reauthenticate("senha-atual")
+
+    expect(api.post).toHaveBeenCalledWith(
+      "/auth/reauthenticate",
+      { password: "senha-atual" },
+      { skipRefresh: true, skipStepUp: true },
+    )
+  })
 })

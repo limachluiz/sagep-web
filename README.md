@@ -13,6 +13,7 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - autenticação JWT integrada ao backend;
 - renovação automática por refresh token rotativo em cookie HttpOnly;
 - access token e estado de sessão mantidos somente em memória pelo Zustand;
+- confirmação de senha automática para operações administrativas críticas;
 - rotas públicas e protegidas;
 - layout responsivo autenticado;
 - fundamentos de acessibilidade com navegação por teclado, movimento reduzido e testes Axe;
@@ -98,6 +99,8 @@ npm run preview  # visualização local do build
 ## Segurança da sessão
 
 O frontend não grava tokens de autenticação no `localStorage` ou no `sessionStorage`. O access token de curta duração existe apenas em memória; ao recarregar a página, a API valida e rotaciona o refresh token armazenado em cookie `HttpOnly`. Todas as chamadas usam credenciais de mesma origem ou uma origem explicitamente autorizada pelo backend.
+
+Quando a API responde `428 AUTH_STEP_UP_REQUIRED`, o cliente abre uma confirmação de identidade, envia a senha somente ao endpoint de reautenticação e repete a operação original com uma autorização temporária. Esse token também permanece apenas em memória, é vinculado ao usuário atual e não é reutilizado após expirar ou trocar de conta.
 
 Na publicação, sirva o frontend e a API por HTTPS, configure `AUTH_COOKIE_SECURE=true` no backend e aplique no proxy reverso uma CSP compatível com os domínios realmente utilizados. Não inclua curingas na lista CORS.
 

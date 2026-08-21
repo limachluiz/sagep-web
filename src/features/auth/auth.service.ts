@@ -22,6 +22,14 @@ export const authService = {
     return api.get<AuthUser>("/auth/me")
   },
 
+  reauthenticate(password: string) {
+    return api.post<{ stepUpToken: string; expiresInSeconds: number }>(
+      "/auth/reauthenticate",
+      { password },
+      { skipRefresh: true, skipStepUp: true },
+    )
+  },
+
   updateProfile(payload: UpdateOwnProfilePayload) {
     return api.patch<AuthUser>("/auth/profile", payload)
   },
