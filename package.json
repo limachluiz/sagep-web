@@ -9,7 +9,9 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "security:audit": "node scripts/check-dependency-audit.mjs",
+    "security:secrets": "node scripts/check-secrets.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

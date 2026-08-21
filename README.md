@@ -34,7 +34,9 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - perfil pessoal com edição segura de dados, avatar, tema, avisos, troca de senha e gestão de dispositivos;
 - revisão responsiva para modais, tabelas, Kanban e Gantt, com estados de carregamento, vazio e erro;
 - React Query integrado aos contratos da API.
-- integração contínua no GitHub Actions com lint, testes e build de produção.
+- integração contínua no GitHub Actions com auditoria de dependências e segredos, CodeQL,
+  lint, testes e build de produção;
+- atualizações semanais de dependências e GitHub Actions pelo Dependabot.
 
 ## Tecnologias
 

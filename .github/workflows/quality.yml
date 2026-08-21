@@ -3,9 +3,12 @@ name: Qualidade do frontend
 on:
   push:
     branches:
-      - upgrade-frontend
       - main
+      - upgrade-security
   pull_request:
+    branches:
+      - main
+      - upgrade-security
 
 permissions:
   contents: read
@@ -32,6 +35,12 @@ jobs:
 
       - name: Instalar dependências
         run: npm ci
+
+      - name: Auditar dependências
+        run: npm run security:audit
+
+      - name: Procurar segredos versionados
+        run: npm run security:secrets
 
       - name: Executar lint
         run: npm run lint
