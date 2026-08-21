@@ -79,6 +79,23 @@ describe("ProtectedRoute", () => {
     expect(fetch).toHaveBeenCalledTimes(2)
   })
 
+  it("mantém o login acessível quando não há sessão e o backend está indisponível", async () => {
+    useAuthStore.getState().logout()
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new TypeError("Failed to fetch")
+      }),
+    )
+
+    renderProtectedRoute()
+
+    expect(await screen.findByText("Tela de login")).toBeInTheDocument()
+    expect(
+      screen.queryByRole("heading", { name: "Não foi possível validar a sessão" }),
+    ).not.toBeInTheDocument()
+  })
+
   it("mantém a área protegida visível durante atualização da sessão em segundo plano", () => {
     vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => undefined)))
 

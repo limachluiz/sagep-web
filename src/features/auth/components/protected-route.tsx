@@ -52,6 +52,13 @@ export function ProtectedRoute() {
   }
 
   if (meQuery.isError) {
+    // Sem access token em memória, esta consulta é apenas a tentativa silenciosa
+    // de restaurar uma sessão pelo cookie HttpOnly. Se a API estiver fora ou o
+    // cookie não existir, a tela pública de login deve continuar acessível.
+    if (!accessToken) {
+      return <Navigate to="/login" replace state={{ from: location }} />
+    }
+
     const sessionWasRejected =
       meQuery.error instanceof ApiError &&
       [401, 403].includes(meQuery.error.status)
