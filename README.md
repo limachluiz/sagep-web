@@ -102,6 +102,8 @@ O frontend não grava tokens de autenticação no `localStorage` ou no `sessionS
 
 Quando a API responde `428 AUTH_STEP_UP_REQUIRED`, o cliente abre uma confirmação de identidade, envia a senha somente ao endpoint de reautenticação e repete a operação original com uma autorização temporária. Esse token também permanece apenas em memória, é vinculado ao usuário atual e não é reutilizado após expirar ou trocar de conta.
 
+O formulário também respeita o bloqueio temporário retornado pela API após tentativas consecutivas inválidas. Novas contas administrativas exigem senha com pelo menos 8 caracteres; credenciais existentes continuam válidas até serem alteradas.
+
 Na publicação, sirva o frontend e a API por HTTPS, configure `AUTH_COOKIE_SECURE=true` no backend e aplique no proxy reverso uma CSP compatível com os domínios realmente utilizados. Não inclua curingas na lista CORS.
 
 ## Estrutura principal

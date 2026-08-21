@@ -66,8 +66,8 @@ export function UserDialog({ open, onOpenChange, user, currentUserId, pending, o
   }, [form, open, user])
 
   const submit = form.handleSubmit(async (values) => {
-    if (!user && values.password.length < 6) {
-      form.setError("password", { message: "A senha deve ter pelo menos 6 caracteres." })
+    if (!user && values.password.length < 8) {
+      form.setError("password", { message: "A senha deve ter pelo menos 8 caracteres." })
       return
     }
 
