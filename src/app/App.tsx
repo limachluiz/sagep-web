@@ -36,6 +36,7 @@ const SystemHealthPage = lazy(() => import("@/features/system-health/pages/syste
 const FinancialExecutionPage = lazy(() => import("@/features/financial-execution/pages/financial-execution-page").then((module) => ({ default: module.FinancialExecutionPage })))
 const IntegrationsSettingsPage = lazy(() => import("@/features/system-settings/pages/integrations-settings-page").then((module) => ({ default: module.IntegrationsSettingsPage })))
 const BackupsPage = lazy(() => import("@/features/backups/pages/backups-page").then((module) => ({ default: module.BackupsPage })))
+const NetworkSettingsPage = lazy(() => import("@/features/deployment/pages/network-settings-page").then((module) => ({ default: module.NetworkSettingsPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -242,6 +243,7 @@ export default function App() {
           />
           <Route path="/settings/integrations" element={<PermissionRoute anyOf={["settings.view"]}><IntegrationsSettingsPage /></PermissionRoute>} />
           <Route path="/settings/backups" element={<PermissionRoute anyOf={["backups.manage"]}><BackupsPage /></PermissionRoute>} />
+          <Route path="/settings/network" element={<PermissionRoute anyOf={["settings.view"]}><NetworkSettingsPage /></PermissionRoute>} />
           <Route
             path="/audit"
             element={

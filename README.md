@@ -30,6 +30,7 @@ Esta branch contém a aplicação operacional integrada ao backend:
 - administração de backups com criação, download, importação, exclusão, exportação seletiva e restauração protegida;
 - execução financeira com consulta de NE, acompanhamento de liquidação/pagamento e registro de NFe;
 - configurações de integrações e parâmetros operacionais;
+- painel de rede, servidores e HTTPS com diagnóstico do ambiente, emissão interna por OM e kits de confiança para Windows 11, Linux Mint e Ubuntu;
 - tarefas com histórico de notas, data/hora e encerramento;
 - perfil pessoal com edição segura de dados, avatar, tema, avisos, troca de senha e gestão de dispositivos;
 - revisão responsiva para modais, tabelas, Kanban e Gantt, com estados de carregamento, vazio e erro;
@@ -109,6 +110,13 @@ O download integral de backup participa desse mesmo fluxo de reautenticação. O
 O formulário também respeita o bloqueio temporário retornado pela API após tentativas consecutivas inválidas. Novas contas administrativas exigem senha com pelo menos 8 caracteres; credenciais existentes continuam válidas até serem alteradas.
 
 Na publicação, sirva o frontend e a API por HTTPS, configure `AUTH_COOKIE_SECURE=true` no backend e aplique no proxy reverso uma CSP compatível com os domínios realmente utilizados. Não inclua curingas na lista CORS.
+
+O painel **Configurações → Rede, servidores e HTTPS** não altera a interface de
+rede do host. Ele registra os valores aprovados, compara IP e DNS com o ambiente
+observado e protege emissão, rotação e download dos kits com perfil ADMIN,
+limite de requisições, reautenticação e auditoria. A impressão digital SHA-256
+exibida deve ser confirmada por um canal confiável antes de instalar a raiz em
+qualquer estação.
 
 ## Estrutura principal
 

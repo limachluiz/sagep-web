@@ -1,0 +1,41 @@
+export type CertificateMode = "INTERNAL_CA" | "IMPORTED" | "ACME_DNS"
+export type CertificateStatus = {
+  configured: boolean
+  toolAvailable: boolean
+  status: "NOT_CONFIGURED" | "VALID" | "EXPIRING" | "EXPIRED" | "INVALID"
+  subject?: string
+  issuer?: string
+  validFrom?: string
+  expiresAt?: string
+  daysRemaining?: number
+  fingerprintSha256?: string
+  rootFingerprintSha256?: string
+}
+
+export type DeploymentSettings = {
+  id: string
+  hostName: string | null
+  expectedIp: string | null
+  gateway: string | null
+  dnsServers: string[]
+  ntpServers: string[]
+  allowedNetworks: string[]
+  proxyUrl: string | null
+  certificateMode: CertificateMode
+  updatedAt: string
+  certificate: CertificateStatus
+}
+
+export type UpdateDeploymentSettings = Omit<DeploymentSettings, "id" | "updatedAt" | "certificate">
+
+export type NetworkDiagnostics = {
+  checkedAt: string
+  hostName: string
+  interfaces: Array<{ interface: string; address: string; netmask: string; mac: string }>
+  systemDnsServers: string[]
+  configuredHostName: string | null
+  resolvedAddresses: string[]
+  dnsError: string | null
+  expectedIpMatches: boolean
+  dnsMatchesExpectedIp: boolean
+}
