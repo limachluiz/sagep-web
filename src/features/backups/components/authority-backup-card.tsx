@@ -72,7 +72,8 @@ export function AuthorityBackupCard() {
       refreshCertificateState()
       toast.success("Autoridade restaurada e certificado do servidor reemitido.")
       if (result.trustRedistributionRequired) toast.warning("A autoridade mudou. Redistribua os kits de confiança aos clientes.")
-      toast.info("Reinicie o proxy Caddy para aplicar o novo certificado.")
+      if (result.proxyRestartRequired) toast.info("Reinicie o proxy Caddy para aplicar o novo certificado.")
+      else toast.info("O Caddy carregará o novo certificado automaticamente.")
     },
     onError: (error) => toast.error(error.message),
   })

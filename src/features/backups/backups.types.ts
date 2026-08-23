@@ -47,7 +47,7 @@ export type RestoreAuthorityResponse = {
   status: "NOT_CONFIGURED" | "VALID" | "EXPIRING" | "EXPIRED" | "INVALID"
   rootFingerprintSha256?: string
   fingerprintSha256?: string
-  proxyRestartRequired: true
+  proxyRestartRequired: boolean
   trustRedistributionRequired: boolean
   recoveryFilename: string | null
 }

@@ -16,6 +16,17 @@ export type CertificateStatus = {
     label: string
   } | null
   proxyRestartRequired?: boolean
+  renewalAutomation: {
+    enabled: boolean
+    renewBeforeDays: number
+    checkIntervalHours: number
+    proxyReloadMode: "AUTOMATIC" | "MANUAL"
+    lastCheckedAt: string | null
+    lastAttemptAt: string | null
+    lastRenewedAt: string | null
+    lastResult: "NEVER_RUN" | "NOT_CONFIGURED" | "NOT_DUE" | "RENEWED" | "FAILED"
+    lastErrorCode: string | null
+  }
 }
 
 export type DeploymentSettings = {

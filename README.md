@@ -140,6 +140,12 @@ Renovar preserva a confiança instalada nas estações; rotacionar a raiz exige
 redistribuir os kits. Alertas progressivos aparecem na Central de Alertas aos 60,
 30, 15 e 7 dias do vencimento.
 
+O painel também mostra a política de renovação automática, a última verificação
+e o modo de recarga do proxy. No perfil Docker HTTPS, a API renova o certificado
+ao entrar na janela configurada e o Caddy detecta o novo par TLS e o carrega sem
+intervenção. Uma tentativa malsucedida gera alerta crítico e mantém disponível a
+renovação manual.
+
 ## Estrutura principal
 
 ```text
