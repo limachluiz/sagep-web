@@ -8,5 +8,6 @@ export const deploymentService = {
   preflight: () => api.get<DeploymentPreflight>("/deployment/preflight"),
   initializeCertificate: (hostName: string, rotate: boolean) =>
     api.post<CertificateStatus>("/deployment/certificate/internal", { hostName, rotate }),
+  renewCertificate: () => api.post<CertificateStatus>("/deployment/certificate/renew", {}),
   trustKit: (platform: "windows" | "linux") => api.getBlob(`/deployment/trust-kit/${platform}`),
 }

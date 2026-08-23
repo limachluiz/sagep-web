@@ -129,6 +129,11 @@ consolida bloqueios e alertas de runtime, cookies, proxy, CORS, DNS, volumes e
 certificado. Nesta versão, apenas a autoridade interna exclusiva da OM é exposta
 como modo de certificado.
 
+A renovação do certificado do servidor é separada da rotação da autoridade raiz.
+Renovar preserva a confiança instalada nas estações; rotacionar a raiz exige
+redistribuir os kits. Alertas progressivos aparecem na Central de Alertas aos 60,
+30, 15 e 7 dias do vencimento.
+
 ## Estrutura principal
 
 ```text

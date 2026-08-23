@@ -39,6 +39,7 @@ export function NetworkSettingsPage() {
   const diagnosticsQuery = useQuery({ queryKey: ["deployment-diagnostics"], queryFn: deploymentService.diagnostics, enabled: canDiagnose, retry: false })
   const preflightQuery = useQuery({ queryKey: ["deployment-preflight"], queryFn: deploymentService.preflight, enabled: canDiagnose, retry: false })
   const [formChanges, setFormChanges] = useState<Partial<UpdateDeploymentSettings>>({})
+  const [proxyRestartPending, setProxyRestartPending] = useState(false)
   const form = settingsQuery.data ? {
     hostName: settingsQuery.data.hostName,
     expectedIp: settingsQuery.data.expectedIp,
@@ -56,9 +57,14 @@ export function NetworkSettingsPage() {
     onSuccess: (data) => { queryClient.setQueryData(["deployment-settings"], data); setFormChanges({}); toast.success("Configuração de implantação atualizada.") },
     onError: (error) => toast.error(error.message),
   })
-  const certificate = useMutation({
+  const authority = useMutation({
     mutationFn: ({ hostName, rotate }: { hostName: string; rotate: boolean }) => deploymentService.initializeCertificate(hostName, rotate),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["deployment-settings"] }); toast.success("Certificado interno emitido com sucesso.") },
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["deployment-settings"] }); void queryClient.invalidateQueries({ queryKey: ["deployment-preflight"] }); void queryClient.invalidateQueries({ queryKey: ["header", "operational-alerts"] }); setProxyRestartPending(true); toast.success("Autoridade e certificado emitidos com sucesso.") },
+    onError: (error) => toast.error(error.message),
+  })
+  const renewal = useMutation({
+    mutationFn: deploymentService.renewCertificate,
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["deployment-settings"] }); void queryClient.invalidateQueries({ queryKey: ["deployment-preflight"] }); void queryClient.invalidateQueries({ queryKey: ["header", "operational-alerts"] }); setProxyRestartPending(true); toast.success("Certificado renovado sem alterar a autoridade da OM.") },
     onError: (error) => toast.error(error.message),
   })
   const [downloading, setDownloading] = useState<"windows" | "linux" | null>(null)
@@ -139,8 +145,10 @@ export function NetworkSettingsPage() {
 
     <Card><CardHeader><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-5" />Certificado HTTPS e confiança dos clientes</CardTitle><CardDescription>A raiz é exclusiva desta instalação. A chave privada permanece no volume protegido do servidor e nunca integra os kits.</CardDescription></CardHeader><CardContent className="space-y-5">
       <div className="grid gap-4 md:grid-cols-3"><div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Estado</p><p className="mt-2 flex items-center gap-2 font-medium">{statusGood ? <CheckCircle2 className="size-4 text-emerald-500" /> : <TriangleAlert className="size-4 text-amber-500" />}{settings.certificate.status}</p></div><div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Validade restante</p><p className="mt-2 font-medium">{settings.certificate.daysRemaining == null ? "—" : `${settings.certificate.daysRemaining} dias`}</p></div><div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">OpenSSL no servidor</p><p className="mt-2 font-medium">{settings.certificate.toolAvailable ? "Disponível" : "Indisponível"}</p></div></div>
+      {settings.certificate.renewalAlert && <Alert variant={settings.certificate.renewalAlert.severity === "CRITICAL" ? "destructive" : "default"}><TriangleAlert /><AlertTitle>{settings.certificate.renewalAlert.label}</AlertTitle><AlertDescription>Renove o certificado do servidor. A autoridade raiz será preservada e os kits já instalados continuarão confiáveis.</AlertDescription></Alert>}
+      {proxyRestartPending && <Alert><RefreshCw /><AlertTitle>Recarregamento do proxy pendente</AlertTitle><AlertDescription>Execute <code>docker compose --profile https restart caddy</code> no servidor para o Caddy carregar o novo certificado.</AlertDescription></Alert>}
       {settings.certificate.rootFingerprintSha256 && <div className="rounded-lg border bg-muted/30 p-4"><p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Impressão digital SHA-256 da raiz</p><code className="mt-2 block break-all text-sm">{settings.certificate.rootFingerprintSha256}</code><p className="mt-2 text-xs text-muted-foreground">Confirme este valor por um canal confiável antes de instalar em qualquer estação.</p></div>}
-      {canManage && <div className="flex flex-wrap gap-2"><Button onClick={() => { if (!form.hostName) return toast.error("Informe o nome DNS completo."); const rotate = settings.certificate.configured; if (rotate && !window.confirm("A rotação da raiz invalidará a confiança instalada nos clientes. Continuar?")) return; certificate.mutate({ hostName: form.hostName, rotate }) }} disabled={certificate.isPending || !settings.certificate.toolAvailable}><KeyRound />{settings.certificate.configured ? "Rotacionar certificado" : "Inicializar certificado interno"}</Button><Button variant="outline" onClick={() => downloadKit("windows")} disabled={!settings.certificate.configured || Boolean(downloading)}><Download />Kit Windows 11</Button><Button variant="outline" onClick={() => downloadKit("linux")} disabled={!settings.certificate.configured || Boolean(downloading)}><Download />Kit Mint / Ubuntu</Button></div>}
+      {canManage && <div className="flex flex-wrap gap-2">{settings.certificate.configured ? <><Button onClick={() => renewal.mutate()} disabled={renewal.isPending || authority.isPending || !settings.certificate.toolAvailable}><RefreshCw className={renewal.isPending ? "animate-spin" : ""} />Renovar certificado do servidor</Button><Button variant="outline" onClick={() => { if (!form.hostName) return toast.error("Informe o nome DNS completo."); if (!window.confirm("A rotação substituirá a autoridade raiz e exigirá reinstalar os kits de confiança em todas as estações. Continuar?")) return; authority.mutate({ hostName: form.hostName, rotate: true }) }} disabled={renewal.isPending || authority.isPending || !settings.certificate.toolAvailable}><KeyRound />Rotacionar autoridade raiz</Button></> : <Button onClick={() => { if (!form.hostName) return toast.error("Informe o nome DNS completo."); authority.mutate({ hostName: form.hostName, rotate: false }) }} disabled={authority.isPending || !settings.certificate.toolAvailable}><KeyRound />Inicializar autoridade interna</Button>}<Button variant="outline" onClick={() => downloadKit("windows")} disabled={!settings.certificate.configured || Boolean(downloading)}><Download />Kit Windows 11</Button><Button variant="outline" onClick={() => downloadKit("linux")} disabled={!settings.certificate.configured || Boolean(downloading)}><Download />Kit Mint / Ubuntu</Button></div>}
     </CardContent></Card>
   </div>
 }

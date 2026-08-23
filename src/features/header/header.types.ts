@@ -29,8 +29,8 @@ export type HeaderAlert = {
   title: string
   description: string
   detailsPath: string
-  project: { id: string; projectCode: number; title: string }
-  nextAction: { code: string; label: string; description: string }
+  project?: { id: string; projectCode: number; title: string }
+  nextAction?: { code: string; label: string; description: string }
 }
 
 export type DismissAlertsResponse = {

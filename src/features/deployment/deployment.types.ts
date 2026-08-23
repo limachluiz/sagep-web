@@ -10,6 +10,12 @@ export type CertificateStatus = {
   daysRemaining?: number
   fingerprintSha256?: string
   rootFingerprintSha256?: string
+  renewalAlert?: {
+    thresholdDays: 60 | 30 | 15 | 7 | 0
+    severity: "INFO" | "WARNING" | "CRITICAL"
+    label: string
+  } | null
+  proxyRestartRequired?: boolean
 }
 
 export type DeploymentSettings = {
