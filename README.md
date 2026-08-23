@@ -124,6 +124,11 @@ limite de requisições, reautenticação e auditoria. A impressão digital SHA-
 exibida deve ser confirmada por um canal confiável antes de instalar a raiz em
 qualquer estação.
 
+O mesmo painel apresenta uma verificação de prontidão somente leitura. Ela
+consolida bloqueios e alertas de runtime, cookies, proxy, CORS, DNS, volumes e
+certificado. Nesta versão, apenas a autoridade interna exclusiva da OM é exposta
+como modo de certificado.
+
 ## Estrutura principal
 
 ```text

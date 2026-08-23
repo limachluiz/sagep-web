@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, Download, KeyRound, Network, RefreshCw, Save, Server, ShieldAlert, ShieldCheck, TriangleAlert } from "lucide-react"
+import { CheckCircle2, Download, KeyRound, Network, RefreshCw, Save, Server, ShieldAlert, ShieldCheck, TriangleAlert, XCircle } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -13,7 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { SettingsNavigation } from "@/features/system-health/components/settings-navigation"
 import { deploymentService } from "../deployment.service"
-import type { CertificateMode, UpdateDeploymentSettings } from "../deployment.types"
+import type { UpdateDeploymentSettings } from "../deployment.types"
 
 const splitList = (value: string) => value.split(/[,\n]/).map((item) => item.trim()).filter(Boolean)
 const joinList = (value: string[]) => value.join(", ")
@@ -37,6 +37,7 @@ export function NetworkSettingsPage() {
   const queryClient = useQueryClient()
   const settingsQuery = useQuery({ queryKey: ["deployment-settings"], queryFn: deploymentService.get })
   const diagnosticsQuery = useQuery({ queryKey: ["deployment-diagnostics"], queryFn: deploymentService.diagnostics, enabled: canDiagnose, retry: false })
+  const preflightQuery = useQuery({ queryKey: ["deployment-preflight"], queryFn: deploymentService.preflight, enabled: canDiagnose, retry: false })
   const [formChanges, setFormChanges] = useState<Partial<UpdateDeploymentSettings>>({})
   const form = settingsQuery.data ? {
     hostName: settingsQuery.data.hostName,
@@ -46,7 +47,7 @@ export function NetworkSettingsPage() {
     ntpServers: settingsQuery.data.ntpServers,
     allowedNetworks: settingsQuery.data.allowedNetworks,
     proxyUrl: settingsQuery.data.proxyUrl,
-    certificateMode: settingsQuery.data.certificateMode,
+    certificateMode: "INTERNAL_CA" as const,
     ...formChanges,
   } : null
 
@@ -76,6 +77,7 @@ export function NetworkSettingsPage() {
 
   const settings = settingsQuery.data
   const diagnostics = diagnosticsQuery.data
+  const preflight = preflightQuery.data
   const set = <K extends keyof UpdateDeploymentSettings>(key: K, value: UpdateDeploymentSettings[K]) => setFormChanges((current) => ({ ...current, [key]: value }))
   const statusGood = settings.certificate.status === "VALID"
 
@@ -84,6 +86,33 @@ export function NetworkSettingsPage() {
     <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><Badge className="mb-3">Implantação da OM</Badge><h1 className="text-3xl font-semibold tracking-tight">Rede, servidores e HTTPS</h1><p className="mt-2 max-w-3xl text-sm text-muted-foreground">Registre os parâmetros esperados, valide DNS e distribua confiança HTTPS aos clientes Windows 11, Linux Mint e Ubuntu.</p></div>{canManage && <Button onClick={() => save.mutate()} disabled={save.isPending}><Save />Salvar configuração</Button>}</div>
 
     <Alert><ShieldAlert /><AlertTitle>Configuração segura e assistida</AlertTitle><AlertDescription>Esta tela não altera IP, gateway ou DNS do sistema operacional. Ela registra os valores aprovados e compara com o ambiente detectado, evitando perda remota de acesso ao servidor.</AlertDescription></Alert>
+
+    <Card>
+      <CardHeader className="gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div><CardTitle className="flex items-center gap-2"><ShieldCheck className="size-5" />Prontidão para produção</CardTitle><CardDescription className="mt-2">Verificação somente leitura dos requisitos necessários para ativar o SAGEP com segurança na OM.</CardDescription></div>
+        {canDiagnose && <Button variant="outline" onClick={() => preflightQuery.refetch()} disabled={preflightQuery.isFetching}><RefreshCw className={preflightQuery.isFetching ? "animate-spin" : ""} />Verificar novamente</Button>}
+      </CardHeader>
+      <CardContent className="space-y-5">
+        {!canDiagnose && <p className="text-sm text-muted-foreground">Sua conta não possui acesso aos detalhes técnicos da implantação.</p>}
+        {preflightQuery.isError && <Alert variant="destructive"><TriangleAlert /><AlertTitle>Verificação indisponível</AlertTitle><AlertDescription>{preflightQuery.error.message}</AlertDescription></Alert>}
+        {canDiagnose && preflightQuery.isPending && <Skeleton className="h-32" />}
+        {preflight && <>
+          <div className="grid gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Resultado</p><p className={`mt-2 font-semibold ${preflight.status === "READY" ? "text-emerald-600" : preflight.status === "BLOCKED" ? "text-destructive" : "text-amber-600"}`}>{preflight.status === "READY" ? "Pronto" : preflight.status === "BLOCKED" ? "Bloqueado" : "Requer atenção"}</p></div>
+            <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Aprovados</p><p className="mt-2 text-xl font-semibold text-emerald-600">{preflight.counts.pass}</p></div>
+            <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Alertas</p><p className="mt-2 text-xl font-semibold text-amber-600">{preflight.counts.warn}</p></div>
+            <div className="rounded-lg border p-4"><p className="text-xs text-muted-foreground">Bloqueios</p><p className="mt-2 text-xl font-semibold text-destructive">{preflight.counts.fail}</p></div>
+          </div>
+          <div className="space-y-3">
+            {preflight.checks.filter((item) => item.status !== "PASS").map((item) => <div key={item.id} className={`rounded-lg border p-4 ${item.status === "FAIL" ? "border-destructive/40 bg-destructive/5" : "border-amber-400/40 bg-amber-50/50 dark:bg-amber-950/10"}`}>
+              <div className="flex items-start gap-3">{item.status === "FAIL" ? <XCircle className="mt-0.5 size-5 shrink-0 text-destructive" /> : <TriangleAlert className="mt-0.5 size-5 shrink-0 text-amber-600" />}<div><p className="font-medium">{item.label}</p><p className="mt-1 text-sm text-muted-foreground">{item.message}</p>{item.remediation && <p className="mt-2 text-sm font-medium">Correção: {item.remediation}</p>}</div></div>
+            </div>)}
+            {preflight.counts.fail === 0 && preflight.counts.warn === 0 && <div className="flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-4"><CheckCircle2 className="size-5 text-emerald-600" /><p className="text-sm font-medium">Todos os requisitos verificados foram aprovados.</p></div>}
+          </div>
+          <p className="text-xs text-muted-foreground">Última verificação: {new Date(preflight.checkedAt).toLocaleString("pt-BR")}</p>
+        </>}
+      </CardContent>
+    </Card>
 
     <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Network className="size-5" />Parâmetros da rede interna</CardTitle><CardDescription>Use o endereço reservado no DHCP e o nome publicado no DNS interno da OM.</CardDescription></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2">
@@ -94,12 +123,13 @@ export function NetworkSettingsPage() {
         <Field label="Servidores NTP" value={joinList(form.ntpServers)} onChange={(value) => set("ntpServers", splitList(value))} />
         <Field label="Redes autorizadas" value={joinList(form.allowedNetworks)} onChange={(value) => set("allowedNetworks", splitList(value))} placeholder="10.78.0.0/16" helper="Faixas CIDR que deverão alcançar o proxy reverso." />
         <Field label="Proxy de saída (opcional)" value={form.proxyUrl ?? ""} onChange={(value) => set("proxyUrl", value || null)} placeholder="http://proxy.om:3128" />
-        <div className="space-y-2 sm:col-span-2"><Label>Modo de certificado</Label><select className="h-9 w-full rounded-sm border border-input bg-background px-3 text-sm" value={form.certificateMode} onChange={(event) => set("certificateMode", event.target.value as CertificateMode)}><option value="INTERNAL_CA">Autoridade interna por OM</option><option value="IMPORTED">Certificado importado</option><option value="ACME_DNS">ACME DNS-01</option></select></div>
+        <div className="space-y-2 sm:col-span-2"><Label>Modo de certificado</Label><div className="rounded-md border bg-muted/30 px-3 py-2 text-sm font-medium">Autoridade interna exclusiva da OM</div><p className="text-xs text-muted-foreground">Fluxo homologado para redes internas sem dependência do DNS público.</p></div>
       </CardContent></Card>
 
       <Card><CardHeader><CardTitle className="flex items-center gap-2"><Server className="size-5" />Diagnóstico observado</CardTitle><CardDescription>Dados vistos pelo container da API. Execute novamente após alterar DNS ou DHCP.</CardDescription></CardHeader><CardContent className="space-y-4">
         {!canDiagnose && <p className="text-sm text-muted-foreground">Sua conta não possui acesso aos detalhes técnicos.</p>}
         {diagnostics && <><div className="grid gap-3 sm:grid-cols-2"><div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">Host do servidor</p><p className="mt-1 font-mono text-sm">{diagnostics.hostName}</p></div><div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">DNS do sistema</p><p className="mt-1 font-mono text-sm">{diagnostics.systemDnsServers.join(", ") || "—"}</p></div></div>
+          <div className="rounded-lg border p-3 text-sm"><p className="text-xs text-muted-foreground">Publicação do proxy</p><p className="mt-1 font-mono">{diagnostics.environmentHostName || "hostname não carregado"} → {diagnostics.bindIp || "IP não carregado"}</p></div>
           <div className="space-y-2">{diagnostics.interfaces.map((item) => <div key={`${item.interface}-${item.address}`} className="flex items-center justify-between rounded-lg border p-3 text-sm"><span>{item.interface}</span><code>{item.address}</code></div>)}</div>
           <div className="rounded-lg border p-3 text-sm"><p className="font-medium">DNS interno</p><p className="mt-1 text-muted-foreground">{diagnostics.configuredHostName || "Nome ainda não configurado"} → {diagnostics.resolvedAddresses.join(", ") || "não resolvido"}</p>{diagnostics.dnsError && <p className="mt-2 text-xs text-destructive">{diagnostics.dnsError}</p>}</div>
           <div className="flex flex-wrap gap-2"><Badge variant="outline" className={diagnostics.expectedIpMatches ? "text-emerald-600" : "text-amber-600"}>{diagnostics.expectedIpMatches ? "IP esperado detectado" : "IP esperado divergente"}</Badge><Badge variant="outline" className={diagnostics.dnsMatchesExpectedIp ? "text-emerald-600" : "text-amber-600"}>{diagnostics.dnsMatchesExpectedIp ? "DNS coerente" : "DNS divergente"}</Badge></div></>}

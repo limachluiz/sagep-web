@@ -26,11 +26,15 @@ export type DeploymentSettings = {
   certificate: CertificateStatus
 }
 
-export type UpdateDeploymentSettings = Omit<DeploymentSettings, "id" | "updatedAt" | "certificate">
+export type UpdateDeploymentSettings = Omit<DeploymentSettings, "id" | "updatedAt" | "certificate" | "certificateMode"> & {
+  certificateMode: "INTERNAL_CA"
+}
 
 export type NetworkDiagnostics = {
   checkedAt: string
   hostName: string
+  environmentHostName: string | null
+  bindIp: string | null
   interfaces: Array<{ interface: string; address: string; netmask: string; mac: string }>
   systemDnsServers: string[]
   configuredHostName: string | null
@@ -38,4 +42,18 @@ export type NetworkDiagnostics = {
   dnsError: string | null
   expectedIpMatches: boolean
   dnsMatchesExpectedIp: boolean
+}
+
+export type DeploymentPreflight = {
+  checkedAt: string
+  status: "READY" | "ATTENTION" | "BLOCKED"
+  counts: { pass: number; warn: number; fail: number }
+  checks: Array<{
+    id: string
+    category: "RUNTIME" | "SECURITY" | "NETWORK" | "STORAGE" | "CERTIFICATE" | "DATABASE"
+    label: string
+    status: "PASS" | "WARN" | "FAIL"
+    message: string
+    remediation?: string
+  }>
 }
