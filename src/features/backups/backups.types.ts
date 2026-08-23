@@ -41,3 +41,13 @@ export type RestoreBackupResponse = {
   restoredBackup: DatabaseBackup
   safetyBackup: DatabaseBackup
 }
+
+export type RestoreAuthorityResponse = {
+  configured: boolean
+  status: "NOT_CONFIGURED" | "VALID" | "EXPIRING" | "EXPIRED" | "INVALID"
+  rootFingerprintSha256?: string
+  fingerprintSha256?: string
+  proxyRestartRequired: true
+  trustRedistributionRequired: boolean
+  recoveryFilename: string | null
+}

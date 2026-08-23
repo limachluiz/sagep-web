@@ -113,6 +113,12 @@ Quando a API responde `428 AUTH_STEP_UP_REQUIRED`, o cliente abre uma confirmaç
 
 O download integral de backup participa desse mesmo fluxo de reautenticação. O arquivo recebido é tratado como `Blob` em memória e não é persistido pelo SAGEP no armazenamento do navegador.
 
+Em **Backup e restauração**, a autoridade certificadora da OM também pode ser
+exportada em arquivo `.sagep-pki` criptografado e restaurada de forma controlada.
+A senha de custódia é usada somente durante a chamada e os campos são limpos ao
+fechar o diálogo. A tela avisa quando a mudança da raiz exige redistribuir os
+kits de confiança e sempre orienta reiniciar o Caddy após a recuperação.
+
 O formulário também respeita o bloqueio temporário retornado pela API após tentativas consecutivas inválidas. Novas contas administrativas exigem senha com pelo menos 8 caracteres; credenciais existentes continuam válidas até serem alteradas.
 
 Na publicação, sirva o frontend e a API por HTTPS, configure `AUTH_COOKIE_SECURE=true` no backend e aplique no proxy reverso uma CSP compatível com os domínios realmente utilizados. Não inclua curingas na lista CORS.

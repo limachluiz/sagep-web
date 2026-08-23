@@ -41,4 +41,23 @@ describe("backupsService", () => {
 
     expect(api.postBlob).toHaveBeenCalledWith("/backups/export", { modules: ["PROJECTS", "ATAS"] })
   })
+
+  it("envia a senha apenas no corpo da exportação da autoridade", async () => {
+    vi.mocked(api.postBlob).mockResolvedValue(new Blob())
+    await backupsService.exportAuthority("senha extensa e exclusiva da autoridade")
+    expect(api.postBlob).toHaveBeenCalledWith("/deployment/certificate/authority/export", {
+      passphrase: "senha extensa e exclusiva da autoridade",
+      passphraseConfirmation: "senha extensa e exclusiva da autoridade",
+    })
+  })
+
+  it("envia o arquivo codificado e a confirmação literal na restauração da autoridade", async () => {
+    vi.mocked(api.post).mockResolvedValue({ configured: true })
+    await backupsService.restoreAuthority("U0FHRVA=", "senha extensa e exclusiva da autoridade")
+    expect(api.post).toHaveBeenCalledWith("/deployment/certificate/authority/restore", {
+      archiveBase64: "U0FHRVA=",
+      passphrase: "senha extensa e exclusiva da autoridade",
+      confirmation: "RESTAURAR AUTORIDADE",
+    })
+  })
 })
