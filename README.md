@@ -101,6 +101,12 @@ npm run preview  # visualização local do build
 
 ## Segurança da sessão
 
+Na primeira execução, quando o banco ainda não possui usuários, o acesso é
+direcionado para `/setup`. O assistente exige a chave `SAGEP_SETUP_TOKEN`
+configurada no servidor e cria, em uma única operação, a OM, o primeiro
+administrador e os parâmetros iniciais de rede. Após a conclusão, esse fluxo é
+desativado pelo backend e a chave deve ser removida do ambiente da API.
+
 O frontend não grava tokens de autenticação no `localStorage` ou no `sessionStorage`. O access token de curta duração existe apenas em memória; ao recarregar a página, a API valida e rotaciona o refresh token armazenado em cookie `HttpOnly`. Todas as chamadas usam credenciais de mesma origem ou uma origem explicitamente autorizada pelo backend.
 
 Quando a API responde `428 AUTH_STEP_UP_REQUIRED`, o cliente abre uma confirmação de identidade, envia a senha somente ao endpoint de reautenticação e repete a operação original com uma autorização temporária. Esse token também permanece apenas em memória, é vinculado ao usuário atual e não é reutilizado após expirar ou trocar de conta.

@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Navigate, useLocation, useNavigate } from "react-router"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQuery } from "@tanstack/react-query"
 import {
   ArrowRight,
   CheckSquare2,
@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label"
 import { authService } from "@/features/auth/auth.service"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { PublicSystemStatus } from "@/features/auth/components/public-system-status"
+import { setupService } from "@/features/setup/setup.service"
 
 const workflow = [
   { label: "Planejamento", icon: ClipboardList },
@@ -122,6 +123,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("admin@sagep.com")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const setupStatus = useQuery({ queryKey: ["setup", "status"], queryFn: setupService.status, retry: false })
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -147,6 +149,10 @@ export function LoginPage() {
 
   if (isAuthenticated) {
     return <Navigate to="/inicio" replace />
+  }
+
+  if (setupStatus.data?.requiresSetup) {
+    return <Navigate to="/setup" replace />
   }
 
   return (

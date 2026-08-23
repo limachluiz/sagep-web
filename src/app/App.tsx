@@ -37,6 +37,7 @@ const FinancialExecutionPage = lazy(() => import("@/features/financial-execution
 const IntegrationsSettingsPage = lazy(() => import("@/features/system-settings/pages/integrations-settings-page").then((module) => ({ default: module.IntegrationsSettingsPage })))
 const BackupsPage = lazy(() => import("@/features/backups/pages/backups-page").then((module) => ({ default: module.BackupsPage })))
 const NetworkSettingsPage = lazy(() => import("@/features/deployment/pages/network-settings-page").then((module) => ({ default: module.NetworkSettingsPage })))
+const SetupPage = lazy(() => import("@/features/setup/pages/setup-page").then((module) => ({ default: module.SetupPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -47,6 +48,7 @@ export default function App() {
     <Suspense fallback={<PageFallback />}><Routes>
       <Route path="/" element={<Navigate to="/inicio" replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/setup" element={<SetupPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedLayout />}>
