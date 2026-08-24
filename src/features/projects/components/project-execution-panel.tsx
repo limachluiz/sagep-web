@@ -4,6 +4,7 @@ import {
   Circle,
   ExternalLink,
   FileSignature,
+  FileCheck2,
   FileSearch,
   PackageCheck,
   Play,
@@ -27,6 +28,7 @@ const stepIcons = {
   "as-built-receipt": PackageCheck,
   "as-built-review": FileSearch,
   invoice: ReceiptText,
+  delivery: FileCheck2,
   completion: ShieldCheck,
 } satisfies Record<ProjectExecutionStepKey, typeof Play>
 

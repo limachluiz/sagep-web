@@ -55,7 +55,7 @@ describe("fluxo de execução e encerramento", () => {
       }),
     )
 
-    expect(flow.find((step) => step.current)?.key).toBe("completion")
+    expect(flow.find((step) => step.current)?.key).toBe("delivery")
     expect(flow.find((step) => step.key === "invoice")?.completed).toBe(true)
   })
 })

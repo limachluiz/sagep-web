@@ -60,6 +60,7 @@ const stageLabels: Record<ProjectStage, string> = {
   SERVICO_EM_EXECUCAO: "Em execução",
   ANALISANDO_AS_BUILT: "Analisando As-Built",
   ATESTAR_NF: "Atestar NF",
+  ENTREGA_TECNICA: "Entrega Técnica",
   SERVICO_CONCLUIDO: "Concluído",
   CANCELADO: "Cancelado",
 }

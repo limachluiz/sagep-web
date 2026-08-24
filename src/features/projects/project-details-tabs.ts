@@ -3,6 +3,7 @@ export type ProjectDetailsTab =
   | "execution"
   | "tasks"
   | "documents"
+  | "evidences"
   | "team"
   | "timeline"
   | "audit"
@@ -12,6 +13,7 @@ const projectDetailsTabs = new Set<ProjectDetailsTab>([
   "execution",
   "tasks",
   "documents",
+  "evidences",
   "team",
   "timeline",
   "audit",

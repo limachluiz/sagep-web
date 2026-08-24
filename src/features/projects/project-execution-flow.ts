@@ -5,6 +5,7 @@ export type ProjectExecutionStepKey =
   | "as-built-receipt"
   | "as-built-review"
   | "invoice"
+  | "delivery"
   | "completion"
 
 export type ProjectExecutionStep = {
@@ -29,6 +30,14 @@ export function buildProjectExecutionFlow(
     milestones.asBuiltRejectedAt && !milestones.asBuiltApprovedAt,
   )
   const steps: Array<Omit<ProjectExecutionStep, "current">> = [
+    {
+      key: "delivery",
+      label: "Entrega técnica",
+      description: "Evidências organizadas e relatório técnico gerado e assinado.",
+      date: milestones.deliveryReportSignedAt ?? milestones.deliveryReportGeneratedAt,
+      completed: Boolean(milestones.deliveryReportSignedAt),
+      rejected: false,
+    },
     {
       key: "execution",
       label: "Início da execução",
@@ -91,8 +100,10 @@ export function buildProjectExecutionFlow(
           ? "as-built-review"
           : details.workflow.stage === "ATESTAR_NF"
             ? milestones.invoiceAttestedAt
-              ? "completion"
+              ? "delivery"
               : "invoice"
+            : details.workflow.stage === "ENTREGA_TECNICA"
+              ? "delivery"
             : null
 
   return steps.map((step) => ({

@@ -37,6 +37,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { TaskFormSheet } from "@/features/tasks/components/task-form-sheet"
+import { EvidencesPanel } from "@/features/evidences/components/evidences-panel"
 import {
   isTaskOverdue,
   taskPriorityLabels,
@@ -223,6 +224,8 @@ export function TaskDetailsPage() {
           </CardContent>
         </Card>
       </div>
+
+      <EvidencesPanel projectId={task.project.id} taskId={task.id} canManage={canEdit && !task.archivedAt} />
 
       <Card className="border-none shadow-sm">
         <CardHeader className="gap-1">

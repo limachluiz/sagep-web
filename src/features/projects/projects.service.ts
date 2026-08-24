@@ -14,6 +14,7 @@ import type {
   FederativeUnit,
   SignedServiceOrderPayload,
   ProjectType,
+  DeliveryReportSignaturePayload,
 } from "./projects.types"
 
 export const projectsService = {
@@ -81,6 +82,9 @@ export const projectsService = {
   updateFlow(projectId: string, payload: ProjectFlowPayload) {
     return api.patch<ProjectMutationResponse>(`/projects/${projectId}/flow`, payload)
   },
+
+  generateDeliveryReport(projectId: string) { return api.postBlob(`/reports/projects/${projectId}/delivery.pdf`) },
+  registerDeliveryReportSignature(projectId: string, payload: DeliveryReportSignaturePayload) { return api.patch<ProjectMutationResponse>(`/projects/${projectId}/delivery-report/signature`, payload) },
 
   cancelCommitmentNote(projectId: string, reason: string) {
     return api.post<CancelCommitmentNoteResponse>(

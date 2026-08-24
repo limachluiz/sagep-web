@@ -7,7 +7,7 @@ import { getWorkflowProgress } from "../project-workflow"
 describe("ProjectWorkflowProgress", () => {
   it("calcula o avanço pelas etapas do workflow", () => {
     expect(getWorkflowProgress("ESTIMATIVA_PRECO", "PLANEJAMENTO")).toBe(0)
-    expect(getWorkflowProgress("OS_LIBERADA", "EM_ANDAMENTO")).toBe(40)
+    expect(getWorkflowProgress("OS_LIBERADA", "EM_ANDAMENTO")).toBe(36)
     expect(getWorkflowProgress("SERVICO_CONCLUIDO", "CONCLUIDO")).toBe(100)
   })
 
@@ -16,7 +16,7 @@ describe("ProjectWorkflowProgress", () => {
 
     expect(screen.getByText("Emitir DIEx")).toBeInTheDocument()
     expect(screen.getByText("DIEx").closest("li")).toHaveAttribute("aria-current", "step")
-    expect(screen.getByRole("progressbar", { name: /progresso do projeto/i })).toHaveAttribute("aria-valuenow", "20")
+    expect(screen.getByRole("progressbar", { name: /progresso do projeto/i })).toHaveAttribute("aria-valuenow", "18")
   })
 
   it("comunica o encerramento de um projeto cancelado", () => {

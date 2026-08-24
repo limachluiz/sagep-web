@@ -12,6 +12,7 @@ export const orderedWorkflowStages: Array<{ stage: ProjectStage; shortLabel: str
   { stage: "SERVICO_EM_EXECUCAO", shortLabel: "Execução" },
   { stage: "ANALISANDO_AS_BUILT", shortLabel: "As-Built" },
   { stage: "ATESTAR_NF", shortLabel: "Atesto NF" },
+  { stage: "ENTREGA_TECNICA", shortLabel: "Entrega" },
   { stage: "SERVICO_CONCLUIDO", shortLabel: "Concluído" },
 ]
 

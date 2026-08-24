@@ -149,6 +149,8 @@ export type ProjectFlowPayload = {
   serviceCompletedAt?: string
 }
 
+export type DeliveryReportSignaturePayload = { signedAt: string; signedLink?: string }
+
 export type CancelCommitmentNoteResponse = {
   message: string
   project: ProjectMutationResponse
