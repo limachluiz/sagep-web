@@ -47,6 +47,7 @@ function synchronizationFreshness(value?: string | null) {
 function statusBadge(note: CommitmentNote) {
   if (note.syncStatus === "ERRO") return <Badge variant="destructive">Erro de consulta</Badge>
   if (note.syncStatus === "DIVERGENTE") return <Badge variant="destructive">Divergência</Badge>
+  if (note.syncStatus === "NAO_VALIDADO") return <Badge variant="outline">Não validada</Badge>
   return <Badge variant={note.financialStatus === "PAGA" ? "default" : "outline"}>{financialLabels[note.financialStatus]}</Badge>
 }
 
@@ -101,7 +102,7 @@ export function FinancialExecutionPage() {
     { label: "Empenhado atual", value: money(totals?.committed ?? 0), icon: Landmark, helper: `${query.data?.summary.total ?? 0} NE(s) ativa(s)` },
     { label: "Liquidado", value: money(totals?.liquidated ?? 0), icon: FileCheck2, helper: `${money(totals?.toLiquidate ?? 0)} a liquidar` },
     { label: "Pago", value: money(totals?.paid ?? 0), icon: CheckCircle2, helper: `${money(totals?.toPay ?? 0)} liquidado a pagar` },
-    { label: "Pendências", value: String((query.data?.summary.bySyncStatus.DIVERGENTE ?? 0) + (query.data?.summary.bySyncStatus.ERRO ?? 0)), icon: AlertTriangle, helper: "Divergências ou falhas de consulta" },
+    { label: "Pendências", value: String((query.data?.summary.bySyncStatus.DIVERGENTE ?? 0) + (query.data?.summary.bySyncStatus.NAO_VALIDADO ?? 0) + (query.data?.summary.bySyncStatus.ERRO ?? 0)), icon: AlertTriangle, helper: "Não validadas, divergências ou falhas" },
   ], [query.data, totals])
 
   const closeDetails = () => {

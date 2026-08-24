@@ -50,12 +50,42 @@ describe("registro da Nota de Empenho", () => {
     )
 
     await user.type(screen.getByLabelText("Número da Nota de Empenho"), "2026NE000534")
-    await user.click(screen.getByRole("button", { name: "Consultar no Portal" }))
+    await user.click(screen.getByRole("button", { name: "Consultar e validar no Portal" }))
 
     const submit = await screen.findByRole("button", { name: "Validar, registrar e liberar OS" })
     expect(submit).toBeDisabled()
 
     await user.click(screen.getByRole("checkbox", { name: /Confirmo os dados oficiais/ }))
     expect(submit).toBeEnabled()
+  })
+
+  it("permite registro manual somente com justificativa e confirmação explícita", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ commitmentNote: {} }), {
+      status: 201,
+      headers: { "Content-Type": "application/json" },
+    }))
+    vi.stubGlobal("fetch", fetchMock)
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CommitmentNoteDialog projectId="project-1" projectCode={42} open onOpenChange={() => undefined} onSaved={() => undefined} />
+      </QueryClientProvider>,
+    )
+
+    await user.type(screen.getByLabelText("Número da Nota de Empenho"), "2026NE000534")
+    await user.click(screen.getByRole("button", { name: "Registrar manualmente" }))
+    const submit = screen.getByRole("button", { name: "Registrar sem validação e liberar OS" })
+    expect(submit).toBeDisabled()
+
+    await user.type(screen.getByLabelText("Justificativa do registro manual"), "Portal indisponível durante o registro")
+    await user.click(screen.getByRole("checkbox", { name: /Confirmo que conferi/ }))
+    expect(submit).toBeEnabled()
+    await user.click(submit)
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/financial-execution/commitment-notes"), expect.objectContaining({
+      body: expect.stringContaining('"registrationMode":"MANUAL"'),
+    }))
   })
 })

@@ -7,7 +7,7 @@ export type CommitmentFinancialStatus =
   | "PARCIALMENTE_ANULADA"
   | "ANULADA"
 
-export type CommitmentSyncStatus = "VALIDADO" | "DIVERGENTE" | "ERRO"
+export type CommitmentSyncStatus = "VALIDADO" | "DIVERGENTE" | "NAO_VALIDADO" | "ERRO"
 
 export type FinancialDocument = {
   id?: string
