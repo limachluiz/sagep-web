@@ -28,7 +28,12 @@ export type SystemSettings = {
   defaultBiddingYear: number | null
   defaultImmediateCommitment: boolean
   defaultEstimateGroup: string
-  portalApiToken: { configured: boolean; masked: string | null; source: "ENVIRONMENT" }
+  portalApiToken: {
+    configured: boolean
+    source: "DATABASE" | "ENVIRONMENT" | null
+    updatedAt: string | null
+    encryption: "DEDICATED" | "DERIVED" | null
+  }
   connections: Partial<Record<IntegrationProvider, ConnectionCheck>>
 }
 
