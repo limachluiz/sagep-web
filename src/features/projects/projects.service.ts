@@ -15,6 +15,8 @@ import type {
   SignedServiceOrderPayload,
   ProjectType,
   DeliveryReportSignaturePayload,
+  DeliveryReportDraft,
+  DeliveryReportDraftResponse,
 } from "./projects.types"
 
 export const projectsService = {
@@ -84,6 +86,8 @@ export const projectsService = {
   },
 
   generateDeliveryReport(projectId: string) { return api.postBlob(`/reports/projects/${projectId}/delivery.pdf`) },
+  deliveryReportDraft(projectId: string) { return api.get<DeliveryReportDraftResponse>(`/projects/${projectId}/delivery-report/draft`) },
+  updateDeliveryReportDraft(projectId: string, payload: DeliveryReportDraft) { return api.put<DeliveryReportDraftResponse>(`/projects/${projectId}/delivery-report/draft`, payload) },
   registerDeliveryReportSignature(projectId: string, payload: DeliveryReportSignaturePayload) { return api.patch<ProjectMutationResponse>(`/projects/${projectId}/delivery-report/signature`, payload) },
 
   cancelCommitmentNote(projectId: string, reason: string) {

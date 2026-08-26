@@ -151,6 +151,46 @@ export type ProjectFlowPayload = {
 
 export type DeliveryReportSignaturePayload = { signedAt: string; signedLink?: string }
 
+export type DeliveryReportSection = {
+  key: string
+  title: string
+  content: string
+  included: boolean
+  reviewed: boolean
+}
+
+export type DeliveryReportItemDetail = {
+  itemId: string
+  unit: string
+  quantity: string
+  technicalDescription: string
+}
+
+export type DeliveryReportDraft = {
+  version: 1
+  sections: DeliveryReportSection[]
+  itemDetails: DeliveryReportItemDetail[]
+}
+
+export type DeliveryReportDraftResponse = {
+  project: { id: string; projectCode: number; title: string; projectType: ProjectType | null }
+  draft: DeliveryReportDraft
+  items: Array<{
+    itemId: string
+    itemCode: string
+    description: string
+    sourceUnit: string
+    sourceQuantity: string
+    totalPrice: string
+  }>
+  readiness: {
+    sectionsIncluded: number
+    sectionsReviewed: number
+    itemsDocumented: number
+    totalItems: number
+  }
+}
+
 export type CancelCommitmentNoteResponse = {
   message: string
   project: ProjectMutationResponse
