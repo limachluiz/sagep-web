@@ -1,20 +1,10 @@
 import { ChevronRight, UserRound, Users } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/user-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import type { ProjectDetailsResponse } from "@/features/projects/projects.types"
-
-function initials(name: string) {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase()
-}
 
 export function ProjectTeamSummary({
   canManage,
@@ -36,9 +26,7 @@ export function ProjectTeamSummary({
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-          <Avatar>
-            <AvatarFallback>{initials(details.project.owner.name)}</AvatarFallback>
-          </Avatar>
+          <UserAvatar user={details.project.owner} />
           <div className="min-w-0 flex-1">
             <p className="truncate font-medium">{details.project.owner.name}</p>
             <p className="truncate text-xs text-muted-foreground">
@@ -52,9 +40,7 @@ export function ProjectTeamSummary({
           <div className="flex items-center">
             <div className="flex -space-x-2">
               {preview.map((member) => (
-                <Avatar key={member.id} className="border-2 border-background">
-                  <AvatarFallback className="text-xs">{initials(member.user.name)}</AvatarFallback>
-                </Avatar>
+                <UserAvatar key={member.id} user={member.user} className="border-2 border-background" />
               ))}
             </div>
             <div className="ml-3 min-w-0">

@@ -14,6 +14,7 @@ import { toast } from "sonner"
 import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
 import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
 import { ListPagination } from "@/components/list-pagination"
+import { UserAvatar } from "@/components/user-avatar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -214,7 +215,7 @@ export function TasksListPage() {
                       </TableCell>
                       <TableCell><Badge variant={taskStatusVariants[task.status]}>{taskStatusLabels[task.status]}</Badge></TableCell>
                       <TableCell>{task.priority} · {taskPriorityLabels[task.priority] ?? "Não definida"}</TableCell>
-                      <TableCell>{task.assignee ? <><p>{task.assignee.name}</p><p className="text-xs text-muted-foreground">USR-{task.assignee.userCode}</p></> : "Não atribuído"}</TableCell>
+                      <TableCell>{task.assignee ? <div className="flex items-center gap-2"><UserAvatar user={task.assignee} className="size-8" /><div><p>{task.assignee.name}</p><p className="text-xs text-muted-foreground">USR-{task.assignee.userCode}</p></div></div> : "Não atribuído"}</TableCell>
                       <TableCell>
                         <span className={overdue ? "font-medium text-destructive" : ""}>{formatDate(task.dueDate)}</span>
                         {overdue && <p className="mt-1 flex items-center gap-1 text-xs text-destructive"><CalendarClock className="size-3" />Em atraso</p>}

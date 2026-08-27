@@ -9,6 +9,7 @@ export type TaskPerson = {
   id: string
   userCode: number
   name: string
+  avatarDataUrl?: string | null
   email: string
   role: string
   active?: boolean

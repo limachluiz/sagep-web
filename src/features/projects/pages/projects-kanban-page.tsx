@@ -25,7 +25,6 @@ import {
   GripVertical,
   Loader2,
   RefreshCw,
-  UserRound,
   Target,
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
@@ -33,6 +32,7 @@ import { Link } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { UserAvatar } from "@/components/user-avatar"
 import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
 import { PageHeader } from "@/components/page-header"
 import { Badge } from "@/components/ui/badge"
@@ -139,7 +139,7 @@ function KanbanCard({
         </div>
 
         <div className="space-y-2 text-xs text-muted-foreground">
-          <p className="flex items-center gap-2"><UserRound className="size-3.5" />{card.owner.name}</p>
+          <p className="flex items-center gap-2"><UserAvatar user={card.owner} className="size-6" />{card.owner.name}</p>
           <p className="flex items-center gap-2"><CalendarClock className="size-3.5" />{card.plannedEndDate ? `Prazo: ${formatDate(card.plannedEndDate)}` : `Atualizado: ${formatDate(card.updatedAt)}`}</p>
         </div>
 
@@ -332,7 +332,7 @@ export function ProjectsKanbanPage() {
           </Select>
           <Select value={ownerId} onValueChange={setOwnerId} disabled={scope === "mine"}>
             <SelectTrigger className="w-full" aria-label="Filtrar Kanban por responsável"><SelectValue placeholder="Todos os responsáveis" /></SelectTrigger>
-            <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}>{owner.rank ? `${owner.rank} ` : ""}{owner.name}</SelectItem>)}</SelectContent>
+            <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}><span className="flex items-center gap-2"><UserAvatar user={owner} className="size-6" />{owner.rank ? `${owner.rank} ` : ""}{owner.name}</span></SelectItem>)}</SelectContent>
           </Select>
           {(search || scope !== "accessible" || emptyColumns !== "show" || stage !== "all" || projectType !== "all" || stateUf !== "all" || omId !== "all" || ownerId !== "all") && (
             <Button variant="ghost" onClick={() => { setSearch(""); setDebouncedSearch(""); setScope("accessible"); setEmptyColumns("show"); setStage("all"); setProjectType("all"); setStateUf("all"); setOmId("all"); setOwnerId("all") }}>Limpar filtros</Button>

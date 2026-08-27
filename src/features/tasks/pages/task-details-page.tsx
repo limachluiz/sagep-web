@@ -20,6 +20,7 @@ import { toast } from "sonner"
 
 import { ArchiveActionDialog } from "@/components/archive-action-dialog"
 import { DeleteActionDialog } from "@/components/delete-action-dialog"
+import { UserAvatar } from "@/components/user-avatar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -206,7 +207,7 @@ export function TaskDetailsPage() {
         <Card className="border-none shadow-sm"><CardContent className="p-5"><ListTodo className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Status</p>{canChangeStatus && !task.archivedAt && task.status !== "CONCLUIDA" ? <Select value={task.status} onValueChange={(value) => statusMutation.mutate(value as TaskStatus)} disabled={statusMutation.isPending}><SelectTrigger className="mt-1 w-full"><SelectValue /></SelectTrigger><SelectContent>{Object.entries(taskStatusLabels).filter(([value]) => value !== "CONCLUIDA").map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select> : <p className="mt-1 font-semibold">{taskStatusLabels[task.status]}</p>}</CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="p-5"><AlertTriangle className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Prioridade</p><p className="mt-1 font-semibold">{task.priority} · {taskPriorityLabels[task.priority]}</p></CardContent></Card>
         <Card className="border-none shadow-sm"><CardContent className="p-5"><CalendarClock className={overdue ? "size-5 text-destructive" : "size-5 text-primary"} /><p className="mt-3 text-xs text-muted-foreground">Prazo</p><p className={overdue ? "mt-1 font-semibold text-destructive" : "mt-1 font-semibold"}>{formatDate(task.dueDate)}</p></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardContent className="p-5"><UserRound className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Responsável</p><p className="mt-1 font-semibold">{task.assignee?.name ?? "Não atribuído"}</p>{task.assignee && <p className="text-xs text-muted-foreground">USR-{task.assignee.userCode}</p>}</CardContent></Card>
+        <Card className="border-none shadow-sm"><CardContent className="p-5"><UserRound className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Responsável</p>{task.assignee ? <div className="mt-2 flex items-center gap-2"><UserAvatar user={task.assignee} className="size-9" /><div><p className="font-semibold">{task.assignee.name}</p><p className="text-xs text-muted-foreground">USR-{task.assignee.userCode}</p></div></div> : <p className="mt-1 font-semibold">Não atribuído</p>}</CardContent></Card>
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
@@ -268,7 +269,7 @@ export function TaskDetailsPage() {
                       <time className="shrink-0 text-xs text-muted-foreground" dateTime={activity.createdAt}>{formatDate(activity.createdAt, true)}</time>
                     </div>
                     <p className="mt-3 whitespace-pre-wrap text-sm leading-6">{activity.content}</p>
-                    <p className="mt-3 text-xs text-muted-foreground">Registrado por {activity.author?.name ?? "Usuário removido"}{activity.author ? ` · USR-${activity.author.userCode}` : ""}</p>
+                    {activity.author ? <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground"><UserAvatar user={activity.author} className="size-6" /><span>Registrado por {activity.author.name} · USR-{activity.author.userCode}</span></div> : <p className="mt-3 text-xs text-muted-foreground">Registrado por usuário removido</p>}
                   </div>
                 </div>
               ))}

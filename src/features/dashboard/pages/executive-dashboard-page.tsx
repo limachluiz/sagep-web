@@ -36,6 +36,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FilterToolbar } from "@/components/filter-toolbar"
 import { PageHeader } from "@/components/page-header"
+import { UserAvatar } from "@/components/user-avatar"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -559,7 +560,7 @@ export function ExecutiveDashboardPage({ embedded = false }: { embedded?: boolea
             <Label>Responsável</Label>
             <Select value={ownerId} onValueChange={setOwnerId}>
               <SelectTrigger aria-label="Filtrar Dashboard por responsável"><SelectValue placeholder={ownersQuery.isLoading ? "Carregando..." : "Todos os responsáveis"} /></SelectTrigger>
-              <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}>{owner.rank ? `${owner.rank} ` : ""}{owner.name}</SelectItem>)}</SelectContent>
+              <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}><span className="flex items-center gap-2"><UserAvatar user={owner} className="size-6" />{owner.rank ? `${owner.rank} ` : ""}{owner.name}</span></SelectItem>)}</SelectContent>
             </Select>
           </div>
 

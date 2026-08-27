@@ -12,6 +12,7 @@ import {
 import { Link } from "react-router"
 
 import { Badge } from "@/components/ui/badge"
+import { UserAvatar } from "@/components/user-avatar"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -113,7 +114,7 @@ export function ProjectTasksOverview({
                     <p className="mt-1 truncate font-medium">{task.title}</p>
                   </div>
                   <div className="shrink-0 text-left text-xs text-muted-foreground sm:text-right">
-                    <p>{task.assignee?.name ?? "Não atribuído"}</p>
+                    {task.assignee ? <div className="flex items-center justify-end gap-2"><UserAvatar user={task.assignee} className="size-7" /><p>{task.assignee.name}</p></div> : <p>Não atribuído</p>}
                     <p className={overdue ? "mt-1 text-destructive" : "mt-1"}>{formatDate(task.dueDate)}</p>
                   </div>
                 </Link>
@@ -231,7 +232,7 @@ export function ProjectTasksPanel({
                       ) : <Badge variant={taskStatusVariants[task.status]}>{taskStatusLabels[task.status]}</Badge>}
                     </TableCell>
                     <TableCell>{task.priority} · {taskPriorityLabels[task.priority]}</TableCell>
-                    <TableCell>{task.assignee?.name ?? "Não atribuído"}</TableCell>
+                    <TableCell>{task.assignee ? <div className="flex items-center gap-2"><UserAvatar user={task.assignee} className="size-7" /><span>{task.assignee.name}</span></div> : "Não atribuído"}</TableCell>
                     <TableCell>
                       <span className={overdue ? "font-medium text-destructive" : ""}>{formatDate(task.dueDate)}</span>
                       {overdue && <p className="mt-1 flex items-center gap-1 text-xs text-destructive"><CalendarClock className="size-3" />Em atraso</p>}

@@ -4,6 +4,7 @@ export type AdminUser = {
   id: string
   userCode: number
   name: string
+  avatarDataUrl?: string | null
   warName: string | null
   email: string
   role: UserRole
@@ -16,7 +17,7 @@ export type AdminUser = {
 
 export type UserOption = Pick<
   AdminUser,
-  "id" | "userCode" | "name" | "email" | "role" | "rank" | "active"
+  "id" | "userCode" | "name" | "avatarDataUrl" | "email" | "role" | "rank" | "active"
 >
 
 export type UserOptionsResponse = {

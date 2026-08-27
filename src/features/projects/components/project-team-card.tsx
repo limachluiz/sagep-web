@@ -3,7 +3,7 @@ import { Loader2, Plus, Trash2, UserRound } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { UserAvatar } from "@/components/user-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,10 +22,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { projectsService } from "@/features/projects/projects.service"
 import type { ProjectDetailsResponse } from "@/features/projects/projects.types"
 import { usersService } from "@/features/users/users.service"
-
-function initials(name: string) {
-  return name.split(" ").filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase()
-}
 
 type ProjectTeamCardProps = {
   details: ProjectDetailsResponse
@@ -87,7 +83,7 @@ export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
           <div>
             <p className="mb-2 text-xs font-medium uppercase tracking-wider text-muted-foreground">Responsável</p>
             <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
-              <Avatar><AvatarFallback>{initials(details.project.owner.name)}</AvatarFallback></Avatar>
+              <UserAvatar user={details.project.owner} />
               <div className="min-w-0 flex-1">
                 <p className="font-medium">{details.project.owner.name}</p>
                 <p className="truncate text-xs text-muted-foreground">{details.project.owner.email}</p>
@@ -102,7 +98,7 @@ export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
               <div className="space-y-2">
                 {details.project.members.map((member) => (
                   <div key={member.id} className="flex items-center gap-3 rounded-xl border p-3">
-                    <Avatar className="size-8"><AvatarFallback className="text-xs">{initials(member.user.name)}</AvatarFallback></Avatar>
+                    <UserAvatar user={member.user} className="size-8" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">{member.user.name}</p>
                       <p className="truncate text-xs text-muted-foreground">USR-{member.user.userCode} · {member.user.email}</p>
@@ -148,7 +144,7 @@ export function ProjectTeamCard({ details, canManage }: ProjectTeamCardProps) {
                 <SelectContent>
                   {availableUsers.map((user) => (
                     <SelectItem key={user.id} value={user.id}>
-                      {user.name} · USR-{user.userCode}{user.rank ? ` · ${user.rank}` : ""}
+                      <span className="flex items-center gap-2"><UserAvatar user={user} className="size-6" />{user.name} · USR-{user.userCode}{user.rank ? ` · ${user.rank}` : ""}</span>
                     </SelectItem>
                   ))}
                 </SelectContent>

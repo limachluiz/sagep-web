@@ -36,6 +36,7 @@ export type ProjectListItem = {
     id: string
     userCode: number
     name: string
+    avatarDataUrl?: string | null
     email: string
     role: string
   } | null
@@ -93,6 +94,7 @@ export type ProjectKanbanCard = {
   owner: {
     id: string
     name: string
+    avatarDataUrl?: string | null
     email: string
   }
   updatedAt: string
@@ -227,6 +229,7 @@ export type ProjectPerson = {
   id: string
   userCode: number
   name: string
+  avatarDataUrl?: string | null
   email: string
   role: string
 }

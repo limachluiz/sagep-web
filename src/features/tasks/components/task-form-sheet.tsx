@@ -6,6 +6,7 @@ import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
 import { FormSection } from "@/components/form-section"
+import { UserAvatar } from "@/components/user-avatar"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -256,7 +257,7 @@ export function TaskFormSheet({
                       <SelectItem value="__unassigned">Não atribuído</SelectItem>
                       {visibleAssigneeOptions.map((user) => (
                         <SelectItem key={user.id} value={user.id}>
-                          {user.name} · USR-{user.userCode}{"rank" in user && user.rank ? ` · ${user.rank}` : ""}{user.active === false ? " · inativo" : ""}
+                          <span className="flex items-center gap-2"><UserAvatar user={user} className="size-6" />{user.name} · USR-{user.userCode}{"rank" in user && user.rank ? ` · ${user.rank}` : ""}{user.active === false ? " · inativo" : ""}</span>
                         </SelectItem>
                       ))}
                     </SelectContent>

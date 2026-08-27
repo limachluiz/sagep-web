@@ -6,6 +6,7 @@ import { Link } from "react-router"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { FilterToolbar } from "@/components/filter-toolbar"
 import { PageHeader } from "@/components/page-header"
+import { UserAvatar } from "@/components/user-avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -193,7 +194,7 @@ export function ServiceOrdersGanttPage() {
         </Select>
         <Select value={ownerId} onValueChange={setOwnerId}>
           <SelectTrigger aria-label="Filtrar Gantt por responsável"><SelectValue placeholder="Todos os responsáveis" /></SelectTrigger>
-          <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}>{owner.rank ? `${owner.rank} ` : ""}{owner.name}</SelectItem>)}</SelectContent>
+          <SelectContent><SelectItem value="all">Todos os responsáveis</SelectItem>{(ownersQuery.data?.items ?? []).filter((owner) => owner.active).map((owner) => <SelectItem key={owner.id} value={owner.id}><span className="flex items-center gap-2"><UserAvatar user={owner} className="size-6" />{owner.rank ? `${owner.rank} ` : ""}{owner.name}</span></SelectItem>)}</SelectContent>
         </Select>
         <Select value={scheduleView} onValueChange={(value) => setScheduleView(value as typeof scheduleView)}>
           <SelectTrigger aria-label="Filtrar Gantt por situação do cronograma"><SelectValue /></SelectTrigger>

@@ -18,6 +18,7 @@ import { toast } from "sonner"
 import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
 import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
 import { ListPagination } from "@/components/list-pagination"
+import { UserAvatar } from "@/components/user-avatar"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -269,7 +270,7 @@ export function ProjectsListPage() {
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2"><Badge variant="outline">{stageLabels[project.stage]}</Badge>{project.projectType && <Badge variant="secondary">{projectTypeLabels[project.projectType]}</Badge>}</div>
                   {project.om && <p className="mt-3 text-sm"><span className="text-muted-foreground">OM:</span> {project.om.sigla} · {project.om.cityName}/{project.om.stateUf}</p>}
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted-foreground"><span>Responsável: {project.owner?.name ?? project.ownerName ?? "Não informado"}</span><span className="text-right">Início: {formatDate(project.startDate)}</span></div>
+                  <div className="mt-2 grid grid-cols-2 items-center gap-2 text-xs text-muted-foreground"><span className="flex items-center gap-2">{project.owner && <UserAvatar user={project.owner} className="size-6" />}Responsável: {project.owner?.name ?? project.ownerName ?? "Não informado"}</span><span className="text-right">Início: {formatDate(project.startDate)}</span></div>
                   <div className="mt-4 flex items-center justify-between border-t pt-3">
                     <div className="flex gap-3 text-xs text-muted-foreground" aria-label="Resumo de atividades"><span className="flex items-center gap-1" aria-label={`${project._count.members} membros`}><Users className="size-3.5" />{project._count.members}</span><span className="flex items-center gap-1" aria-label={`${project._count.tasks} tarefas`}><ListChecks className="size-3.5" />{project._count.tasks}</span><span className="flex items-center gap-1" aria-label={`${project._count.estimates} estimativas`}><FileSpreadsheet className="size-3.5" />{project._count.estimates}</span></div>
                     <Button asChild variant="outline" size="sm"><Link to={`/projects/${project.id}${visibility === "archived" ? "?includeArchived=true" : ""}`} aria-label={`Abrir projeto PRJ-${project.projectCode}`}><span>Abrir</span><ArrowUpRight className="size-4" /></Link></Button>
@@ -309,10 +310,7 @@ export function ProjectsListPage() {
                     </TableCell>
                     <TableCell><Badge variant={statusVariants[project.status]}>{statusLabels[project.status]}</Badge></TableCell>
                     <TableCell><Badge variant="outline">{stageLabels[project.stage]}</Badge></TableCell>
-                    <TableCell>
-                      <p className="font-medium">{project.owner?.name ?? project.ownerName ?? "Não informado"}</p>
-                      {project.owner?.email && <p className="mt-1 text-xs text-muted-foreground">{project.owner.email}</p>}
-                    </TableCell>
+                    <TableCell>{project.owner ? <div className="flex items-center gap-2"><UserAvatar user={project.owner} className="size-8" /><div><p className="font-medium">{project.owner.name}</p><p className="mt-1 text-xs text-muted-foreground">{project.owner.email}</p></div></div> : <p className="font-medium">{project.ownerName ?? "Não informado"}</p>}</TableCell>
                     <TableCell>
                       <div className="flex gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1" title="Membros"><Users className="size-3.5" />{project._count.members}</span>
