@@ -127,19 +127,19 @@ const navigation: NavigationGroup[] = [
   ]},
   { label: "Catálogo e saldo", items: [
   {
-    label: "ATAs e Saldos",
+    label: "Pregões e Atas",
     href: "/atas",
     icon: Files,
     anyOf: ["atas.manage", "projects.view_all", "estimates.view_all"],
   },
+  ]},
+  { label: "Administração", items: [
   {
     label: "Organizações Militares",
     href: "/military-organizations",
     icon: Building2,
     anyOf: ["military_organizations.manage"],
   },
-  ]},
-  { label: "Administração", items: [
   {
     label: "Usuários",
     href: "/users",

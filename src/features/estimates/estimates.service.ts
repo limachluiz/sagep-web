@@ -55,13 +55,14 @@ export const estimatesService = {
     return api.delete<{ message: string; deletedAt: string }>(`/estimates/${estimateId}/permanent`)
   },
 
-  listAtas(type: Ata["type"]) {
+  listAtas(type: Ata["type"], pregaoId?: string) {
     const query = new URLSearchParams({
       page: "1",
       pageSize: "100",
       active: "true",
       type,
     })
+    if (pregaoId) query.set("pregaoId", pregaoId)
     return api.get<ListEnvelope<Ata>>(`/atas?${query.toString()}`)
   },
 

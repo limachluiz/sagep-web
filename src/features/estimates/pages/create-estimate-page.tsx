@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { estimatesService } from "@/features/estimates/estimates.service"
 import type { AtaItem, CreateEstimatePayload } from "@/features/estimates/estimates.types"
 import { projectsService } from "@/features/projects/projects.service"
+import { pregoesService } from "@/features/atas/atas.service"
 
 function formatCurrency(value: string | number) {
   return new Intl.NumberFormat("pt-BR", {
@@ -47,6 +48,7 @@ export function CreateEstimatePage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [projectId, setProjectId] = useState("")
+  const [pregaoId, setPregaoId] = useState("")
   const [ataId, setAtaId] = useState("")
   const [coverageGroupId, setCoverageGroupId] = useState("")
   const [notes, setNotes] = useState("")
@@ -65,10 +67,16 @@ export function CreateEstimatePage() {
       ? "FIBRA_OPTICA"
       : undefined
 
-  const atasQuery = useQuery({
-    queryKey: ["atas", "estimate-options", ataType],
-    queryFn: () => estimatesService.listAtas(ataType!),
+  const pregoesQuery = useQuery({
+    queryKey: ["pregoes", "estimate-options", ataType],
+    queryFn: () => pregoesService.list({ page: 1, pageSize: 100, active: true, type: ataType! }),
     enabled: Boolean(ataType),
+  })
+
+  const atasQuery = useQuery({
+    queryKey: ["atas", "estimate-options", ataType, pregaoId],
+    queryFn: () => estimatesService.listAtas(ataType!, pregaoId),
+    enabled: Boolean(ataType && pregaoId),
   })
 
   const selectedAta = atasQuery.data?.items.find((ata) => ata.id === ataId)
@@ -131,6 +139,14 @@ export function CreateEstimatePage() {
   })
 
   const resetAfterProject = () => {
+    setPregaoId("")
+    setAtaId("")
+    setCoverageGroupId("")
+    setQuantities({})
+    setItemSearch("")
+  }
+
+  const resetAfterPregao = () => {
     setAtaId("")
     setCoverageGroupId("")
     setQuantities({})
@@ -196,12 +212,12 @@ export function CreateEstimatePage() {
         </p>
       </div>
 
-      {(projectsQuery.isError || atasQuery.isError || itemsQuery.isError) && (
+      {(projectsQuery.isError || pregoesQuery.isError || atasQuery.isError || itemsQuery.isError) && (
         <Alert variant="destructive">
           <AlertTriangle />
           <AlertTitle>Não foi possível carregar as opções da estimativa</AlertTitle>
           <AlertDescription>
-            {projectsQuery.error?.message ?? atasQuery.error?.message ?? itemsQuery.error?.message}
+            {projectsQuery.error?.message ?? pregoesQuery.error?.message ?? atasQuery.error?.message ?? itemsQuery.error?.message}
           </AlertDescription>
         </Alert>
       )}
@@ -240,13 +256,21 @@ export function CreateEstimatePage() {
       </Card>
 
       <Card className="border-none shadow-sm">
-        <CardHeader><CardTitle>2. ATA e grupo de cobertura</CardTitle></CardHeader>
-        <CardContent className="grid gap-5 lg:grid-cols-2">
+        <CardHeader><CardTitle>2. Pregão, ATA e grupo de cobertura</CardTitle></CardHeader>
+        <CardContent className="grid gap-5 lg:grid-cols-3">
+          <div className="space-y-2">
+            <Label>Pregão</Label>
+            <Select value={pregaoId} disabled={!ataType || pregoesQuery.isLoading} onValueChange={(value) => { setPregaoId(value); resetAfterPregao() }}>
+              <SelectTrigger><SelectValue placeholder={pregoesQuery.isLoading ? "Carregando pregões..." : "Selecione o pregão"} /></SelectTrigger>
+              <SelectContent>{pregoesQuery.data?.items.map((pregao) => <SelectItem key={pregao.id} value={pregao.id}>PE {pregao.number}/{pregao.year} · UASG {pregao.uasg}</SelectItem>)}</SelectContent>
+            </Select>
+            {ataType && !pregoesQuery.isLoading && !pregoesQuery.data?.items.length && <p className="text-xs text-destructive">Não há pregão ativo compatível com este tipo de projeto.</p>}
+          </div>
           <div className="space-y-2">
             <Label>Ata de Registro de Preços</Label>
             <Select
               value={ataId}
-              disabled={!ataType || atasQuery.isLoading}
+              disabled={!pregaoId || atasQuery.isLoading}
               onValueChange={(value) => { setAtaId(value); resetAfterAta() }}
             >
               <SelectTrigger><SelectValue placeholder={atasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>

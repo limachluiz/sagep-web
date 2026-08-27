@@ -21,6 +21,8 @@ export type AtaCoverageGroup = {
 export type Ata = {
   id: string
   ataCode: number
+  pregaoId?: string | null
+  pregao?: PregaoSummary | null
   number: string
   type: AtaType
   vendorName: string
@@ -153,6 +155,30 @@ export type ComprasGovAtaFound = {
   validFrom: string | null
   validUntil: string | null
   sampleItems: ComprasGovPreviewItem[]
+  importedAtaId?: string
+  importedAt?: string
+}
+
+export type PregaoSummary = {
+  id: string
+  pregaoCode: number
+  uasg: string
+  number: string
+  year: string
+  modality: string
+  object: string | null
+  type: AtaType | null
+  managingAgency: string | null
+  isActive: boolean
+}
+
+export type Pregao = PregaoSummary & {
+  externalSource: string | null
+  externalLastSyncAt: string | null
+  createdAt: string
+  updatedAt: string
+  atas: Array<Ata & { _count?: { items: number; estimates: number } }>
+  _count: { atas: number }
 }
 
 export type ComprasGovPreview = {

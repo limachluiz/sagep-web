@@ -8,6 +8,7 @@ import { AuthenticatedLayout } from "@/layouts/authenticated-layout"
 
 const AtaDetailsPage = lazy(() => import("@/features/atas/pages/ata-details-page").then((module) => ({ default: module.AtaDetailsPage })))
 const AtasPage = lazy(() => import("@/features/atas/pages/atas-page").then((module) => ({ default: module.AtasPage })))
+const PregaoDetailsPage = lazy(() => import("@/features/atas/pages/pregao-details-page").then((module) => ({ default: module.PregaoDetailsPage })))
 const AccessDeniedPage = lazy(() => import("@/features/auth/pages/access-denied-page").then((module) => ({ default: module.AccessDeniedPage })))
 const SessionsPage = lazy(() => import("@/features/auth/pages/sessions-page").then((module) => ({ default: module.SessionsPage })))
 const LoginPage = lazy(() => import("@/features/auth/pages/login-page").then((module) => ({ default: module.LoginPage })))
@@ -204,6 +205,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["atas.manage", "projects.view_all", "estimates.view_all"]}>
                 <AtaDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/pregoes/:pregaoId"
+            element={
+              <PermissionRoute anyOf={["atas.manage", "projects.view_all", "estimates.view_all"]}>
+                <PregaoDetailsPage />
               </PermissionRoute>
             }
           />
