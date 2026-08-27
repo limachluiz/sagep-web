@@ -38,7 +38,7 @@ describe("SetupPage", () => {
 
     renderSetup()
 
-    expect(await screen.findByText((_, element) => element?.tagName === "P" && (element.textContent?.includes("Defina SAGEP_SETUP_TOKEN no servidor") ?? false))).toBeInTheDocument()
+    expect(await screen.findByText((_, element) => element?.tagName === "P" && (element.textContent?.includes("A chave de instalação ainda não está disponível") ?? false))).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /Concluir configuração/ })).toBeDisabled()
   })
 })

@@ -69,7 +69,8 @@ export function SetupPage() {
         <div className="grid gap-8 p-6 sm:p-9 lg:grid-cols-2">
           <section className="space-y-4">
             <h2 className="flex items-center gap-2 font-semibold"><KeyRound className="size-5 text-[#96731f]" />Segurança e administrador</h2>
-            {!status.data?.setupTokenConfigured && <p className="rounded-md border border-amber-400/50 bg-amber-50 p-3 text-sm text-amber-900">Defina <code>SAGEP_SETUP_TOKEN</code> no servidor antes de continuar.</p>}
+            {!status.data?.setupTokenConfigured && <p className="rounded-md border border-amber-400/50 bg-amber-50 p-3 text-sm text-amber-900">A chave de instalação ainda não está disponível. Reinicie a API e consulte os logs do contêiner.</p>}
+            {status.data?.setupTokenGenerated && <p className="rounded-md border border-emerald-400/50 bg-emerald-50 p-3 text-sm text-emerald-900">A chave foi gerada automaticamente. Consulte-a com <code>docker compose logs api</code> no servidor.</p>}
             <Field label="Chave de instalação"><Input type="password" autoComplete="off" value={form.setupToken} onChange={set("setupToken")} required minLength={32} /></Field>
             <Field label="Nome completo"><Input value={form.adminName} onChange={set("adminName")} required minLength={3} /></Field>
             <Field label="E-mail institucional"><Input type="email" value={form.adminEmail} onChange={set("adminEmail")} required /></Field>
@@ -93,7 +94,7 @@ export function SetupPage() {
         </div>
 
         <footer className="flex flex-col gap-4 border-t border-[#b08a36]/25 bg-white/30 px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-9">
-          <p className="flex items-center gap-2 text-xs text-[#536158]"><ShieldCheck className="size-4" />A chave de instalação não será armazenada pelo SAGEP.</p>
+          <p className="flex items-center gap-2 text-xs text-[#536158]"><ShieldCheck className="size-4" />A chave temporária será removida após a criação do administrador.</p>
           <Button type="submit" className="bg-[#17392c] hover:bg-[#214c3c]" disabled={initialize.isPending || !status.data?.setupTokenConfigured}>{initialize.isPending ? <Loader2 className="animate-spin" /> : <ArrowRight />}Concluir configuração</Button>
         </footer>
       </form>

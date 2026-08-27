@@ -1,6 +1,7 @@
 export type SetupStatus = {
   requiresSetup: boolean
   setupTokenConfigured: boolean
+  setupTokenGenerated?: boolean
 }
 
 export type SetupPayload = {
