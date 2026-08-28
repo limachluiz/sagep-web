@@ -146,6 +146,11 @@ export type ComprasGovPreviewItem = {
   externalItemId: string
   externalItemNumber: string
   coverage: ComprasGovCoverage | null
+  textIntegrity: {
+    status: "OK" | "NEEDS_REVIEW"
+    replacementCharactersBefore: number
+    replacementCharactersAfter: number
+  }
 }
 
 export type ComprasGovCoverage = {
@@ -168,6 +173,7 @@ export type ComprasGovAtaFound = {
   importStatus?: "NOT_IMPORTED" | "IMPORTED" | "UPDATE_AVAILABLE" | "INACTIVE"
   coverageGroups: ComprasGovCoverage[]
   coverageDetected: boolean
+  textIssuesCount: number
 }
 
 export type PregaoSummary = {
