@@ -209,7 +209,7 @@ export function AtaDetailsPage() {
           <div className="relative flex flex-col justify-between gap-5 lg:flex-row">
             <div>
               <div className="flex flex-wrap gap-2">
-                <Badge className="bg-sidebar-primary text-sidebar-primary-foreground">ATA-{ata.ataCode}</Badge>
+                <Badge className="bg-sidebar-primary text-sidebar-primary-foreground">{ata.number}</Badge>
                 <Badge variant="outline" className="border-white/20 text-white">
                   {ata.type === "CFTV" ? "CFTV" : "Fibra Óptica / Ponto Lógico"}
                 </Badge>
@@ -220,11 +220,12 @@ export function AtaDetailsPage() {
                   <Badge variant="outline" className="border-white/20 text-white">Compras.gov</Badge>
                 )}
               </div>
-              <h1 className="mt-4 text-3xl font-semibold">{ata.number}</h1>
+              <h1 className="mt-4 text-3xl font-semibold">Ata de Registro de Preços</h1>
               <p className="mt-2 text-sidebar-foreground/75">
                 {ata.vendorName} · {ata.managingAgency || "Órgão gerenciador não informado"}
               </p>
               <p className="mt-2 text-xs text-sidebar-foreground/60">
+                Registro interno ATA-{ata.ataCode} ·{" "}
                 Vigência: {formatAtaDate(ata.validFrom)} até {formatAtaDate(ata.validUntil)}
                 {ata.externalUasg ? ` · UASG ${ata.externalUasg}` : ""}
               </p>

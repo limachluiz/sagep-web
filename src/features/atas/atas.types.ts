@@ -145,6 +145,14 @@ export type ComprasGovPreviewItem = {
   initialQuantity: number
   externalItemId: string
   externalItemNumber: string
+  coverage: ComprasGovCoverage | null
+}
+
+export type ComprasGovCoverage = {
+  code: string
+  name: string
+  region: string | null
+  localities: Array<{ cityName: string; stateUf: FederativeUnit }>
 }
 
 export type ComprasGovAtaFound = {
@@ -157,6 +165,9 @@ export type ComprasGovAtaFound = {
   sampleItems: ComprasGovPreviewItem[]
   importedAtaId?: string
   importedAt?: string
+  importStatus?: "NOT_IMPORTED" | "IMPORTED" | "UPDATE_AVAILABLE" | "INACTIVE"
+  coverageGroups: ComprasGovCoverage[]
+  coverageDetected: boolean
 }
 
 export type PregaoSummary = {
@@ -179,6 +190,16 @@ export type Pregao = PregaoSummary & {
   updatedAt: string
   atas: Array<Ata & { _count?: { items: number; estimates: number } }>
   _count: { atas: number }
+  metrics: {
+    ataCount: number
+    activeAtaCount: number
+    supplierCount: number
+    itemCount: number
+    totalAmount: string
+    reservedAmount: string
+    consumedAmount: string
+    availableAmount: string
+  }
 }
 
 export type ComprasGovPreview = {
@@ -206,9 +227,10 @@ export type ComprasGovImportPayload = {
   anoPregao: string
   numeroAta?: string
   ataType: AtaType
-  coverageGroupCode: string
-  coverageGroupName: string
-  coverageGroupLocalities: Array<{ cityName: string; stateUf: FederativeUnit }>
+  autoDetectCoverage?: boolean
+  coverageGroupCode?: string
+  coverageGroupName?: string
+  coverageGroupLocalities?: Array<{ cityName: string; stateUf: FederativeUnit }>
 }
 
 export type ComprasGovImportResult = {
@@ -217,5 +239,5 @@ export type ComprasGovImportResult = {
   itemsCreated: number
   itemsUpdated: number
   warnings: string[]
-  imported: { ataId: string; coverageGroupId: string; coverageGroupCode: string; createdItems: number; updatedItems: number }
+  imported: { ataId: string; coverageGroupId: string | null; coverageGroupCode: string | null; createdItems: number; updatedItems: number }
 }

@@ -73,10 +73,12 @@ export function CreateEstimatePage() {
     enabled: Boolean(ataType),
   })
 
+  const effectivePregaoId = pregaoId || (pregoesQuery.data?.items.length === 1 ? pregoesQuery.data.items[0].id : "")
+
   const atasQuery = useQuery({
-    queryKey: ["atas", "estimate-options", ataType, pregaoId],
-    queryFn: () => estimatesService.listAtas(ataType!, pregaoId),
-    enabled: Boolean(ataType && pregaoId),
+    queryKey: ["atas", "estimate-options", ataType, effectivePregaoId],
+    queryFn: () => estimatesService.listAtas(ataType!, effectivePregaoId),
+    enabled: Boolean(ataType && effectivePregaoId),
   })
 
   const selectedAta = atasQuery.data?.items.find((ata) => ata.id === ataId)
@@ -260,7 +262,7 @@ export function CreateEstimatePage() {
         <CardContent className="grid gap-5 lg:grid-cols-3">
           <div className="space-y-2">
             <Label>Pregão</Label>
-            <Select value={pregaoId} disabled={!ataType || pregoesQuery.isLoading} onValueChange={(value) => { setPregaoId(value); resetAfterPregao() }}>
+            <Select value={effectivePregaoId} disabled={!ataType || pregoesQuery.isLoading} onValueChange={(value) => { setPregaoId(value); resetAfterPregao() }}>
               <SelectTrigger><SelectValue placeholder={pregoesQuery.isLoading ? "Carregando pregões..." : "Selecione o pregão"} /></SelectTrigger>
               <SelectContent>{pregoesQuery.data?.items.map((pregao) => <SelectItem key={pregao.id} value={pregao.id}>PE {pregao.number}/{pregao.year} · UASG {pregao.uasg}</SelectItem>)}</SelectContent>
             </Select>
@@ -270,7 +272,7 @@ export function CreateEstimatePage() {
             <Label>Ata de Registro de Preços</Label>
             <Select
               value={ataId}
-              disabled={!pregaoId || atasQuery.isLoading}
+              disabled={!effectivePregaoId || atasQuery.isLoading}
               onValueChange={(value) => { setAtaId(value); resetAfterAta() }}
             >
               <SelectTrigger><SelectValue placeholder={atasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>

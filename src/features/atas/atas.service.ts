@@ -55,4 +55,7 @@ export const pregoesService = {
   update(id: string, payload: Partial<Pick<Pregao, "modality" | "object" | "type" | "managingAgency" | "isActive">>) {
     return api.patch<Pregao>(`/pregoes/${id}`, payload)
   },
+  sync(id: string) {
+    return api.post<{ pregaoId: string; synchronizedAt: string; atasProcessed: number; itemsCreated: number; itemsUpdated: number }>(`/pregoes/${id}/sync`, {})
+  },
 }
