@@ -14,6 +14,7 @@ import {
   Power,
   RefreshCw,
   Scale,
+  SpellCheck2,
   Trash2,
   X,
 } from "lucide-react"
@@ -132,6 +133,27 @@ export function AtaDetailsPage() {
     onSuccess: (item) => {
       toast.success(`${item.referenceCode} ${item.isActive ? "ativado" : "inativado"}.`)
       invalidate()
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const correctItemMutation = useMutation({
+    mutationFn: (item: AtaItem) => atasService.correctItemDescription(item.id),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
+      if (result.changed) toast.success("Descrição corrigida e protegida contra novas sincronizações.")
+      else if (result.unresolvedCharacters) toast.warning("O dicionário ainda não reconhece todos os códigos desta descrição.")
+      else toast.info("A descrição já está normalizada.")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const correctAllItemsMutation = useMutation({
+    mutationFn: () => atasService.correctAllItemDescriptions(ataId!),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
+      const suffix = result.unresolvedCharacters
+        ? ` Restaram ${result.unresolvedCharacters} caractere(s) para incluir no dicionário.`
+        : ""
+      toast.success(`${result.corrected} de ${result.total} descrição(ões) corrigida(s).${suffix}`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -475,7 +497,10 @@ export function AtaDetailsPage() {
               {filteredItems.length} de {items.length} item(ns) exibido(s)
             </p>
           </div>
-          {totals.riskCount > 0 && <Badge variant="destructive">{totals.riskCount} saldo(s) crítico(s)</Badge>}
+          <div className="flex items-center gap-2">
+            {totals.riskCount > 0 && <Badge variant="destructive">{totals.riskCount} saldo(s) crítico(s)</Badge>}
+            {canManage && <Button variant="outline" size="sm" disabled={correctAllItemsMutation.isPending} onClick={() => correctAllItemsMutation.mutate()}><SpellCheck2 className="size-4" />Corrigir todas as descrições</Button>}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4 overflow-x-auto">
           {itemsQuery.isLoading ? (
@@ -543,6 +568,16 @@ export function AtaDetailsPage() {
                           </Button>
                           {canManage && (
                             <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                title="Corrigir descrição pelo dicionário"
+                                aria-label={`Corrigir descrição do item ${item.referenceCode}`}
+                                disabled={correctItemMutation.isPending}
+                                onClick={() => correctItemMutation.mutate(item)}
+                              >
+                                <SpellCheck2 className="size-4" />
+                              </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
