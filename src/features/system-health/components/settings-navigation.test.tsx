@@ -32,6 +32,18 @@ describe("SettingsNavigation", () => {
     expect(screen.getByRole("link", { name: /saúde do sistema/i })).toHaveAttribute("href", "/settings")
     expect(screen.queryByRole("link", { name: /acessos e permissões/i })).not.toBeInTheDocument()
     expect(screen.queryByRole("link", { name: /backup e restauração/i })).not.toBeInTheDocument()
+    expect(screen.queryByRole("link", { name: /dicionário de correções/i })).not.toBeInTheDocument()
+  })
+
+  it("exibe o dicionário com permissão de visualização das configurações", () => {
+    useAuthStore.getState().setAuth({
+      user: { id: "gestor-1", email: "gestor@sagep.test", role: "GESTOR", permissions: ["settings.view"] },
+      accessToken: "access-token",
+    })
+
+    render(<MemoryRouter><SettingsNavigation /></MemoryRouter>)
+
+    expect(screen.getByRole("link", { name: /dicionário de correções/i })).toHaveAttribute("href", "/settings/text-corrections")
   })
 
   it("exibe backup somente com a permissão crítica", () => {

@@ -1,4 +1,4 @@
-import { Activity, DatabaseBackup, Network, Settings2, ShieldCheck } from "lucide-react"
+import { Activity, BookOpenCheck, DatabaseBackup, Network, Settings2, ShieldCheck } from "lucide-react"
 import { NavLink } from "react-router"
 
 import { useAuthStore } from "@/features/auth/auth.store"
@@ -10,6 +10,7 @@ export function SettingsNavigation() {
     { label: "Saúde do sistema", href: "/settings", icon: Activity, visible: true },
     { label: "Integrações e parâmetros", href: "/settings/integrations", icon: Settings2, visible: hasPermission("settings.view") },
     { label: "Rede, servidores e HTTPS", href: "/settings/network", icon: Network, visible: hasPermission("settings.view") },
+    { label: "Dicionário de correções", href: "/settings/text-corrections", icon: BookOpenCheck, visible: hasPermission("settings.view") },
     { label: "Acessos e permissões", href: "/settings/access", icon: ShieldCheck, visible: hasPermission("permissions.view") },
     { label: "Backup e restauração", href: "/settings/backups", icon: DatabaseBackup, visible: hasPermission("backups.manage") },
   ].filter((item) => item.visible)
