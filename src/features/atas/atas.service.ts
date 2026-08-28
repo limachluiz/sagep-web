@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 import type { FederativeUnit } from "@/features/projects/projects.types"
-import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ListEnvelope, Pregao } from "./atas.types"
+import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ListEnvelope, Pregao, PregaoPayload } from "./atas.types"
 
 export const atasService = {
   list(filters: { page?: number; pageSize?: number; search?: string; type?: AtaType; stateUf?: FederativeUnit; active?: boolean; pregaoId?: string } = {}) {
@@ -52,10 +52,14 @@ export const pregoesService = {
     return api.get<ListEnvelope<Pregao>>(`/pregoes?${query.toString()}`)
   },
   details(id: string) { return api.get<Pregao>(`/pregoes/${id}`) },
-  update(id: string, payload: Partial<Pick<Pregao, "modality" | "object" | "type" | "managingAgency" | "isActive">>) {
+  create(payload: PregaoPayload) { return api.post<Pregao>("/pregoes", payload) },
+  update(id: string, payload: Partial<PregaoPayload>) {
     return api.patch<Pregao>(`/pregoes/${id}`, payload)
   },
   sync(id: string) {
     return api.post<{ pregaoId: string; synchronizedAt: string; atasProcessed: number; itemsCreated: number; itemsUpdated: number }>(`/pregoes/${id}/sync`, {})
+  },
+  checkUpdates(id: string) {
+    return api.post<{ pregaoId: string; checkedAt: string; totalAtas: number; statuses: Record<string, number> }>(`/pregoes/${id}/check-updates`, {})
   },
 }

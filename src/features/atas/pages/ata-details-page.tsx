@@ -225,10 +225,10 @@ export function AtaDetailsPage() {
                 {ata.vendorName} · {ata.managingAgency || "Órgão gerenciador não informado"}
               </p>
               <p className="mt-2 text-xs text-sidebar-foreground/60">
-                Registro interno ATA-{ata.ataCode} ·{" "}
                 Vigência: {formatAtaDate(ata.validFrom)} até {formatAtaDate(ata.validUntil)}
                 {ata.externalUasg ? ` · UASG ${ata.externalUasg}` : ""}
               </p>
+              {ata.pregao && <Button asChild variant="link" className="mt-2 h-auto p-0 text-sidebar-primary"><Link to={`/pregoes/${ata.pregao.id}`}>Pregão PE {ata.pregao.number}/{ata.pregao.year}</Link></Button>}
             </div>
             <div className="flex flex-wrap items-start gap-2">
               {canManage && (
@@ -356,6 +356,7 @@ export function AtaDetailsPage() {
                     <p className="mt-2 text-2xl font-semibold tabular-nums">{ata.pncpSnapshot?.linkedContracts.total ?? "—"}</p>
                   </div>
                 </div>
+                <p className="mt-4 text-[11px] text-muted-foreground">Identificador técnico interno: ATA-{ata.ataCode}</p>
                 <p className="mt-4 text-xs leading-5 text-muted-foreground">
                   Cadastro importado: {formatAtaDate(ata.externalLastSyncAt ?? null, true)} · PNCP: {formatAtaDate(ata.pncpLastSyncAt ?? null, true)}
                 </p>
@@ -365,9 +366,7 @@ export function AtaDetailsPage() {
                 </p>
               </>
             ) : (
-              <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">
-                Esta ATA foi cadastrada manualmente. O saldo é controlado pelas movimentações internas do SAGEP.
-              </div>
+              <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground">Esta ATA foi cadastrada manualmente. O saldo é controlado pelas movimentações internas do SAGEP.<p className="mt-3 text-[11px]">Identificador técnico interno: ATA-{ata.ataCode}</p></div>
             )}
           </CardContent>
         </Card>

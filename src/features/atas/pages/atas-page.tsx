@@ -1,7 +1,8 @@
 import { useState } from "react"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { CircleDollarSign, CloudDownload, FileStack, Search, ShieldCheck } from "lucide-react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { CircleDollarSign, CloudDownload, FileStack, Plus, Search, ShieldCheck } from "lucide-react"
 import { Link } from "react-router"
+import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -11,8 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { ComprasGovImportDialog } from "@/features/atas/components/compras-gov-import-dialog"
+import { PregaoDialog } from "@/features/atas/components/pregao-dialog"
 import { pregoesService } from "@/features/atas/atas.service"
-import type { AtaType } from "@/features/atas/atas.types"
+import type { AtaType, PregaoPayload } from "@/features/atas/atas.types"
 import { useAuthStore } from "@/features/auth/auth.store"
 
 const typeLabels: Record<AtaType, string> = { CFTV: "CFTV", FIBRA_OPTICA: "Fibra óptica" }
@@ -26,6 +28,7 @@ export function AtasPage() {
   const [type, setType] = useState<AtaType | "all">("all")
   const [page, setPage] = useState(1)
   const [importOpen, setImportOpen] = useState(false)
+  const [createOpen, setCreateOpen] = useState(false)
   const query = useQuery({
     queryKey: ["pregoes", { page, search, year, type }],
     queryFn: () => pregoesService.list({
@@ -40,11 +43,16 @@ export function AtasPage() {
   const totalAtas = pregoes.reduce((sum, pregao) => sum + pregao.metrics.ataCount, 0)
   const activeAtas = pregoes.reduce((sum, pregao) => sum + pregao.metrics.activeAtaCount, 0)
   const totalAmount = pregoes.reduce((sum, pregao) => sum + Number(pregao.metrics.totalAmount), 0)
+  const createMutation = useMutation({
+    mutationFn: (payload: PregaoPayload) => pregoesService.create(payload),
+    onSuccess: () => { toast.success("Pregão cadastrado com sucesso."); setCreateOpen(false); queryClient.invalidateQueries({ queryKey: ["pregoes"] }) },
+    onError: (error) => toast.error(error.message),
+  })
 
   return <div className="space-y-6">
     <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
       <div><Badge variant="outline" className="mb-3">Catálogo e saldo</Badge><h1 className="text-3xl font-semibold tracking-tight">Pregões e Atas</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Consulte cada pregão como um processo único e acompanhe suas Atas de Registro de Preços, fornecedores, cobertura e saldos.</p></div>
-      {canManage && <Button onClick={() => setImportOpen(true)}><CloudDownload className="size-4" />Importar do Compras.gov.br</Button>}
+      {canManage && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setCreateOpen(true)}><Plus className="size-4" />Cadastrar manualmente</Button><Button onClick={() => setImportOpen(true)}><CloudDownload className="size-4" />Importar do Compras.gov.br</Button></div>}
     </div>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pregões encontrados</CardTitle></CardHeader><CardContent><p className="text-3xl font-semibold">{query.data?.meta.totalItems ?? 0}</p></CardContent></Card>
@@ -67,5 +75,6 @@ export function AtasPage() {
       {query.data && query.data.meta.totalPages > 1 && <div className="mt-5 flex items-center justify-end gap-3"><span className="text-sm text-muted-foreground">Página {query.data.meta.page} de {query.data.meta.totalPages}</span><Button variant="outline" size="sm" disabled={!query.data.meta.hasPreviousPage} onClick={() => setPage((value) => value - 1)}>Anterior</Button><Button variant="outline" size="sm" disabled={!query.data.meta.hasNextPage} onClick={() => setPage((value) => value + 1)}>Próxima</Button></div>}
     </CardContent></Card>
     <ComprasGovImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={() => { queryClient.invalidateQueries({ queryKey: ["pregoes"] }); queryClient.invalidateQueries({ queryKey: ["atas"] }) }} />
+    {createOpen && <PregaoDialog open={createOpen} pending={createMutation.isPending} onOpenChange={setCreateOpen} onSubmit={(payload) => createMutation.mutateAsync(payload).then(() => undefined)} />}
   </div>
 }

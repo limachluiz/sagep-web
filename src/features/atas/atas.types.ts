@@ -178,9 +178,24 @@ export type PregaoSummary = {
   year: string
   modality: string
   object: string | null
+  openingAt: string | null
+  homologatedAt: string | null
   type: AtaType | null
   managingAgency: string | null
   isActive: boolean
+}
+
+export type PregaoPayload = {
+  uasg: string
+  number: string
+  year: string
+  modality: string
+  object?: string | null
+  type?: AtaType | null
+  managingAgency?: string | null
+  openingAt?: string | null
+  homologatedAt?: string | null
+  isActive?: boolean
 }
 
 export type Pregao = PregaoSummary & {
