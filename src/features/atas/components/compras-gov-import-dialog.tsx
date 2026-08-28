@@ -26,7 +26,11 @@ const importStatusLabel = {
 
 function CoverageBadges({ coverages }: { coverages: ComprasGovCoverage[] }) {
   if (!coverages.length) return <Badge variant="destructive">Cobertura não identificada</Badge>
-  return <div className="flex flex-wrap gap-1.5">{coverages.map((coverage) => <Badge key={coverage.code} variant="secondary">{coverage.name} · {coverage.localities.map((locality) => `${locality.cityName}/${locality.stateUf}`).join(", ")}</Badge>)}</div>
+  return <div className="flex flex-col items-start gap-1.5">{coverages.map((coverage) => {
+    const localities = coverage.localities.map((locality) => `${locality.cityName}/${locality.stateUf}`).join(", ")
+    const title = coverage.region ?? coverage.name
+    return <div key={coverage.code} className="max-w-full rounded-md border bg-muted/40 px-2 py-1 text-[11px] leading-4"><strong>{title}</strong>{localities && <span className="ml-1 text-muted-foreground">· {localities}</span>}</div>
+  })}</div>
 }
 
 export function ComprasGovImportDialog({ open, onOpenChange, onImported }: Props) {
@@ -101,14 +105,19 @@ export function ComprasGovImportDialog({ open, onOpenChange, onImported }: Props
     {autoDetectCoverage && !validConfiguration && <p className="text-sm text-destructive">Há itens sem região identificável. Confira os itens ou desative a detecção automática e informe a cobertura manualmente.</p>}
   </div>
 
-  return <Dialog open={open} onOpenChange={(next) => { if (!busy) onOpenChange(next) }}><DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-5xl">
+  return <Dialog open={open} onOpenChange={(next) => { if (!busy) onOpenChange(next) }}><DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-6xl">
     <DialogHeader><DialogTitle className="flex items-center gap-2"><CloudDownload className="size-5 text-primary" />Importar pregão e ATAs do Compras.gov.br</DialogTitle><DialogDescription>Consulte o pregão uma vez, selecione as ATAs necessárias e importe ou atualize seus itens sem duplicidade.</DialogDescription></DialogHeader>
     {!preview ? <div className="space-y-5"><div className="grid gap-4 sm:grid-cols-3"><div className="space-y-2"><Label>UASG</Label><Input value={uasg} onChange={(event) => setUasg(event.target.value)} placeholder="Ex.: 160016" autoFocus /></div><div className="space-y-2"><Label>Número do pregão</Label><Input value={numeroPregao} onChange={(event) => setNumeroPregao(event.target.value)} placeholder="Ex.: 90004" /></div><div className="space-y-2"><Label>Ano</Label><Input value={anoPregao} onChange={(event) => setAnoPregao(event.target.value.replace(/\D/g, "").slice(0, 4))} inputMode="numeric" /></div></div><Alert><Search /><AlertTitle>Consulta sem gravação</AlertTitle><AlertDescription>Nenhum dado será salvo até você confirmar a importação.</AlertDescription></Alert></div>
       : preview.ata ? <div className="space-y-5">
         <div className="grid gap-4 rounded-xl border p-4 sm:grid-cols-4"><div><p className="text-xs text-muted-foreground">ATA</p><p className="mt-1 font-medium">{preview.ata.number}</p></div><div><p className="text-xs text-muted-foreground">Fornecedor</p><p className="mt-1 font-medium">{preview.ata.vendorName || "Não informado"}</p></div><div><p className="text-xs text-muted-foreground">Itens</p><p className="mt-1 font-medium">{preview.items.length}</p></div><div><p className="text-xs text-muted-foreground">Valor homologado</p><p className="mt-1 font-medium">{money(totalAmount)}</p></div></div>
         {configuration}
         {preview.warnings.length > 0 && <Alert><AlertTriangle /><AlertTitle>Atenções da consulta</AlertTitle><AlertDescription><ul className="list-disc space-y-1 pl-4">{preview.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></AlertDescription></Alert>}
-        <div className="max-h-72 overflow-auto rounded-xl border"><Table><TableHeader><TableRow><TableHead>Referência</TableHead><TableHead>Descrição</TableHead><TableHead>Cobertura identificada</TableHead><TableHead>Unidade</TableHead><TableHead className="text-right">Quantidade</TableHead><TableHead className="text-right">Valor unitário</TableHead></TableRow></TableHeader><TableBody>{preview.items.map((item) => <TableRow key={`${item.externalItemId}-${item.referenceCode}`}><TableCell className="font-medium">{item.referenceCode}</TableCell><TableCell className="max-w-sm text-xs">{item.description}</TableCell><TableCell><CoverageBadges coverages={item.coverage ? [item.coverage] : []} /></TableCell><TableCell>{item.unit}</TableCell><TableCell className="text-right">{item.initialQuantity.toLocaleString("pt-BR")}</TableCell><TableCell className="text-right">{money(item.unitPrice)}</TableCell></TableRow>)}</TableBody></Table></div>
+        <div className="max-h-[26rem] overflow-auto rounded-xl border">
+          <Table className="min-w-[1080px] table-fixed">
+            <TableHeader><TableRow><TableHead className="w-24">Referência</TableHead><TableHead className="w-[440px]">Descrição</TableHead><TableHead className="w-64">Cobertura identificada</TableHead><TableHead className="w-24">Unidade</TableHead><TableHead className="w-28 text-right">Quantidade</TableHead><TableHead className="w-32 text-right">Valor unitário</TableHead></TableRow></TableHeader>
+            <TableBody>{preview.items.map((item) => <TableRow key={`${item.externalItemId}-${item.referenceCode}`} className="align-top"><TableCell className="font-medium">{item.referenceCode}</TableCell><TableCell><p className="whitespace-normal break-words text-xs leading-5" title={item.description}>{item.description}</p></TableCell><TableCell><CoverageBadges coverages={item.coverage ? [item.coverage] : []} /></TableCell><TableCell className="whitespace-nowrap">{item.unit}</TableCell><TableCell className="whitespace-nowrap text-right">{item.initialQuantity.toLocaleString("pt-BR")}</TableCell><TableCell className="whitespace-nowrap text-right">{money(item.unitPrice)}</TableCell></TableRow>)}</TableBody>
+          </Table>
+        </div>
       </div>
         : <div className="space-y-5">
           <Alert><CheckCircle2 /><AlertTitle>{preview.atasFound.length} ATA(s) encontrada(s)</AlertTitle><AlertDescription>Marque quantas desejar. ATAs já importadas serão atualizadas, preservando reservas e consumos.</AlertDescription></Alert>
