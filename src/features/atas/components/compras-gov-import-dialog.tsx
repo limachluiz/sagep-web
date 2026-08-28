@@ -29,7 +29,7 @@ function CoverageBadges({ coverages }: { coverages: ComprasGovCoverage[] }) {
   return <div className="flex flex-col items-start gap-1.5">{coverages.map((coverage) => {
     const localities = coverage.localities.map((locality) => `${locality.cityName}/${locality.stateUf}`).join(", ")
     const title = coverage.region ?? coverage.name
-    return <div key={coverage.code} className="max-w-full rounded-md border bg-muted/40 px-2 py-1 text-[11px] leading-4"><strong>{title}</strong>{localities && <span className="ml-1 text-muted-foreground">· {localities}</span>}</div>
+    return <div key={coverage.code} className="w-full rounded-md border bg-muted/40 px-2 py-1.5 text-[11px] leading-4"><strong className="block">{title}</strong>{localities && <span className="mt-0.5 block whitespace-normal break-words text-muted-foreground">{localities}</span>}</div>
   })}</div>
 }
 
@@ -115,7 +115,7 @@ export function ComprasGovImportDialog({ open, onOpenChange, onImported }: Props
         <div className="max-h-[26rem] overflow-auto rounded-xl border">
           <Table className="min-w-[1080px] table-fixed">
             <TableHeader><TableRow><TableHead className="w-24">Referência</TableHead><TableHead className="w-[440px]">Descrição</TableHead><TableHead className="w-64">Cobertura identificada</TableHead><TableHead className="w-24">Unidade</TableHead><TableHead className="w-28 text-right">Quantidade</TableHead><TableHead className="w-32 text-right">Valor unitário</TableHead></TableRow></TableHeader>
-            <TableBody>{preview.items.map((item) => <TableRow key={`${item.externalItemId}-${item.referenceCode}`} className="align-top"><TableCell className="font-medium">{item.referenceCode}</TableCell><TableCell><p className="whitespace-normal break-words text-xs leading-5" title={item.description}>{item.description}</p></TableCell><TableCell><CoverageBadges coverages={item.coverage ? [item.coverage] : []} /></TableCell><TableCell className="whitespace-nowrap">{item.unit}</TableCell><TableCell className="whitespace-nowrap text-right">{item.initialQuantity.toLocaleString("pt-BR")}</TableCell><TableCell className="whitespace-nowrap text-right">{money(item.unitPrice)}</TableCell></TableRow>)}</TableBody>
+            <TableBody>{preview.items.map((item) => <TableRow key={`${item.externalItemId}-${item.referenceCode}`} className="align-top"><TableCell className="font-medium">{item.referenceCode}</TableCell><TableCell><p className="whitespace-normal break-words text-xs leading-5" title={item.description}>{item.description}</p></TableCell><TableCell className="whitespace-normal"><CoverageBadges coverages={item.coverage ? [item.coverage] : []} /></TableCell><TableCell className="whitespace-nowrap">{item.unit}</TableCell><TableCell className="whitespace-nowrap text-right">{item.initialQuantity.toLocaleString("pt-BR")}</TableCell><TableCell className="whitespace-nowrap text-right">{money(item.unitPrice)}</TableCell></TableRow>)}</TableBody>
           </Table>
         </div>
       </div>
