@@ -31,8 +31,8 @@ export const atasService = {
 
   createItem(ataId: string, payload: AtaItemPayload) { return api.post<AtaItem>(`/atas/${ataId}/items`, payload) },
   updateItem(itemId: string, payload: Partial<AtaItemPayload> & { isActive?: boolean }) { return api.patch<AtaItem>(`/ata-items/${itemId}`, payload) },
-  correctItemDescription(itemId: string) { return api.post<{ itemId: string; changed: boolean; description: string; unresolvedCharacters: number }>(`/ata-items/${itemId}/correct-description`, {}) },
-  correctAllItemDescriptions(ataId: string) { return api.post<{ ataId: string; total: number; corrected: number; unchanged: number; unresolvedCharacters: number }>(`/atas/${ataId}/items/correct-descriptions`, {}) },
+  correctItemDescription(itemId: string) { return api.post<{ itemId: string; changed: boolean; description: string; unresolvedCharacters: number; unresolvedTokens: string[] }>(`/ata-items/${itemId}/correct-description`, {}) },
+  correctAllItemDescriptions(ataId: string) { return api.post<{ ataId: string; total: number; corrected: number; unchanged: number; unresolvedCharacters: number; unresolvedTokens: string[] }>(`/atas/${ataId}/items/correct-descriptions`, {}) },
   listItemMovements(itemId: string) { return api.get<AtaItemMovement[]>(`/ata-items/${itemId}/movements`) },
 
   previewComprasGov(filters: { uasg: string; numeroPregao: string; anoPregao: string; numeroAta?: string }) {

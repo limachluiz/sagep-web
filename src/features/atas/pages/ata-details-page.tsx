@@ -141,7 +141,7 @@ export function AtaDetailsPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
       if (result.changed) toast.success("Descrição corrigida e protegida contra novas sincronizações.")
-      else if (result.unresolvedCharacters) toast.warning("O dicionário ainda não reconhece todos os códigos desta descrição.")
+      else if (result.unresolvedCharacters) toast.warning(`O dicionário ainda não reconhece: ${result.unresolvedTokens.join(", ")}.`)
       else toast.info("A descrição já está normalizada.")
     },
     onError: (error) => toast.error(error.message),
@@ -151,7 +151,7 @@ export function AtaDetailsPage() {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
       const suffix = result.unresolvedCharacters
-        ? ` Restaram ${result.unresolvedCharacters} caractere(s) para incluir no dicionário.`
+        ? ` Ainda não reconhecidos: ${result.unresolvedTokens.join(", ")}.`
         : ""
       toast.success(`${result.corrected} de ${result.total} descrição(ões) corrigida(s).${suffix}`)
     },
