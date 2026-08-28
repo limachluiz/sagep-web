@@ -1,15 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { ArrowLeft, Building2, CalendarDays, CircleDollarSign, FileStack, Loader2, Pencil, RefreshCw, ShieldCheck } from "lucide-react"
-import { Link, useParams } from "react-router"
+import { ArrowLeft, Building2, CalendarDays, CircleDollarSign, FileStack, Loader2, Pencil, RefreshCw, ShieldCheck, Trash2 } from "lucide-react"
+import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
+import { DeleteActionDialog } from "@/components/delete-action-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { PregaoDialog } from "@/features/atas/components/pregao-dialog"
-import { pregoesService } from "@/features/atas/atas.service"
-import type { PregaoPayload } from "@/features/atas/atas.types"
+import { atasService, pregoesService } from "@/features/atas/atas.service"
+import type { Pregao, PregaoPayload } from "@/features/atas/atas.types"
 import { formatAtaDate } from "@/features/atas/atas.utils"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { useState } from "react"
@@ -19,8 +20,11 @@ const money = (value: string) => Number(value).toLocaleString("pt-BR", { style: 
 export function PregaoDetailsPage() {
   const { pregaoId } = useParams<{ pregaoId: string }>()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const canManage = useAuthStore((state) => state.hasPermission("atas.manage"))
   const [editOpen, setEditOpen] = useState(false)
+  const [deletePregaoOpen, setDeletePregaoOpen] = useState(false)
+  const [deleteAta, setDeleteAta] = useState<Pregao["atas"][number] | null>(null)
   const query = useQuery({ queryKey: ["pregoes", "details", pregaoId], queryFn: () => pregoesService.details(pregaoId!), enabled: Boolean(pregaoId) })
   const updateImportedMutation = useMutation({
     mutationFn: () => pregoesService.sync(pregaoId!),
@@ -37,11 +41,30 @@ export function PregaoDetailsPage() {
     onSuccess: () => { toast.success("Pregão atualizado."); setEditOpen(false); queryClient.invalidateQueries({ queryKey: ["pregoes"] }) },
     onError: (error) => toast.error(error.message),
   })
+  const deleteAtaMutation = useMutation({
+    mutationFn: (ataId: string) => atasService.remove(ataId),
+    onSuccess: () => {
+      toast.success("ATA excluída.")
+      setDeleteAta(null)
+      queryClient.invalidateQueries({ queryKey: ["pregoes"] })
+      queryClient.invalidateQueries({ queryKey: ["atas"] })
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const deletePregaoMutation = useMutation({
+    mutationFn: () => pregoesService.remove(pregaoId!),
+    onSuccess: () => {
+      toast.success("Pregão excluído.")
+      navigate("/atas")
+      queryClient.invalidateQueries({ queryKey: ["pregoes"] })
+    },
+    onError: (error) => toast.error(error.message),
+  })
   if (query.isLoading) return <div className="space-y-4">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-24" />)}</div>
   if (query.isError || !query.data) return <p className="text-sm text-destructive">{query.error?.message ?? "Pregão não encontrado."}</p>
   const pregao = query.data
   return <div className="space-y-6">
-    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/atas"><ArrowLeft className="size-4" />Voltar para Pregões e Atas</Link></Button><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="flex gap-2"><Badge>{pregao.modality}</Badge><Badge variant="outline">PRG-{pregao.pregaoCode}</Badge></div><h1 className="mt-3 text-3xl font-semibold">PE {pregao.number}/{pregao.year}</h1><p className="mt-2 text-sm text-muted-foreground">UASG {pregao.uasg} · {pregao.managingAgency || "Órgão gerenciador não informado"}</p><p className="mt-1 text-xs text-muted-foreground">Abertura: {formatAtaDate(pregao.openingAt)} · Homologação: {formatAtaDate(pregao.homologatedAt)}</p></div>{canManage && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar pregão</Button>{pregao.externalSource === "COMPRAS_GOV" && <><Button variant="outline" onClick={() => checkMutation.mutate()} disabled={checkMutation.isPending}>{checkMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar com Compras.gov</Button><Button onClick={() => updateImportedMutation.mutate()} disabled={updateImportedMutation.isPending}>{updateImportedMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar somente importadas</Button></>}</div>}</div></div>
+    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/atas"><ArrowLeft className="size-4" />Voltar para Pregões e Atas</Link></Button><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><div className="flex gap-2"><Badge>{pregao.modality}</Badge><Badge variant="outline">PRG-{pregao.pregaoCode}</Badge></div><h1 className="mt-3 text-3xl font-semibold">PE {pregao.number}/{pregao.year}</h1><p className="mt-2 text-sm text-muted-foreground">UASG {pregao.uasg} · {pregao.managingAgency || "Órgão gerenciador não informado"}</p><p className="mt-1 text-xs text-muted-foreground">Abertura: {formatAtaDate(pregao.openingAt)} · Homologação: {formatAtaDate(pregao.homologatedAt)}</p></div>{canManage && <div className="flex flex-wrap gap-2"><Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar pregão</Button><Button variant="destructive" onClick={() => setDeletePregaoOpen(true)}><Trash2 className="size-4" />Excluir pregão</Button>{pregao.externalSource === "COMPRAS_GOV" && <><Button variant="outline" onClick={() => checkMutation.mutate()} disabled={checkMutation.isPending}>{checkMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar com Compras.gov</Button><Button onClick={() => updateImportedMutation.mutate()} disabled={updateImportedMutation.isPending}>{updateImportedMutation.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Atualizar somente importadas</Button></>}</div>}</div></div>
     <Card><CardHeader><CardTitle>Objeto da contratação</CardTitle></CardHeader><CardContent><p className="leading-7 text-muted-foreground">{pregao.object || "Objeto resumido ainda não informado."}</p></CardContent></Card>
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <Card><CardContent className="flex items-center gap-3 pt-6"><FileStack className="size-7 text-primary" /><div><p className="text-sm text-muted-foreground">ATAs vinculadas</p><p className="text-2xl font-semibold">{pregao.metrics.ataCount}</p></div></CardContent></Card>
@@ -54,8 +77,10 @@ export function PregaoDetailsPage() {
       <Card><CardContent className="pt-6"><p className="text-sm text-muted-foreground">Valor consumido</p><p className="mt-1 text-xl font-semibold">{money(pregao.metrics.consumedAmount)}</p></CardContent></Card>
     </div>
     <Card><CardHeader><CardTitle>Atas de Registro de Preços</CardTitle></CardHeader><CardContent>
-      {pregao.atas.length ? <Table><TableHeader><TableRow><TableHead>ATA</TableHead><TableHead>Fornecedor</TableHead><TableHead>Cobertura</TableHead><TableHead>Vigência</TableHead><TableHead>Itens</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader><TableBody>{pregao.atas.map((ata) => <TableRow key={ata.id}><TableCell><p className="font-semibold">{ata.number}</p><p className="mt-1 text-xs text-muted-foreground">ATA-{ata.ataCode}</p></TableCell><TableCell className="max-w-80">{ata.vendorName}</TableCell><TableCell>{ata.coverageGroups.map((group) => group.code).join(", ") || "—"}</TableCell><TableCell>{formatAtaDate(ata.validFrom)} até {formatAtaDate(ata.validUntil)}</TableCell><TableCell>{ata._count?.items ?? 0}</TableCell><TableCell><Badge variant={ata.isActive ? "default" : "secondary"}>{ata.isActive ? "Vigente" : "Inativa"}</Badge></TableCell><TableCell className="text-right"><Button asChild variant="ghost" size="sm"><Link to={`/atas/${ata.id}`}>Abrir ATA</Link></Button></TableCell></TableRow>)}</TableBody></Table> : <p className="py-10 text-center text-sm text-muted-foreground">Nenhuma ATA vinculada a este pregão.</p>}
+      {pregao.atas.length ? <Table><TableHeader><TableRow><TableHead>ATA</TableHead><TableHead>Fornecedor</TableHead><TableHead>Cobertura</TableHead><TableHead>Vigência</TableHead><TableHead>Itens</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ação</TableHead></TableRow></TableHeader><TableBody>{pregao.atas.map((ata) => <TableRow key={ata.id}><TableCell><p className="font-semibold">{ata.number}</p><p className="mt-1 text-xs text-muted-foreground">ATA-{ata.ataCode}</p></TableCell><TableCell className="max-w-80">{ata.vendorName}</TableCell><TableCell>{ata.coverageGroups.map((group) => group.code).join(", ") || "—"}</TableCell><TableCell>{formatAtaDate(ata.validFrom)} até {formatAtaDate(ata.validUntil)}</TableCell><TableCell>{ata._count?.items ?? 0}</TableCell><TableCell><Badge variant={ata.isActive ? "default" : "secondary"}>{ata.isActive ? "Vigente" : "Inativa"}</Badge></TableCell><TableCell className="text-right"><div className="flex justify-end gap-1"><Button asChild variant="ghost" size="sm"><Link to={`/atas/${ata.id}`}>Abrir ATA</Link></Button>{canManage && <Button variant="ghost" size="icon" title="Excluir ATA" onClick={() => setDeleteAta(ata)}><Trash2 className="size-4 text-destructive" /></Button>}</div></TableCell></TableRow>)}</TableBody></Table> : <p className="py-10 text-center text-sm text-muted-foreground">Nenhuma ATA vinculada a este pregão.</p>}
     </CardContent></Card>
+    <DeleteActionDialog open={deletePregaoOpen} onOpenChange={setDeletePregaoOpen} entityLabel="pregão" entityCode={`PE ${pregao.number}/${pregao.year}`} description="As ATAs vinculadas precisam ser excluídas primeiro." pending={deletePregaoMutation.isPending} onConfirm={() => deletePregaoMutation.mutate()} />
+    {deleteAta && <DeleteActionDialog open={Boolean(deleteAta)} onOpenChange={(open) => !open && setDeleteAta(null)} entityLabel="ATA" entityCode={deleteAta.number} description="A exclusão será bloqueada se houver estimativas ou movimentações de saldo." pending={deleteAtaMutation.isPending} onConfirm={() => deleteAtaMutation.mutate(deleteAta.id)} />}
     {editOpen && <PregaoDialog open={editOpen} pregao={pregao} pending={editMutation.isPending} onOpenChange={setEditOpen} onSubmit={(payload) => editMutation.mutateAsync(payload).then(() => undefined)} />}
   </div>
 }
