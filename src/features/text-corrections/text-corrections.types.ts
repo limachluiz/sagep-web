@@ -9,6 +9,7 @@ export type TextCorrectionRule = {
 
 export type TextCorrectionsCatalog = {
   rules: TextCorrectionRule[]
+  builtInRules: Array<Pick<TextCorrectionRule, "id" | "damagedText" | "correctedText" | "isActive"> & { source: "BUILT_IN" }>
   builtInRuleCount: number
   unresolvedTokens: Array<{ token: string; occurrences: number }>
 }
