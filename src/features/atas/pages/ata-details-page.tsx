@@ -414,7 +414,7 @@ export function AtaDetailsPage() {
         <CardContent>
           <div className="rounded-xl border border-primary/10 bg-muted/15 p-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <p className="font-medium">{coverageGroup?.code ?? "REG-01"} · {coverageGroup?.name ?? "Região 1"}</p>
+              <p className="font-medium">{coverageGroup?.name ?? "Região 1"}</p>
               <Badge variant="outline">{coverageLocalities.length} localidade(s)</Badge>
             </div>
             <div className="mt-3 flex flex-wrap gap-2">
@@ -436,7 +436,7 @@ export function AtaDetailsPage() {
           <SelectContent>
             <SelectItem value="all">Todos os grupos</SelectItem>
             {ata.coverageGroups.map((group) => (
-              <SelectItem key={group.id} value={group.code}>{group.code} · {group.name}</SelectItem>
+              <SelectItem key={group.id} value={group.code}>{group.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -512,7 +512,7 @@ export function AtaDetailsPage() {
                           {item.description}
                         </ItemDescription>
                       </TableCell>
-                      <TableCell><Badge variant="outline">{item.coverageGroup.code}</Badge></TableCell>
+                      <TableCell><Badge variant="outline">{item.coverageGroup.name}</Badge></TableCell>
                       <TableCell className="whitespace-nowrap">{formatAtaCurrency(item.unitPrice)}</TableCell>
                       <TableCell className="min-w-48">
                         <div className="flex justify-between gap-3 text-xs">
