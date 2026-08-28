@@ -14,12 +14,14 @@ import {
   Power,
   RefreshCw,
   Scale,
+  Trash2,
   X,
 } from "lucide-react"
-import { Link, useParams } from "react-router"
+import { Link, useNavigate, useParams } from "react-router"
 import { toast } from "sonner"
 
 import { DataTableSkeleton, EmptyState } from "@/components/data-table-state"
+import { DeleteActionDialog } from "@/components/delete-action-dialog"
 import { FilterToolbar, SearchField } from "@/components/filter-toolbar"
 import { ItemDescription } from "@/components/item-description"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -30,6 +32,7 @@ import { Progress } from "@/components/ui/progress"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { AtaCoverageDialog } from "@/features/atas/components/ata-coverage-dialog"
 import { AtaDialog } from "@/features/atas/components/ata-dialog"
 import { AtaItemDialog } from "@/features/atas/components/ata-item-dialog"
 import { AtaItemMovementsDialog } from "@/features/atas/components/ata-item-movements-dialog"
@@ -74,11 +77,14 @@ type ItemFilter = "all" | "available" | "risk" | "inactive"
 export function AtaDetailsPage() {
   const { ataId } = useParams<{ ataId: string }>()
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const canManage = useAuthStore((state) => state.hasPermission("atas.manage"))
   const [search, setSearch] = useState("")
   const [itemFilter, setItemFilter] = useState<ItemFilter>("all")
   const [groupFilter, setGroupFilter] = useState("all")
   const [editOpen, setEditOpen] = useState(false)
+  const [coverageOpen, setCoverageOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
   const [itemOpen, setItemOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<AtaItem | null>(null)
   const [movementItem, setMovementItem] = useState<AtaItem | null>(null)
@@ -137,6 +143,26 @@ export function AtaDetailsPage() {
     },
     onError: (error) => toast.error(error.message),
   })
+  const coverageMutation = useMutation({
+    mutationFn: (payload: { regionNumber: number; localities: Array<{ cityName: string; stateUf: "AM" | "RO" | "RR" | "AC" }> }) =>
+      atasService.replaceCoverage(ataId!, payload),
+    onSuccess: () => {
+      toast.success("Cobertura territorial consolidada.")
+      setCoverageOpen(false)
+      invalidate()
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const deleteMutation = useMutation({
+    mutationFn: () => atasService.remove(ataId!),
+    onSuccess: () => {
+      toast.success("ATA excluída.")
+      navigate("/atas")
+      queryClient.invalidateQueries({ queryKey: ["atas"] })
+      queryClient.invalidateQueries({ queryKey: ["pregoes"] })
+    },
+    onError: (error) => toast.error(error.message),
+  })
 
   if (ataQuery.isLoading) {
     return (
@@ -186,6 +212,10 @@ export function AtaDetailsPage() {
       (itemFilter === "inactive" && status === "INACTIVE")
     return matchesSearch && matchesGroup && matchesStatus
   })
+  const coverageGroup = ata.coverageGroups.find((group) => /^REG-\d+$/i.test(group.code)) ?? ata.coverageGroups[0]
+  const coverageLocalities = ata.coverageGroups.flatMap((group) => group.localities).filter((locality, index, array) =>
+    array.findIndex((item) => item.cityName.toLocaleLowerCase("pt-BR") === locality.cityName.toLocaleLowerCase("pt-BR") && item.stateUf === locality.stateUf) === index
+  )
   const hasItemFilters = Boolean(search || itemFilter !== "all" || groupFilter !== "all")
   const clearItemFilters = () => {
     setSearch("")
@@ -254,6 +284,10 @@ export function AtaDetailsPage() {
                   <Button variant="secondary" onClick={() => setEditOpen(true)}>
                     <Pencil className="size-4" />
                     Editar ATA
+                  </Button>
+                  <Button variant="secondary" onClick={() => setDeleteOpen(true)}>
+                    <Trash2 className="size-4" />
+                    Excluir ATA
                   </Button>
                 </>
               )}
@@ -373,31 +407,20 @@ export function AtaDetailsPage() {
       </div>
 
       <Card className="border-primary/10 shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <MapPin className="size-5 text-primary" />
-            Cobertura territorial
-          </CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between gap-3">
+          <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-primary" />Cobertura territorial</CardTitle>
+          {canManage && <Button variant="outline" size="sm" onClick={() => setCoverageOpen(true)}><Pencil className="size-4" />Editar localidades</Button>}
         </CardHeader>
-        <CardContent className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {ata.coverageGroups.map((group) => (
-            <div key={group.id} className="rounded-xl border border-primary/10 bg-muted/15 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="font-medium">{group.code} · {group.name}</p>
-                <Badge variant="outline">{group.localities.length} localidade(s)</Badge>
-              </div>
-              <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                {group.description || "Sem descrição adicional."}
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {group.localities.map((locality) => (
-                  <Badge key={`${locality.cityName}-${locality.stateUf}`} variant="secondary">
-                    {locality.cityName}/{locality.stateUf}
-                  </Badge>
-                ))}
-              </div>
+        <CardContent>
+          <div className="rounded-xl border border-primary/10 bg-muted/15 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="font-medium">{coverageGroup?.code ?? "REG-01"} · {coverageGroup?.name ?? "Região 1"}</p>
+              <Badge variant="outline">{coverageLocalities.length} localidade(s)</Badge>
             </div>
-          ))}
+            <div className="mt-3 flex flex-wrap gap-2">
+              {coverageLocalities.map((locality) => <Badge key={`${locality.cityName}-${locality.stateUf}`} variant="secondary">{locality.cityName}/{locality.stateUf}</Badge>)}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -559,6 +582,8 @@ export function AtaDetailsPage() {
         </CardContent>
       </Card>
 
+      {coverageOpen && <AtaCoverageDialog open={coverageOpen} onOpenChange={setCoverageOpen} ata={ata} pending={coverageMutation.isPending} onSubmit={(payload) => coverageMutation.mutateAsync(payload).then(() => undefined)} />}
+      <DeleteActionDialog open={deleteOpen} onOpenChange={setDeleteOpen} entityLabel="ATA" entityCode={ata.number} description="A exclusão só será concluída quando não houver estimativas nem movimentações de saldo vinculadas." pending={deleteMutation.isPending} onConfirm={() => deleteMutation.mutate()} />
       {editOpen && (
         <AtaDialog
           open={editOpen}
