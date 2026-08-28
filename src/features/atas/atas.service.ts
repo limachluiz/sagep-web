@@ -17,6 +17,9 @@ export const atasService = {
   create(payload: AtaPayload) { return api.post<Ata>("/atas", payload) },
   update(ataId: string, payload: AtaUpdatePayload) { return api.patch<Ata>(`/atas/${ataId}`, payload) },
   remove(ataId: string) { return api.delete<{ message: string }>(`/atas/${ataId}`) },
+  replaceCoverage(ataId: string, payload: { regionNumber: number; localities: Array<{ cityName: string; stateUf: FederativeUnit }> }) {
+    return api.put<Ata["coverageGroups"][number]>(`/atas/${ataId}/coverage`, payload)
+  },
   syncPncp(ataId: string) { return api.post<{ controlNumber: string; lastSyncAt: string; snapshot: NonNullable<Ata["pncpSnapshot"]> }>(`/atas/${ataId}/sync-pncp`) },
 
   listItems(ataId: string, filters: { page?: number; pageSize?: number; search?: string; active?: boolean } = {}) {
@@ -56,6 +59,7 @@ export const pregoesService = {
   update(id: string, payload: Partial<PregaoPayload>) {
     return api.patch<Pregao>(`/pregoes/${id}`, payload)
   },
+  remove(id: string) { return api.delete<{ message: string }>(`/pregoes/${id}`) },
   sync(id: string) {
     return api.post<{ pregaoId: string; synchronizedAt: string; atasProcessed: number; itemsCreated: number; itemsUpdated: number }>(`/pregoes/${id}/sync`, {})
   },
