@@ -24,6 +24,7 @@ export function MilitaryOrganizationsPage() {
   const [search, setSearch] = useState("")
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
+  const [cityName, setCityName] = useState("all")
   const [activity, setActivity] = useState<"all" | "active" | "inactive">("all")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
@@ -41,8 +42,9 @@ export function MilitaryOrganizationsPage() {
     pageSize: 10,
     search: debouncedSearch || undefined,
     stateUf: stateUf === "all" ? undefined : stateUf,
+    cityName: cityName === "all" ? undefined : cityName,
     active: activity === "all" ? undefined : activity === "active",
-  }), [activity, debouncedSearch, page, stateUf])
+  }), [activity, cityName, debouncedSearch, page, stateUf])
 
   const listQuery = useQuery({
     queryKey: ["military-organizations", "management", filters],
@@ -78,12 +80,18 @@ export function MilitaryOrganizationsPage() {
   })
 
   const allOrganizations = summaryQuery.data?.items ?? []
+  const availableCities = useMemo(() => Array.from(new Set(
+    allOrganizations
+      .filter((item) => stateUf === "all" || item.stateUf === stateUf)
+      .map((item) => item.cityName.trim())
+      .filter(Boolean),
+  )).sort((left, right) => left.localeCompare(right, "pt-BR")), [allOrganizations, stateUf])
   const activeCount = allOrganizations.filter((item) => item.isActive).length
   const representedStates = new Set(allOrganizations.map((item) => item.stateUf)).size
-  const hasFilters = Boolean(search || stateUf !== "all" || activity !== "all")
+  const hasFilters = Boolean(search || stateUf !== "all" || cityName !== "all" || activity !== "all")
   const meta = listQuery.data?.meta
 
-  const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStateUf("all"); setActivity("all"); setPage(1) }
+  const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStateUf("all"); setCityName("all"); setActivity("all"); setPage(1) }
   const openCreate = () => { setSelected(null); setFormOpen(true) }
   const openEdit = (organization: MilitaryOrganization) => { setSelected(organization); setFormOpen(true) }
 
@@ -108,9 +116,10 @@ export function MilitaryOrganizationsPage() {
         <Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Estados representados</p><p className="mt-2 text-2xl font-semibold">{summaryQuery.isLoading ? "—" : `${representedStates}/4`}</p></div><MapPin className="size-6 text-primary" /></CardContent></Card>
       </div>
 
-      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_220px_auto]">
+      <Card className="border-none shadow-sm"><CardContent className="grid gap-3 p-5 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_200px_220px_200px_auto]">
         <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Buscar por sigla, nome ou cidade..." value={search} onChange={(event) => setSearch(event.target.value)} /></div>
-        <Select value={stateUf} onValueChange={(value) => { setStateUf(value as FederativeUnit | "all"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os estados</SelectItem>{Object.entries(stateLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
+        <Select value={stateUf} onValueChange={(value) => { setStateUf(value as FederativeUnit | "all"); setCityName("all"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os estados</SelectItem>{Object.entries(stateLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
+        <Select value={cityName} onValueChange={(value) => { setCityName(value); setPage(1) }} disabled={summaryQuery.isLoading || availableCities.length === 0}><SelectTrigger><SelectValue placeholder="Todos os municípios" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os municípios</SelectItem>{availableCities.map((city) => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select>
         <Select value={activity} onValueChange={(value) => { setActivity(value as "all" | "active" | "inactive"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Ativas e inativas</SelectItem><SelectItem value="active">Somente ativas</SelectItem><SelectItem value="inactive">Somente inativas</SelectItem></SelectContent></Select>
         {hasFilters && <Button variant="ghost" onClick={clearFilters}><X className="size-4" />Limpar</Button>}
       </CardContent></Card>
