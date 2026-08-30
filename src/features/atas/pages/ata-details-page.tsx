@@ -536,6 +536,9 @@ export function AtaDetailsPage() {
                         <ItemDescription className="mt-1 text-xs text-muted-foreground">
                           {item.description}
                         </ItemDescription>
+                        {item.descriptionCorrectionStatus === "NEEDS_REVIEW" && <Badge variant="destructive" className="mt-2">Revisão textual pendente</Badge>}
+                        {item.descriptionCorrectionStatus === "AUTO_CORRECTED" && <Badge variant="secondary" className="mt-2">Corrigida automaticamente</Badge>}
+                        {item.descriptionCorrectionStatus === "MANUALLY_REVIEWED" && <Badge variant="outline" className="mt-2">Descrição validada</Badge>}
                       </TableCell>
                       <TableCell><Badge variant="outline">{item.coverageGroup.name}</Badge></TableCell>
                       <TableCell className="whitespace-nowrap">{formatAtaCurrency(item.unitPrice)}</TableCell>
@@ -571,7 +574,7 @@ export function AtaDetailsPage() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                title="Corrigir descrição pelo dicionário"
+                                title="Executar correção inteligente"
                                 aria-label={`Corrigir descrição do item ${item.referenceCode}`}
                                 disabled={correctItemMutation.isPending}
                                 onClick={() => correctItemMutation.mutate(item)}

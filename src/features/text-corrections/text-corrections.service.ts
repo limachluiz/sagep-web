@@ -8,4 +8,5 @@ export const textCorrectionsService = {
   remove: (id: string) => api.delete<{ message: string }>(`/text-corrections/${id}`),
   test: (input: { text: string; damagedText?: string; correctedText?: string }) => api.post<{ originalText: string; correctedText: string; changed: boolean; unresolvedTokens: string[] }>("/text-corrections/test", input),
   applyCatalog: () => api.post<{ scope: "CATALOG"; total: number; corrected: number; unresolvedTokens: string[] }>("/text-corrections/apply", { scope: "CATALOG" }),
+  reviewItem: (itemId: string, description: string, learnRule?: { damagedText: string; correctedText: string }) => api.patch<{ id: string; description: string }>(`/text-corrections/review/${itemId}`, { description, ...(learnRule && { learnRule }) }),
 }

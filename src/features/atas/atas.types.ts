@@ -90,6 +90,10 @@ export type AtaItem = {
   coverageGroupId: string
   referenceCode: string
   description: string
+  externalDescription?: string | null
+  automaticDescription?: string | null
+  descriptionCorrectionStatus?: "OK" | "AUTO_CORRECTED" | "NEEDS_REVIEW" | "MANUALLY_REVIEWED"
+  descriptionCorrectionConfidence?: number | null
   unit: string
   unitPrice: string
   initialQuantity: string
