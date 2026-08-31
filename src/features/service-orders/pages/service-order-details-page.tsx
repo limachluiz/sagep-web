@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Archive, ArrowLeft, Building2, CalendarRange, Download, ExternalLink, FileCheck2, FileSignature, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
+import { AlertTriangle, Archive, ArrowLeft, Building2, CalendarRange, ExternalLink, FileCheck2, FileSignature, FileText, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -15,6 +15,7 @@ import { serviceOrdersApi } from "@/features/service-orders/service-orders.api"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { EditServiceOrderDialog } from "@/features/service-orders/components/edit-service-order-dialog"
 import { RegisterSignedServiceOrderDialog } from "@/features/service-orders/components/register-signed-service-order-dialog"
+import { openPdfPreview } from "@/lib/pdf-preview"
 
 const money = (value: string) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value))
 const quantity = (value: string) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(Number(value))
@@ -39,12 +40,36 @@ export function ServiceOrderDetailsPage() {
   const archiveMutation = useMutation({ mutationFn: () => serviceOrdersApi.archive(serviceOrderId), onSuccess: () => { toast.success("Ordem de Serviço arquivada."); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); navigate("/service-orders") }, onError: (error) => toast.error(error.message) })
   const restoreMutation = useMutation({ mutationFn: () => serviceOrdersApi.restore(serviceOrderId), onSuccess: () => { toast.success("Ordem de Serviço restaurada."); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }); navigate(`/service-orders/${serviceOrderId}`) }, onError: (error) => toast.error(error.message) })
   const deleteMutation = useMutation({ mutationFn: () => serviceOrdersApi.softDelete(serviceOrderId), onSuccess: () => { toast.success("Ordem de Serviço excluída com sucesso."); queryClient.invalidateQueries({ queryKey: ["service-orders"] }); queryClient.invalidateQueries({ queryKey: ["projects"] }); queryClient.invalidateQueries({ queryKey: ["dashboard"] }); navigate("/service-orders") }, onError: (error) => toast.error(error.message) })
-  const document = async (format: "html" | "pdf") => { const win = format === "html" ? window.open("", "_blank") : null; setLoading(format); try { const blob = await serviceOrdersApi.document(serviceOrderId, format); const url = URL.createObjectURL(blob); if (win) win.location.href = url; else { const a = window.document.createElement("a"); a.href = url; a.download = `ordem-servico-${query.data?.serviceOrderNumber}.${format}`; a.click() } window.setTimeout(() => URL.revokeObjectURL(url), 60_000) } catch (error) { win?.close(); toast.error(error instanceof Error ? error.message : "Erro ao gerar documento.") } finally { setLoading(null) } }
+  const document = async (format: "html" | "pdf") => {
+    setLoading(format)
+    let previewWindow: Window | null = null
+    try {
+      if (format === "pdf") {
+        await openPdfPreview(
+          () => serviceOrdersApi.document(serviceOrderId, "pdf"),
+          `Ordem de Serviço ${query.data?.serviceOrderNumber ?? serviceOrderId}`,
+        )
+        return
+      }
+
+      previewWindow = window.open("", "_blank")
+      const blob = await serviceOrdersApi.document(serviceOrderId, format)
+      const url = URL.createObjectURL(blob)
+      if (previewWindow) previewWindow.location.href = url
+      else { const a = window.document.createElement("a"); a.href = url; a.download = `ordem-servico-${query.data?.serviceOrderNumber}.${format}`; a.click() }
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (error) {
+      previewWindow?.close()
+      toast.error(error instanceof Error ? error.message : "Erro ao gerar documento.")
+    } finally {
+      setLoading(null)
+    }
+  }
   if (query.isLoading) return <div className="space-y-4">{Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-28" />)}</div>
   if (query.isError || !query.data) return <div className="space-y-4"><Button asChild variant="ghost"><Link to="/service-orders"><ArrowLeft className="size-4" />Voltar</Link></Button><Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar a OS</AlertTitle><AlertDescription>{query.error?.message}</AlertDescription></Alert></div>
   const order = query.data
   const canRegisterSignature = canEdit && !order.archivedAt && order.project.stage === "AGUARDANDO_OS_ASSINADA"
-  return <div className="space-y-6"><div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/service-orders"><ArrowLeft className="size-4" />Voltar às OS</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>{order.serviceOrderNumber}</Badge>{order.isEmergency && <Badge variant="destructive">Emergencial</Badge>}{order.archivedAt && <Badge variant="outline">Arquivada</Badge>}</div><h1 className="text-3xl font-semibold">Ordem de Serviço</h1><p className="mt-2 text-sm text-muted-foreground">Emitida em {date(order.issuedAt)} · NE {order.commitmentNoteNumber}</p></div><div className="flex flex-wrap gap-2">{canEdit && !order.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canCancel && !order.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && order.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}{canDelete && order.archivedAt && <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}<Button variant="outline" disabled={Boolean(loading) || Boolean(order.archivedAt)} onClick={() => document("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={Boolean(loading) || Boolean(order.archivedAt)} onClick={() => document("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
+  return <div className="space-y-6"><div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/service-orders"><ArrowLeft className="size-4" />Voltar às OS</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>{order.serviceOrderNumber}</Badge>{order.isEmergency && <Badge variant="destructive">Emergencial</Badge>}{order.archivedAt && <Badge variant="outline">Arquivada</Badge>}</div><h1 className="text-3xl font-semibold">Ordem de Serviço</h1><p className="mt-2 text-sm text-muted-foreground">Emitida em {date(order.issuedAt)} · NE {order.commitmentNoteNumber}</p></div><div className="flex flex-wrap gap-2">{canEdit && !order.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canCancel && !order.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && order.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}{canDelete && order.archivedAt && <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}<Button variant="outline" disabled={Boolean(loading) || Boolean(order.archivedAt)} onClick={() => document("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={Boolean(loading) || Boolean(order.archivedAt)} onClick={() => document("pdf")}><FileText className="size-4" />Visualizar PDF</Button></div></div></div>
     {canRegisterSignature && <Alert><FileSignature /><AlertTitle>Recebimento da OS assinada pendente</AlertTitle><AlertDescription className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between"><span>Registre o link da versão devolvida pela contratada para liberar o início da execução.</span><Button size="sm" onClick={() => setRegisterSignatureOpen(true)}>Registrar OS assinada</Button></AlertDescription></Alert>}
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card className="border-none shadow-sm"><CardContent className="p-5"><FileCheck2 className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Valor da OS</p><p className="mt-1 text-xl font-semibold">{money(order.totalAmount)}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><Building2 className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Contratada</p><p className="mt-1 font-semibold">{order.contractorName}</p><p className="text-xs text-muted-foreground">{order.contractorCnpj}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><UserRound className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Fiscal/requisitante</p><p className="mt-1 font-semibold">{order.requesterRank} {order.requesterName}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><CalendarRange className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Execução planejada</p><p className="mt-1 font-semibold">{date(order.plannedStartDate)} — {date(order.plannedEndDate)}</p></CardContent></Card></div>
     <Card className="border-none shadow-sm"><CardHeader><CardTitle>Vínculos e execução</CardTitle></CardHeader><CardContent className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4"><div><p className="text-xs text-muted-foreground">Projeto</p><Button asChild variant="link" className="h-auto p-0"><Link to={`/projects/${order.project.id}`}>PRJ-{order.project.projectCode}</Link></Button></div><div><p className="text-xs text-muted-foreground">Estimativa</p><p className="font-medium">EST-{order.estimate.estimateCode}</p></div><div><p className="text-xs text-muted-foreground">DIEx</p><p className="font-medium">{order.diexRequest?.diexNumber ?? "Não vinculado"}</p></div><div><p className="text-xs text-muted-foreground">Local</p><p className="font-medium">{order.executionLocation ?? "Não informado"}</p></div></CardContent></Card>

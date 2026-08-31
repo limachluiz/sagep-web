@@ -5,7 +5,7 @@ import {
   Archive,
   ArrowLeft,
   Building2,
-  Download,
+  FileText,
   ExternalLink,
   FileSpreadsheet,
   MapPin,
@@ -41,6 +41,7 @@ import { estimatesService } from "@/features/estimates/estimates.service"
 import type { EstimateStatus } from "@/features/estimates/estimates.types"
 import { EstimateEditDialog } from "@/features/estimates/components/estimate-edit-dialog"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { openPdfPreview } from "@/lib/pdf-preview"
 
 const statusLabels: Record<EstimateStatus, string> = {
   RASCUNHO: "Rascunho",
@@ -141,14 +142,23 @@ export function EstimateDetailsPage() {
   })
 
   const handleDocument = async (format: "html" | "pdf") => {
-    const previewWindow = format === "html" ? window.open("", "_blank") : null
     setDocumentLoading(format)
+    let previewWindow: Window | null = null
 
     try {
+      if (format === "pdf") {
+        await openPdfPreview(
+          () => estimatesService.document(estimateId, "pdf"),
+          `Estimativa EST-${estimateQuery.data?.estimateCode ?? estimateId}`,
+        )
+        return
+      }
+
+      previewWindow = window.open("", "_blank")
       const blob = await estimatesService.document(estimateId, format)
       const url = URL.createObjectURL(blob)
 
-      if (format === "html" && previewWindow) {
+      if (previewWindow) {
         previewWindow.location.href = url
       } else {
         const anchor = document.createElement("a")
@@ -245,8 +255,8 @@ export function EstimateDetailsPage() {
               {documentLoading === "html" ? "Gerando..." : "Visualizar documento"}
             </Button>
             <Button className="gap-2" onClick={() => handleDocument("pdf")} disabled={Boolean(documentLoading)}>
-              <Download className="size-4" />
-              {documentLoading === "pdf" ? "Gerando..." : "Baixar PDF"}
+              <FileText className="size-4" />
+              {documentLoading === "pdf" ? "Gerando..." : "Visualizar PDF"}
             </Button>
           </div>
         </div>

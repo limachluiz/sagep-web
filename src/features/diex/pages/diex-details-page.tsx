@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Archive, ArrowLeft, Building2, Download, ExternalLink, FileSignature, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
+import { AlertTriangle, Archive, ArrowLeft, Building2, ExternalLink, FileSignature, FileText, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
@@ -17,6 +17,7 @@ import { CompleteDiexDialog } from "@/features/diex/components/complete-diex-dia
 import { EditDiexDialog } from "@/features/diex/components/edit-diex-dialog"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { invalidateProjectFlow } from "@/features/projects/project-flow-cache"
+import { openPdfPreview } from "@/lib/pdf-preview"
 
 function formatCurrency(value: string) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value)) }
 function formatQuantity(value: string) { return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(Number(value)) }
@@ -75,12 +76,21 @@ export function DiexDetailsPage() {
   })
 
   const handleDocument = async (format: "html" | "pdf") => {
-    const previewWindow = format === "html" ? window.open("", "_blank") : null
     setDocumentLoading(format)
+    let previewWindow: Window | null = null
     try {
+      if (format === "pdf") {
+        await openPdfPreview(
+          () => diexService.document(diexId, "pdf"),
+          `DIEx ${query.data?.diexNumber ?? query.data?.diexCode ?? diexId}`,
+        )
+        return
+      }
+
+      previewWindow = window.open("", "_blank")
       const blob = await diexService.document(diexId, format)
       const url = URL.createObjectURL(blob)
-      if (format === "html" && previewWindow) previewWindow.location.href = url
+      if (previewWindow) previewWindow.location.href = url
       else { const anchor = document.createElement("a"); anchor.href = url; anchor.download = `diex-${query.data?.diexNumber ?? query.data?.diexCode}.${format}`; anchor.click() }
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (error) { previewWindow?.close(); toast.error(error instanceof Error ? error.message : "Não foi possível gerar o documento.") }
@@ -93,7 +103,7 @@ export function DiexDetailsPage() {
   const documentReady = Boolean(diex.diexNumber && diex.issuedAt)
 
   return <div className="space-y-6">
-    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex flex-wrap gap-2">{canIssue && !diex.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}{canCancel && !diex.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && diex.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}{canDelete && diex.archivedAt && <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><Download className="size-4" />Baixar PDF</Button></div></div></div>
+    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex flex-wrap gap-2">{canIssue && !diex.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}{canCancel && !diex.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && diex.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}{canDelete && diex.archivedAt && <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><FileText className="size-4" />Visualizar PDF</Button></div></div></div>
 
     {!documentReady && <Alert><AlertTriangle /><AlertTitle>Documento ainda indisponível</AlertTitle><AlertDescription>O número e a data de emissão precisam ser preenchidos pela SALC antes da geração oficial.</AlertDescription></Alert>}
 
