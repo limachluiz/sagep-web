@@ -57,6 +57,7 @@ describe("LoginPage", () => {
         expect(JSON.parse(String(init.body))).toEqual({
           email: "admin@sagep.com",
           password: "123456",
+          rememberSession: false,
         })
 
         return new Response(
@@ -171,6 +172,41 @@ describe("LoginPage", () => {
       accessToken: "access-token",
     })
     expect(localStorage.getItem("sagep-auth")).toBeNull()
+  })
+
+  it("envia a preferência de manter a sessão somente quando o usuário optar", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.endsWith("/auth/login")) {
+        expect(JSON.parse(String(init?.body))).toMatchObject({ rememberSession: true })
+        return new Response(JSON.stringify({ accessToken: "access-token", user: authenticatedUser }), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      if (url.endsWith("/auth/me")) {
+        return new Response(JSON.stringify(authenticatedUser), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }
+      if (url.includes("/dashboard/operational") || url.includes("/operational-alerts")) {
+        return new Response(JSON.stringify({}), { status: 200, headers: { "Content-Type": "application/json" } })
+      }
+      throw new Error(`Requisição inesperada: ${url}`)
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const user = userEvent.setup()
+    renderApplication()
+
+    await user.type(await screen.findByLabelText("Senha"), "123456")
+    await user.click(screen.getByRole("checkbox", { name: /manter sessão neste dispositivo/i }))
+    await user.click(screen.getByRole("button", { name: /entrar no sistema/i }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringMatching(/\/auth\/login$/),
+      expect.objectContaining({ method: "POST" }),
+    ))
   })
 
   it("mantém o usuário no login quando as credenciais são inválidas", async () => {

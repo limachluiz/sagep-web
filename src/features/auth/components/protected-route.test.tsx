@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { MemoryRouter, Route, Routes } from "react-router"
 
 import { ProtectedRoute } from "@/features/auth/components/protected-route"
+import { PermissionRoute } from "@/features/auth/components/permission-route"
 import { useAuthStore } from "@/features/auth/auth.store"
 
 const authenticatedUser = {
@@ -122,5 +123,54 @@ describe("ProtectedRoute", () => {
 
     expect(await screen.findByText("Tela de login")).toBeInTheDocument()
     expect(useAuthStore.getState().isAuthenticated).toBe(false)
+  })
+
+  it("restaura usuário e permissões antes de liberar uma rota administrativa", async () => {
+    useAuthStore.getState().logout()
+    const restoredUser = {
+      ...authenticatedUser,
+      permissions: ["backups.manage" as const],
+    }
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input)
+        if (url.endsWith("/auth/refresh")) {
+          return new Response(JSON.stringify({ accessToken: "restored-token" }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          })
+        }
+        if (url.endsWith("/auth/me") && !useAuthStore.getState().accessToken) {
+          return new Response(JSON.stringify({ message: "Token ausente" }), {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          })
+        }
+        return new Response(JSON.stringify(restoredUser), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        })
+      }),
+    )
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    render(
+      <QueryClientProvider client={queryClient}>
+        <MemoryRouter initialEntries={["/settings/backups"]}>
+          <Routes>
+            <Route element={<ProtectedRoute />}>
+              <Route path="/settings/backups" element={<PermissionRoute anyOf={["backups.manage"]}><p>Backup autorizado</p></PermissionRoute>} />
+            </Route>
+            <Route path="/acesso-negado" element={<p>Acesso negado</p>} />
+            <Route path="/login" element={<p>Tela de login</p>} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>,
+    )
+
+    expect(await screen.findByText("Backup autorizado")).toBeInTheDocument()
+    expect(screen.queryByText("Acesso negado")).not.toBeInTheDocument()
   })
 })

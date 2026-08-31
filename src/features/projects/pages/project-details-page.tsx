@@ -442,6 +442,9 @@ export function ProjectDetailsPage() {
   const canRestore = Boolean(details.project.archivedAt) && hasPermission("projects.restore")
   const canDelete = Boolean(details.project.archivedAt) && hasPermission("projects.delete")
   const canCreateTasks = hasPermission("tasks.create") && !details.project.archivedAt
+  const activeEstimate = details.documents.estimates.find((estimate) => !estimate.archivedAt)
+  const canOpenEstimateStep = hasPermission("estimates.create") && canManage && !details.project.archivedAt
+    && details.workflow.stage === "ESTIMATIVA_PRECO"
   const canChangeTaskStatus = !details.project.archivedAt && (hasPermission("tasks.edit_all") || hasPermission("tasks.edit_own") || hasPermission("tasks.complete"))
   const canRegisterCreditNote = canManage && !details.project.archivedAt && details.workflow.stage === "AGUARDANDO_NOTA_CREDITO"
   const canCreateDiex = hasPermission("diex.issue") && canManage && !details.project.archivedAt && details.workflow.stage === "DIEX_REQUISITORIO"
@@ -502,6 +505,10 @@ export function ProjectDetailsPage() {
                   ? { label: "Emitir DIEx", icon: ClipboardCheck, run: () => setCreateDiexOpen(true) }
                   : canRegisterCreditNote
                     ? { label: "Registrar Nota de Crédito", icon: CircleDollarSign, run: () => setCreditNoteOpen(true) }
+                    : canOpenEstimateStep
+                      ? activeEstimate
+                        ? { label: "Abrir estimativa", icon: FileSpreadsheet, run: () => navigate(`/estimates/${activeEstimate.id}`) }
+                        : { label: "Criar estimativa", icon: FileSpreadsheet, run: () => navigate(`/estimates/new?projectId=${details.project.id}`) }
                     : null
   const metricCards = [
     { label: "Valor estimado", value: formatCurrency(details.financialSummary.estimatedTotalAmount), icon: CircleDollarSign },

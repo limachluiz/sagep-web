@@ -10,7 +10,7 @@ import {
   Search,
   Trash2,
 } from "lucide-react"
-import { Link, useNavigate } from "react-router"
+import { Link, useNavigate, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -46,8 +46,9 @@ function cityMatches(first: string, second: string) {
 
 export function CreateEstimatePage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
-  const [projectId, setProjectId] = useState("")
+  const [projectId, setProjectId] = useState(() => searchParams.get("projectId") ?? "")
   const [pregaoId, setPregaoId] = useState("")
   const [ataId, setAtaId] = useState("")
   const [coverageGroupId, setCoverageGroupId] = useState("")
@@ -81,7 +82,18 @@ export function CreateEstimatePage() {
     enabled: Boolean(ataType && effectivePregaoId),
   })
 
-  const selectedAta = atasQuery.data?.items.find((ata) => ata.id === ataId)
+  const compatibleAtas = useMemo(() => {
+    if (!selectedProject?.om) return []
+
+    return (atasQuery.data?.items ?? []).filter((ata) => ata.coverageGroups.some((group) =>
+      group.localities.some((locality) =>
+        locality.stateUf === selectedProject.om?.stateUf &&
+        cityMatches(locality.cityName, selectedProject.om.cityName),
+      ),
+    ))
+  }, [atasQuery.data?.items, selectedProject])
+  const effectiveAtaId = ataId || (compatibleAtas.length === 1 ? compatibleAtas[0].id : "")
+  const selectedAta = atasQuery.data?.items.find((ata) => ata.id === effectiveAtaId)
   const coverageGroups = useMemo(() => {
     if (!selectedAta || !selectedProject?.om) return []
 
@@ -92,12 +104,13 @@ export function CreateEstimatePage() {
       ),
     )
   }, [selectedAta, selectedProject])
-  const selectedCoverageGroup = coverageGroups.find((group) => group.id === coverageGroupId)
+  const effectiveCoverageGroupId = coverageGroupId || (coverageGroups.length === 1 ? coverageGroups[0].id : "")
+  const selectedCoverageGroup = coverageGroups.find((group) => group.id === effectiveCoverageGroupId)
 
   const itemsQuery = useQuery({
-    queryKey: ["ata-items", "estimate-options", ataId, selectedCoverageGroup?.code],
-    queryFn: () => estimatesService.listAtaItems(ataId, selectedCoverageGroup!.code),
-    enabled: Boolean(ataId && selectedCoverageGroup),
+    queryKey: ["ata-items", "estimate-options", effectiveAtaId, selectedCoverageGroup?.code],
+    queryFn: () => estimatesService.listAtaItems(effectiveAtaId, selectedCoverageGroup!.code),
+    enabled: Boolean(effectiveAtaId && selectedCoverageGroup),
   })
 
   const visibleItems = useMemo(() => {
@@ -271,24 +284,26 @@ export function CreateEstimatePage() {
           <div className="space-y-2">
             <Label>Ata de Registro de Preços</Label>
             <Select
-              value={ataId}
+              value={effectiveAtaId}
               disabled={!effectivePregaoId || atasQuery.isLoading}
               onValueChange={(value) => { setAtaId(value); resetAfterAta() }}
             >
               <SelectTrigger><SelectValue placeholder={atasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>
               <SelectContent>
-                {atasQuery.data?.items.map((ata) => (
+                {compatibleAtas.map((ata) => (
                   <SelectItem key={ata.id} value={ata.id}>{ata.number} · {ata.vendorName}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {compatibleAtas.length === 1 && !ataId && <p className="text-xs text-primary">ATA selecionada automaticamente pela cobertura de {selectedProject?.om?.cityName}/{selectedProject?.om?.stateUf}.</p>}
+            {selectedProject?.om && !atasQuery.isLoading && Boolean(atasQuery.data?.items.length) && !compatibleAtas.length && <p className="text-xs text-destructive">Nenhuma ATA deste pregão atende {selectedProject.om.cityName}/{selectedProject.om.stateUf}. Revise a cobertura territorial das ATAs.</p>}
             {ataType && !atasQuery.isLoading && !atasQuery.data?.items.length && <p className="text-xs text-destructive">Não há ATA ativa compatível com este tipo de projeto.</p>}
           </div>
 
           <div className="space-y-2">
             <Label>Grupo de cobertura</Label>
             <Select
-              value={coverageGroupId}
+              value={effectiveCoverageGroupId}
               disabled={!selectedAta}
               onValueChange={(value) => { setCoverageGroupId(value); resetAfterCoverage() }}
             >
@@ -299,6 +314,7 @@ export function CreateEstimatePage() {
                 ))}
               </SelectContent>
             </Select>
+            {coverageGroups.length === 1 && !coverageGroupId && <p className="text-xs text-primary">Cobertura selecionada automaticamente para a OM do projeto.</p>}
             {selectedAta && selectedProject?.om && !coverageGroups.length && (
               <p className="text-xs text-destructive">A ATA selecionada não possui grupo cobrindo {selectedProject.om.cityName}/{selectedProject.om.stateUf}.</p>
             )}

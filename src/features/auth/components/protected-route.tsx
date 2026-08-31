@@ -14,18 +14,18 @@ export function ProtectedRoute() {
 
   const meQuery = useQuery({
     queryKey: ["auth", "me"],
-    queryFn: authService.me,
+    queryFn: async () => {
+      const user = await authService.me()
+      // Atualiza o usuário e suas permissões antes de liberar as rotas filhas.
+      // Isso evita um redirecionamento indevido durante a restauração por cookie.
+      setUser(user)
+      return user
+    },
     enabled: true,
     retry: false,
     staleTime: 1000 * 60 * 5,
     refetchOnWindowFocus: false,
   })
-
-  useEffect(() => {
-    if (meQuery.data) {
-      setUser(meQuery.data)
-    }
-  }, [meQuery.data, setUser])
 
   useEffect(() => {
     const sessionWasRejected =

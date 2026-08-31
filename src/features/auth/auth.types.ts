@@ -74,6 +74,7 @@ export type AccessPermissionGroup = {
 export type LoginPayload = {
   email: string
   password: string
+  rememberSession?: boolean
 }
 
 export type LoginResponse = {

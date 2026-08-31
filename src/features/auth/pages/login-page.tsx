@@ -123,6 +123,7 @@ export function LoginPage() {
   const [email, setEmail] = useState("admin@sagep.com")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
+  const [rememberSession, setRememberSession] = useState(false)
   const setupStatus = useQuery({ queryKey: ["setup", "status"], queryFn: setupService.status, retry: false })
 
   const loginMutation = useMutation({
@@ -144,7 +145,7 @@ export function LoginPage() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    loginMutation.mutate({ email, password })
+    loginMutation.mutate({ email, password, rememberSession })
   }
 
   if (isAuthenticated) {
@@ -286,6 +287,19 @@ export function LoginPage() {
                   </button>
                 </div>
               </div>
+
+              <label className="flex cursor-pointer items-start gap-3 rounded-md border border-[#b8af91]/70 bg-[#e9e4d7]/60 px-3.5 py-3 text-[#354033] transition-colors hover:border-[#98803f]">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4 shrink-0 accent-[#80681c]"
+                  checked={rememberSession}
+                  onChange={(event) => setRememberSession(event.target.checked)}
+                />
+                <span>
+                  <span className="block text-sm font-semibold">Manter sessão neste dispositivo</span>
+                  <span className="mt-0.5 block text-[11px] leading-4 text-[#66705f]">Use somente em equipamento institucional ou pessoal confiável. A sessão permanecerá por até 7 dias e poderá ser revogada nas configurações.</span>
+                </span>
+              </label>
 
               <Button
                 className="group h-13 w-full rounded-md bg-[linear-gradient(90deg,#80681c,#9c7e24,#76601a)] text-sm font-medium tracking-[.02em] text-white shadow-[0_8px_20px_rgba(92,70,11,.18)] hover:brightness-110"
