@@ -82,31 +82,61 @@ export type CreateServiceOrderPayload = {
   estimateId: string
   diexId: string
   issuedAt: string
-  contractorCnpj: string
+  contractorName?: string
+  contractorCnpj?: string
   requesterName: string
   requesterRank: string
   requesterCpf: string
+  requesterRole?: string
+  issuingOrganization?: string
+  isEmergency?: boolean
+  requestingArea?: string
+  projectDisplayName?: string
+  projectAcronym?: string
+  contractNumber?: string
   plannedStartDate?: string
   plannedEndDate?: string
   executionLocation?: string
+  executionHours?: string
   contactName?: string
   contactPhone?: string
+  contactExtension?: string
+  contractTotalTerm?: string
+  originProcess?: string
   contractorRepresentativeName?: string
+  contractorRepresentativeRole?: string
+  scheduleItems?: Array<{ orderIndex: number; taskStep: string; scheduleText: string }>
+  deliveredDocuments?: Array<{ description: string; isChecked?: boolean }>
   notes?: string
 }
 
 export type UpdateServiceOrderPayload = {
   serviceOrderNumber?: string
   issuedAt?: string
+  contractorName?: string
   contractorCnpj?: string
   requesterName?: string
   requesterRank?: string
   requesterCpf?: string
+  requesterRole?: string
+  issuingOrganization?: string
+  isEmergency?: boolean
+  requestingArea?: string
+  projectDisplayName?: string
+  projectAcronym?: string
+  contractNumber?: string
   plannedStartDate?: string
   plannedEndDate?: string
   executionLocation?: string
+  executionHours?: string
   contactName?: string
   contactPhone?: string
+  contactExtension?: string
+  contractTotalTerm?: string
+  originProcess?: string
   contractorRepresentativeName?: string
+  contractorRepresentativeRole?: string
+  scheduleItems?: Array<{ orderIndex: number; taskStep: string; scheduleText: string }>
+  deliveredDocuments?: Array<{ description: string; isChecked?: boolean }>
   notes?: string
 }

@@ -272,23 +272,23 @@ export function CreateEstimatePage() {
 
       <Card className="border-none shadow-sm">
         <CardHeader><CardTitle>2. Pregão, ATA e grupo de cobertura</CardTitle></CardHeader>
-        <CardContent className="grid gap-5 lg:grid-cols-3">
-          <div className="space-y-2">
+        <CardContent className="grid min-w-0 gap-5 xl:grid-cols-3">
+          <div className="min-w-0 space-y-2">
             <Label>Pregão</Label>
             <Select value={effectivePregaoId} disabled={!ataType || pregoesQuery.isLoading} onValueChange={(value) => { setPregaoId(value); resetAfterPregao() }}>
-              <SelectTrigger><SelectValue placeholder={pregoesQuery.isLoading ? "Carregando pregões..." : "Selecione o pregão"} /></SelectTrigger>
+              <SelectTrigger className="w-full min-w-0 [&>span]:truncate"><SelectValue placeholder={pregoesQuery.isLoading ? "Carregando pregões..." : "Selecione o pregão"} /></SelectTrigger>
               <SelectContent>{pregoesQuery.data?.items.map((pregao) => <SelectItem key={pregao.id} value={pregao.id}>PE {pregao.number}/{pregao.year} · UASG {pregao.uasg}</SelectItem>)}</SelectContent>
             </Select>
             {ataType && !pregoesQuery.isLoading && !pregoesQuery.data?.items.length && <p className="text-xs text-destructive">Não há pregão ativo compatível com este tipo de projeto.</p>}
           </div>
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <Label>Ata de Registro de Preços</Label>
             <Select
               value={effectiveAtaId}
               disabled={!effectivePregaoId || atasQuery.isLoading}
               onValueChange={(value) => { setAtaId(value); resetAfterAta() }}
             >
-              <SelectTrigger><SelectValue placeholder={atasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>
+              <SelectTrigger className="w-full min-w-0 [&>span]:truncate"><SelectValue placeholder={atasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>
               <SelectContent>
                 {compatibleAtas.map((ata) => (
                   <SelectItem key={ata.id} value={ata.id}>{ata.number} · {ata.vendorName}</SelectItem>
@@ -300,14 +300,14 @@ export function CreateEstimatePage() {
             {ataType && !atasQuery.isLoading && !atasQuery.data?.items.length && <p className="text-xs text-destructive">Não há ATA ativa compatível com este tipo de projeto.</p>}
           </div>
 
-          <div className="space-y-2">
+          <div className="min-w-0 space-y-2">
             <Label>Grupo de cobertura</Label>
             <Select
               value={effectiveCoverageGroupId}
               disabled={!selectedAta}
               onValueChange={(value) => { setCoverageGroupId(value); resetAfterCoverage() }}
             >
-              <SelectTrigger><SelectValue placeholder="Selecione a cobertura" /></SelectTrigger>
+              <SelectTrigger className="w-full min-w-0 [&>span]:truncate"><SelectValue placeholder="Selecione a cobertura" /></SelectTrigger>
               <SelectContent>
                 {coverageGroups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>{group.code} · {group.name}</SelectItem>

@@ -334,9 +334,26 @@ export type ProjectDetailsResponse = {
       documentStatus: string | null
       totalAmount: string
       supplierName: string | null
+      supplierCnpj: string
+      requesterName: string
+      requesterRank: string
+      requesterCpf: string | null
+      issuingOrganization: string
+      pregaoNumber: string
+      uasg: string
       archivedAt: string | null
       createdAt: string
-      estimate: { id: string; estimateCode: number }
+      estimate: {
+        id: string
+        estimateCode: number
+        destinationCityName: string
+        destinationStateUf: string
+        ata: {
+          number: string
+          vendorName: string
+          pregao: { number: string; year: string; managingAgency: string | null } | null
+        }
+      }
     }>
     serviceOrders: Array<{
       id: string
