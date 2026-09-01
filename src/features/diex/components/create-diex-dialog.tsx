@@ -21,6 +21,7 @@ import { useAuthStore } from "@/features/auth/auth.store"
 import { diexService } from "@/features/diex/diex.service"
 import type { CreateDiexPayload, DiexRequest } from "@/features/diex/diex.types"
 import type { ProjectDetailsResponse } from "@/features/projects/projects.types"
+import { cnpjDigits, formatCnpj } from "@/lib/brazilian-documents"
 
 type CreateDiexDialogProps = {
   details: ProjectDetailsResponse
@@ -43,7 +44,7 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
     (estimate) => estimate.status === "FINALIZADA" && !estimate.archivedAt && !existingEstimateIds.has(estimate.id),
   )
   const [estimateId, setEstimateId] = useState(() => eligibleEstimates[0]?.id ?? "")
-  const [supplierCnpj, setSupplierCnpj] = useState("")
+  const [supplierCnpj, setSupplierCnpj] = useState(() => formatCnpj(eligibleEstimates[0]?.ata.vendorCnpj))
   const [requesterName, setRequesterName] = useState(() => user?.name ?? "")
   const [requesterRank, setRequesterRank] = useState(() => user?.rank ?? "")
   const [requesterCpf, setRequesterCpf] = useState(() => user?.cpf ?? "")
@@ -53,7 +54,7 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
 
   const validationError = useMemo(() => {
     if (!estimateId) return "Selecione uma estimativa finalizada."
-    if (supplierCnpj.trim().length < 14) return "Informe o CNPJ do fornecedor."
+    if (cnpjDigits(supplierCnpj).length !== 14) return "Informe um CNPJ válido com 14 dígitos."
     if (requesterName.trim().length < 3) return "Informe o nome do requisitante."
     if (requesterRank.trim().length < 2) return "Informe o posto ou graduação do requisitante."
     if (requesterCpf.replace(/\D/g, "").length !== 11) return "Informe um CPF válido com 11 dígitos."
@@ -66,7 +67,7 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
       const payload: CreateDiexPayload = {
         projectId: details.project.id,
         estimateId,
-        supplierCnpj: supplierCnpj.trim(),
+        supplierCnpj: cnpjDigits(supplierCnpj),
         requesterName: requesterName.trim(),
         requesterRank: requesterRank.trim(),
         requesterCpf: requesterCpf.trim(),
@@ -105,7 +106,10 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
 
           <div className="space-y-2">
             <Label>Estimativa finalizada</Label>
-            <Select value={estimateId} onValueChange={setEstimateId}>
+            <Select value={estimateId} onValueChange={(value) => {
+              setEstimateId(value)
+              setSupplierCnpj(formatCnpj(eligibleEstimates.find((estimate) => estimate.id === value)?.ata.vendorCnpj))
+            }}>
               <SelectTrigger><SelectValue placeholder="Selecione a estimativa" /></SelectTrigger>
               <SelectContent>
                 {eligibleEstimates.map((estimate) => (
@@ -120,7 +124,12 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
 
           <div className="space-y-2">
             <Label htmlFor="supplier-cnpj">CNPJ do fornecedor</Label>
-            <Input id="supplier-cnpj" value={supplierCnpj} onChange={(event) => setSupplierCnpj(event.target.value)} placeholder="00.000.000/0000-00" />
+            <Input id="supplier-cnpj" value={supplierCnpj} onChange={(event) => setSupplierCnpj(formatCnpj(event.target.value))} placeholder="00.000.000/0000-00" inputMode="numeric" />
+            <p className="text-xs text-muted-foreground">
+              {eligibleEstimates.find((estimate) => estimate.id === estimateId)?.ata.vendorCnpj
+                ? `Preenchido automaticamente pela ATA ${eligibleEstimates.find((estimate) => estimate.id === estimateId)?.ata.number}. Você pode editar em caso excepcional.`
+                : "A ATA selecionada ainda não possui CNPJ cadastrado. Informe-o aqui ou atualize os dados da ATA."}
+            </p>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

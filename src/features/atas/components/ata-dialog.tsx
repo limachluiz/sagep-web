@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import type { FederativeUnit } from "@/features/projects/projects.types"
 import type { Ata, AtaPayload, AtaType, AtaUpdatePayload } from "@/features/atas/atas.types"
+import { cnpjDigits, formatCnpj } from "@/lib/brazilian-documents"
 
 type EditableLocality = { cityName: string; stateUf: FederativeUnit }
 type EditableGroup = { code: string; name: string; description: string; localities: EditableLocality[] }
@@ -20,6 +21,7 @@ export function AtaDialog({ open, onOpenChange, ata, pending, onSubmit }: Props)
   const [number, setNumber] = useState(ata?.number ?? "")
   const [type, setType] = useState<AtaType>(ata?.type ?? "CFTV")
   const [vendorName, setVendorName] = useState(ata?.vendorName ?? "")
+  const [vendorCnpj, setVendorCnpj] = useState(() => formatCnpj(ata?.vendorCnpj))
   const [managingAgency, setManagingAgency] = useState(ata?.managingAgency ?? "")
   const [validFrom, setValidFrom] = useState(ata?.validFrom?.slice(0, 10) ?? "")
   const [validUntil, setValidUntil] = useState(ata?.validUntil?.slice(0, 10) ?? "")
@@ -33,7 +35,9 @@ export function AtaDialog({ open, onOpenChange, ata, pending, onSubmit }: Props)
   const submit = async () => {
     if (number.trim().length < 3 || vendorName.trim().length < 3) { setError("Informe o número e o fornecedor da ATA."); return }
     if (validFrom && validUntil && validUntil < validFrom) { setError("A vigência final não pode ser anterior à inicial."); return }
-    const base = { number: number.trim(), type, vendorName: vendorName.trim(), ...(managingAgency.trim() && { managingAgency: managingAgency.trim() }), ...(validFrom && { validFrom }), ...(validUntil && { validUntil }), ...(notes.trim() && { notes: notes.trim() }) }
+    const normalizedVendorCnpj = cnpjDigits(vendorCnpj)
+    if (normalizedVendorCnpj && normalizedVendorCnpj.length !== 14) { setError("Informe um CNPJ válido com 14 dígitos."); return }
+    const base = { number: number.trim(), type, vendorName: vendorName.trim(), ...(normalizedVendorCnpj && { vendorCnpj: normalizedVendorCnpj }), ...(managingAgency.trim() && { managingAgency: managingAgency.trim() }), ...(validFrom && { validFrom }), ...(validUntil && { validUntil }), ...(notes.trim() && { notes: notes.trim() }) }
     if (ata) { await onSubmit(base); return }
     if (groups.some((group) => group.code.trim().length < 2 || group.name.trim().length < 2 || group.localities.some((locality) => locality.cityName.trim().length < 2))) { setError("Preencha o código, nome e todas as localidades dos grupos de cobertura."); return }
     await onSubmit({ ...base, coverageGroups: groups.map((group) => ({ code: group.code.trim().toUpperCase(), name: group.name.trim(), ...(group.description.trim() && { description: group.description.trim() }), localities: group.localities.map((locality) => ({ cityName: locality.cityName.trim(), stateUf: locality.stateUf })) })) })
@@ -42,7 +46,7 @@ export function AtaDialog({ open, onOpenChange, ata, pending, onSubmit }: Props)
   return <Dialog open={open} onOpenChange={onOpenChange}><DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl"><DialogHeader><DialogTitle className="flex items-center gap-2"><FileStack className="size-5 text-primary" />{ata ? "Editar ATA" : "Nova ATA"}</DialogTitle><DialogDescription>{ata ? "Atualize os dados gerais. Os grupos serão administrados separadamente para preservar os itens vinculados." : "Cadastre a ATA e sua estrutura inicial de cobertura territorial."}</DialogDescription></DialogHeader>
     <div className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Número da ATA</Label><Input value={number} onChange={(event) => setNumber(event.target.value)} autoFocus /></div><div className="space-y-2"><Label>Tipo</Label><Select value={type} onValueChange={(value) => setType(value as AtaType)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="CFTV">CFTV</SelectItem><SelectItem value="FIBRA_OPTICA">Fibra Óptica / Ponto Lógico</SelectItem></SelectContent></Select></div></div>
-      <div className="space-y-2"><Label>Fornecedor</Label><Input value={vendorName} onChange={(event) => setVendorName(event.target.value)} /></div>
+      <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Fornecedor</Label><Input value={vendorName} onChange={(event) => setVendorName(event.target.value)} /></div><div className="space-y-2"><Label>CNPJ do fornecedor</Label><Input value={vendorCnpj} onChange={(event) => setVendorCnpj(formatCnpj(event.target.value))} placeholder="00.000.000/0000-00" inputMode="numeric" /></div></div>
       <div className="space-y-2"><Label>Órgão gerenciador</Label><Input value={managingAgency} onChange={(event) => setManagingAgency(event.target.value)} /></div>
       <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2"><Label>Início da vigência</Label><Input type="date" value={validFrom} onChange={(event) => setValidFrom(event.target.value)} /></div><div className="space-y-2"><Label>Fim da vigência</Label><Input type="date" value={validUntil} onChange={(event) => setValidUntil(event.target.value)} /></div></div>
       <div className="space-y-2"><Label>Observações</Label><Textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows={3} /></div>

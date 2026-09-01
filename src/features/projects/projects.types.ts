@@ -325,6 +325,11 @@ export type ProjectDetailsResponse = {
       totalAmount: string
       archivedAt: string | null
       createdAt: string
+      ata: {
+        number: string
+        vendorName: string
+        vendorCnpj: string | null
+      }
     }>
     diexRequests: Array<{
       id: string

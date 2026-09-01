@@ -10,6 +10,7 @@ const ata: Ata = {
   number: "001/2026",
   type: "CFTV",
   vendorName: "Fornecedor",
+  vendorCnpj: null,
   managingAgency: "4º CTA",
   validFrom: "2026-01-01",
   validUntil: "2026-12-31",

@@ -85,7 +85,7 @@ export type DiexListResponse = {
 export type CreateDiexPayload = {
   projectId: string
   estimateId: string
-  supplierCnpj: string
+  supplierCnpj?: string
   requesterName: string
   requesterRank: string
   requesterCpf: string

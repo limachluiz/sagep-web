@@ -26,6 +26,7 @@ export type Ata = {
   number: string
   type: AtaType
   vendorName: string
+  vendorCnpj: string | null
   managingAgency: string | null
   validFrom: string | null
   validUntil: string | null
@@ -55,6 +56,7 @@ export type AtaPayload = {
   number: string
   type: AtaType
   vendorName: string
+  vendorCnpj?: string
   managingAgency?: string
   validFrom?: string
   validUntil?: string
@@ -167,6 +169,7 @@ export type ComprasGovCoverage = {
 export type ComprasGovAtaFound = {
   ataNumber: string
   vendorName: string | null
+  vendorCnpj: string | null
   itemCount: number
   totalAmount: number | null
   validFrom: string | null
@@ -236,6 +239,7 @@ export type ComprasGovPreview = {
     number: string
     type: AtaType | null
     vendorName: string | null
+    vendorCnpj: string | null
     managingAgency: string | null
     validFrom: string | null
     validUntil: string | null
