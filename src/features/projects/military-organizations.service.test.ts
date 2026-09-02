@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 import { api } from "@/lib/api"
 import { militaryOrganizationsService } from "./military-organizations.service"
 
-vi.mock("@/lib/api", () => ({ api: { get: vi.fn(), getBlob: vi.fn(), post: vi.fn(), patch: vi.fn() } }))
+vi.mock("@/lib/api", () => ({ api: { get: vi.fn(), getBlob: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() } }))
 
 describe("militaryOrganizationsService CSV", () => {
   beforeEach(() => vi.clearAllMocks())
@@ -33,5 +33,13 @@ describe("militaryOrganizationsService CSV", () => {
     await militaryOrganizationsService.template()
 
     expect(api.getBlob).toHaveBeenCalledWith("/military-organizations/import/template")
+  })
+
+  it("solicita a exclusão da OM pelo identificador", async () => {
+    vi.mocked(api.delete).mockResolvedValue({ message: "OM excluída com sucesso" })
+
+    await militaryOrganizationsService.remove("om-1")
+
+    expect(api.delete).toHaveBeenCalledWith("/military-organizations/om-1")
   })
 })

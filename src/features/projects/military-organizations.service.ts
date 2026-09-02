@@ -70,6 +70,10 @@ export const militaryOrganizationsService = {
     return api.patch<MilitaryOrganization>(`/military-organizations/${id}`, payload)
   },
 
+  remove(id: string) {
+    return api.delete<{ message: string }>(`/military-organizations/${id}`)
+  },
+
   template: () => api.getBlob("/military-organizations/import/template"),
 
   previewImport: (content: string, mode: MilitaryOrganizationImportMode) =>

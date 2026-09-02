@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Building2, ChevronLeft, ChevronRight, FileUp, MapPin, Pencil, Plus, Power, RefreshCw, Search, X } from "lucide-react"
+import { AlertTriangle, Building2, ChevronLeft, ChevronRight, FileUp, MapPin, Pencil, Plus, Power, RefreshCw, Search, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -30,6 +30,7 @@ export function MilitaryOrganizationsPage() {
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<MilitaryOrganization | null>(null)
   const [toggleTarget, setToggleTarget] = useState<MilitaryOrganization | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<MilitaryOrganization | null>(null)
   const [importOpen, setImportOpen] = useState(false)
 
   useEffect(() => {
@@ -74,6 +75,15 @@ export function MilitaryOrganizationsPage() {
     onSuccess: (organization) => {
       toast.success(`${organization.sigla} ${organization.isActive ? "ativada" : "inativada"} com sucesso.`)
       setToggleTarget(null)
+      invalidate()
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const deleteMutation = useMutation({
+    mutationFn: (organization: MilitaryOrganization) => militaryOrganizationsService.remove(organization.id),
+    onSuccess: (_, organization) => {
+      toast.success(`${organization.sigla} excluída com sucesso.`)
+      setDeleteTarget(null)
       invalidate()
     },
     onError: (error) => toast.error(error.message),
@@ -136,7 +146,7 @@ export function MilitaryOrganizationsPage() {
                 <TableCell><p className="font-medium">{organization.sigla}</p><p className="mt-1 max-w-md text-xs text-muted-foreground">{organization.name}</p></TableCell>
                 <TableCell><p className="font-medium">{organization.cityName}</p><p className="mt-1 text-xs text-muted-foreground">{stateLabels[organization.stateUf]} · {organization.stateUf}</p></TableCell>
                 <TableCell><Badge variant={organization.isActive ? "default" : "secondary"}>{organization.isActive ? "Ativa" : "Inativa"}</Badge></TableCell>
-                <TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="sm" onClick={() => openEdit(organization)}><Pencil className="size-4" />Editar</Button><Button variant="ghost" size="sm" className={organization.isActive ? "text-destructive hover:text-destructive" : "text-primary hover:text-primary"} onClick={() => setToggleTarget(organization)}><Power className="size-4" />{organization.isActive ? "Inativar" : "Ativar"}</Button></div></TableCell>
+                <TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="sm" onClick={() => openEdit(organization)}><Pencil className="size-4" />Editar</Button><Button variant="ghost" size="sm" className={organization.isActive ? "text-destructive hover:text-destructive" : "text-primary hover:text-primary"} onClick={() => setToggleTarget(organization)}><Power className="size-4" />{organization.isActive ? "Inativar" : "Ativar"}</Button><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(organization)}><Trash2 className="size-4" />Excluir</Button></div></TableCell>
               </TableRow>)}
             </TableBody></Table>
           ) : <div className="flex flex-col items-center py-16 text-center"><Building2 className="size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhuma OM encontrada</p><p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou cadastre uma nova Organização Militar.</p></div>}
@@ -149,6 +159,8 @@ export function MilitaryOrganizationsPage() {
       <MilitaryOrganizationsImportDialog open={importOpen} onOpenChange={setImportOpen} onImported={invalidate} />
 
       <Dialog open={Boolean(toggleTarget)} onOpenChange={(open) => !open && setToggleTarget(null)}><DialogContent><DialogHeader><DialogTitle>{toggleTarget?.isActive ? "Inativar" : "Ativar"} Organização Militar?</DialogTitle><DialogDescription>{toggleTarget?.isActive ? `${toggleTarget.sigla} deixará de aparecer em novos projetos e estimativas, mas os vínculos históricos serão preservados.` : `${toggleTarget?.sigla} voltará a ficar disponível nos fluxos operacionais.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setToggleTarget(null)} disabled={toggleMutation.isPending}>Cancelar</Button><Button variant={toggleTarget?.isActive ? "destructive" : "default"} onClick={() => toggleTarget && toggleMutation.mutate(toggleTarget)} disabled={!toggleTarget || toggleMutation.isPending}>{toggleTarget?.isActive ? "Confirmar inativação" : "Confirmar ativação"}</Button></DialogFooter></DialogContent></Dialog>
+
+      <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}><DialogContent><DialogHeader><DialogTitle>Excluir Organização Militar?</DialogTitle><DialogDescription>{deleteTarget?.isActive ? `${deleteTarget.sigla} ainda está ativa. Para excluí-la com segurança, cancele esta ação e inative a OM primeiro.` : `O SAGEP verificará se ${deleteTarget?.sigla} possui projetos ou estimativas vinculados. Se houver qualquer vínculo, a exclusão será bloqueada e o histórico permanecerá preservado.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>{deleteTarget?.isActive ? "Voltar e inativar" : "Cancelar"}</Button><Button variant="destructive" onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget)} disabled={!deleteTarget || deleteTarget.isActive || deleteMutation.isPending}><Trash2 className="size-4" />Confirmar exclusão</Button></DialogFooter></DialogContent></Dialog>
     </div>
   )
 }
