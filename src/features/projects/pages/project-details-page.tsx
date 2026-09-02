@@ -11,6 +11,7 @@ import {
   Edit3,
   FileCheck2,
   FileSignature,
+  FileText,
   FileSpreadsheet,
   Images,
   Landmark,
@@ -42,6 +43,7 @@ import { ProjectFormSheet } from "@/features/projects/components/project-form-sh
 import { ProjectAuditPanel } from "@/features/projects/components/project-audit-panel"
 import { ProjectDocumentsPanel } from "@/features/projects/components/project-documents-panel"
 import { ProjectDeliveryPanel } from "@/features/projects/components/project-delivery-panel"
+import { EvidencesPanel } from "@/features/evidences/components/evidences-panel"
 import { ProjectExecutionPanel } from "@/features/projects/components/project-execution-panel"
 import { CancelCommitmentNoteDialog } from "@/features/projects/components/cancel-commitment-note-dialog"
 import { ProjectFinancialCard } from "@/features/projects/components/project-financial-card"
@@ -484,7 +486,7 @@ export function ProjectDetailsPage() {
   const primaryAction = canFinalizeProject
     ? { label: "Concluir projeto", icon: CheckCircle2, run: () => setCompleteServiceOpen(true) }
     : canCompleteService
-    ? { label: "Encerrar execução", icon: CheckCircle2, run: () => setCompleteServiceOpen(true) }
+    ? { label: "Iniciar Entrega Técnica", icon: FileText, run: () => setCompleteServiceOpen(true) }
     : canAttestInvoice
       ? { label: "Atestar NF", icon: ReceiptText, run: () => setInvoiceAttestationOpen(true) }
       : canReviewAsBuilt
@@ -564,6 +566,7 @@ export function ProjectDetailsPage() {
           {canViewTasks && <TabsTrigger value="tasks"><ListChecks data-icon="inline-start" />Tarefas <Badge variant="outline" className="ml-1">{details.tasks.length}</Badge></TabsTrigger>}
           <TabsTrigger value="documents"><FileCheck2 data-icon="inline-start" />Documentos</TabsTrigger>
           <TabsTrigger value="evidences"><Images data-icon="inline-start" />Evidências</TabsTrigger>
+          <TabsTrigger value="delivery"><FileText data-icon="inline-start" />Entrega Técnica</TabsTrigger>
           <TabsTrigger value="team"><Users data-icon="inline-start" />Equipe <Badge variant="outline" className="ml-1">{details.operationalSummary.membersCount + 1}</Badge></TabsTrigger>
           <TabsTrigger value="timeline"><CalendarDays data-icon="inline-start" />Timeline</TabsTrigger>
           {canViewAudit && <TabsTrigger value="audit"><ShieldCheck data-icon="inline-start" />Auditoria</TabsTrigger>}
@@ -602,7 +605,8 @@ export function ProjectDetailsPage() {
             onCancelCommitmentNote={() => setCancelCommitmentNoteOpen(true)}
           />
         </TabsContent>
-        <TabsContent value="evidences"><ProjectDeliveryPanel details={details} canManage={canManage} /></TabsContent>
+        <TabsContent value="evidences"><EvidencesPanel projectId={details.project.id} canManage={canManage && !details.project.archivedAt} /></TabsContent>
+        <TabsContent value="delivery"><ProjectDeliveryPanel details={details} canManage={canManage} /></TabsContent>
         <TabsContent value="team"><ProjectTeamCard details={details} canManage={canManage} /></TabsContent>
         <TabsContent value="timeline"><Timeline details={details} /></TabsContent>
         {canViewAudit && details.auditTrail && (
@@ -716,7 +720,7 @@ export function ProjectDetailsPage() {
 
       {invoiceAttestationOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={invoiceAttestationOpen} onOpenChange={setInvoiceAttestationOpen} title="Atestar Nota Fiscal" description="Confirme a data do atesto da Nota Fiscal após a aprovação do As-Built." fieldLabel="Data do atesto" successMessage="Atesto da Nota Fiscal registrado" submitLabel="Registrar atesto" minDate={dateInputValue(details.workflow.milestones.asBuiltApprovedAt)} minDateLabel="data de aprovação do As-Built" payload={(date) => ({ stage: "ATESTAR_NF", invoiceAttestedAt: date })} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
-      {completeServiceOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={completeServiceOpen} onOpenChange={setCompleteServiceOpen} title={canFinalizeProject ? "Concluir projeto" : "Encerrar execução"} description={canFinalizeProject ? "O relatório de entrega foi gerado, revisado e assinado. Confirme a conclusão do workflow." : "Registre o término da execução para abrir a etapa de Entrega Técnica."} fieldLabel={canFinalizeProject ? "Data da conclusão do projeto" : "Data de término da execução"} successMessage={canFinalizeProject ? "Projeto concluído" : "Entrega Técnica iniciada"} submitLabel={canFinalizeProject ? "Concluir projeto" : "Iniciar Entrega Técnica"} minDate={dateInputValue(canFinalizeProject ? details.workflow.milestones.deliveryReportSignedAt : details.workflow.milestones.invoiceAttestedAt)} minDateLabel={canFinalizeProject ? "data da assinatura do relatório" : "data de atesto da Nota Fiscal"} warning={canFinalizeProject && details.operationalSummary.openTasksCount ? `O projeto ainda possui ${details.operationalSummary.openTasksCount} tarefa(s) aberta(s).` : undefined} confirmationLabel={canFinalizeProject && details.operationalSummary.openTasksCount ? "Confirmo que revisei as tarefas abertas e desejo concluir o projeto mesmo assim." : undefined} payload={(date) => canFinalizeProject ? ({ stage: "SERVICO_CONCLUIDO", serviceCompletedAt: details.workflow.milestones.serviceCompletedAt ?? date }) : ({ stage: "ENTREGA_TECNICA", serviceCompletedAt: date })} onSaved={() => { invalidateProjectFlow(queryClient); selectTab(canFinalizeProject ? "execution" : "evidences") }} />}
+      {completeServiceOpen && <DateFlowDialog projectId={details.project.id} projectCode={details.project.projectCode} open={completeServiceOpen} onOpenChange={setCompleteServiceOpen} title={canFinalizeProject ? "Concluir projeto" : "Iniciar Entrega Técnica"} description={canFinalizeProject ? "O relatório de entrega foi gerado, revisado e assinado. Confirme a conclusão do workflow." : "Registre o término da execução para abrir a etapa de Entrega Técnica."} fieldLabel={canFinalizeProject ? "Data da conclusão do projeto" : "Data de término da execução"} successMessage={canFinalizeProject ? "Projeto concluído" : "Entrega Técnica iniciada"} submitLabel={canFinalizeProject ? "Concluir projeto" : "Iniciar Entrega Técnica"} minDate={dateInputValue(canFinalizeProject ? details.workflow.milestones.deliveryReportSignedAt : details.workflow.milestones.invoiceAttestedAt)} minDateLabel={canFinalizeProject ? "data da assinatura do relatório" : "data de atesto da Nota Fiscal"} warning={canFinalizeProject && details.operationalSummary.openTasksCount ? `O projeto ainda possui ${details.operationalSummary.openTasksCount} tarefa(s) aberta(s).` : undefined} confirmationLabel={canFinalizeProject && details.operationalSummary.openTasksCount ? "Confirmo que revisei as tarefas abertas e desejo concluir o projeto mesmo assim." : undefined} payload={(date) => canFinalizeProject ? ({ stage: "SERVICO_CONCLUIDO", serviceCompletedAt: details.workflow.milestones.serviceCompletedAt ?? date }) : ({ stage: "ENTREGA_TECNICA", serviceCompletedAt: date })} onSaved={() => { invalidateProjectFlow(queryClient); selectTab(canFinalizeProject ? "execution" : "delivery") }} />}
     </div>
   )
 }

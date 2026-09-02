@@ -10,6 +10,7 @@ describe("abas dos detalhes do projeto", () => {
     expect(resolveProjectDetailsTab("documents", true, false)).toBe("documents")
     expect(resolveProjectDetailsTab("execution", true, false)).toBe("execution")
     expect(resolveProjectDetailsTab("team", true, false)).toBe("team")
+    expect(resolveProjectDetailsTab("delivery", true, false)).toBe("delivery")
     expect(resolveProjectDetailsTab("tasks", true, false)).toBe("tasks")
     expect(resolveProjectDetailsTab("tasks", false, false)).toBe("overview")
     expect(resolveProjectDetailsTab("audit", true, false)).toBe("overview")
