@@ -13,6 +13,20 @@ function details(
 }
 
 describe("fluxo de execução e encerramento", () => {
+  it("mantém a entrega técnica como o último quadro", () => {
+    const flow = buildProjectExecutionFlow(details("ENTREGA_TECNICA", {}))
+
+    expect(flow.map((step) => step.key)).toEqual([
+      "execution",
+      "as-built-receipt",
+      "as-built-review",
+      "invoice",
+      "completion",
+      "delivery",
+    ])
+    expect(flow.at(-1)).toMatchObject({ key: "delivery", current: true })
+  })
+
   it("identifica a etapa atual após o início da execução", () => {
     const flow = buildProjectExecutionFlow(
       details("SERVICO_EM_EXECUCAO", {

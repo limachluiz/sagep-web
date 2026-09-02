@@ -31,14 +31,6 @@ export function buildProjectExecutionFlow(
   )
   const steps: Array<Omit<ProjectExecutionStep, "current">> = [
     {
-      key: "delivery",
-      label: "Entrega técnica",
-      description: "Evidências organizadas e relatório técnico gerado e assinado.",
-      date: milestones.deliveryReportSignedAt ?? milestones.deliveryReportGeneratedAt,
-      completed: Boolean(milestones.deliveryReportSignedAt),
-      rejected: false,
-    },
-    {
       key: "execution",
       label: "Início da execução",
       description: "Serviço iniciado a partir da Ordem de Serviço.",
@@ -85,6 +77,14 @@ export function buildProjectExecutionFlow(
       description: "Workflow encerrado e resultado consolidado.",
       date: milestones.serviceCompletedAt,
       completed: Boolean(milestones.serviceCompletedAt),
+      rejected: false,
+    },
+    {
+      key: "delivery",
+      label: "Entrega técnica",
+      description: "Evidências organizadas e relatório técnico gerado e assinado.",
+      date: milestones.deliveryReportSignedAt ?? milestones.deliveryReportGeneratedAt,
+      completed: Boolean(milestones.deliveryReportSignedAt),
       rejected: false,
     },
   ]
