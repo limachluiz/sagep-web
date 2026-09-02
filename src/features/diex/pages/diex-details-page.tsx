@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Archive, ArrowLeft, Building2, ExternalLink, FileSignature, FileText, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
+import { AlertTriangle, Archive, ArrowLeft, Building2, ExternalLink, FileSignature, FileSpreadsheet, FileText, MapPin, PackageCheck, Pencil, RotateCcw, Trash2, UserRound } from "lucide-react"
 import { Link, useNavigate, useParams, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
@@ -103,13 +103,52 @@ export function DiexDetailsPage() {
   const documentReady = Boolean(diex.diexNumber && diex.issuedAt)
 
   return <div className="space-y-6">
-    <div><Button asChild variant="ghost" className="mb-3 -ml-3"><Link to="/diex"><ArrowLeft className="size-4" />Voltar aos DIEx</Link></Button><div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><div className="mb-3 flex gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div><h1 className="text-3xl font-semibold">{diex.diexNumber ?? "DIEx requisitório"}</h1><p className="mt-2 text-sm text-muted-foreground">Emissão: {formatDate(diex.issuedAt)}</p></div><div className="flex flex-wrap gap-2">{canIssue && !diex.archivedAt && <Button variant="outline" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}{canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" onClick={() => setCompleteOpen(true)}>Preencher dados da SALC</Button>}{canCancel && !diex.archivedAt && <Button variant="outline" className="text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}{canRestore && diex.archivedAt && <Button variant="outline" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}{canDelete && diex.archivedAt && <Button variant="destructive" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}<Button variant="outline" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />Visualizar</Button><Button disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><FileText className="size-4" />Visualizar PDF</Button></div></div></div>
+    <div>
+      <Button asChild variant="ghost" className="mb-3 -ml-3 gap-2"><Link to="/diex"><ArrowLeft className="size-4" />Voltar para DIEx</Link></Button>
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div>
+          <div className="mb-3 flex flex-wrap items-center gap-2"><Badge>DIEX-{diex.diexCode}</Badge><Badge variant={documentReady ? "default" : "secondary"}>{documentReady ? "Documento disponível" : "Aguardando SALC"}</Badge>{diex.archivedAt && <Badge variant="outline">Arquivado</Badge>}</div>
+          <h1 className="text-3xl font-semibold tracking-tight">DIEx requisitório</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{diex.diexNumber ? `Número ${diex.diexNumber} · emitido em ${formatDate(diex.issuedAt)}` : `Criado em ${formatDate(diex.createdAt)} · aguardando dados de emissão`}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {canIssue && !diex.archivedAt && <Button variant="outline" className="gap-2" onClick={() => setEditOpen(true)}><Pencil className="size-4" />Editar</Button>}
+          {canIssue && !documentReady && !diex.archivedAt && <Button variant="outline" className="gap-2" onClick={() => setCompleteOpen(true)}><FileSignature className="size-4" />Preencher dados da SALC</Button>}
+          {canCancel && !diex.archivedAt && <Button variant="outline" className="gap-2 text-destructive hover:text-destructive" onClick={() => setArchiveDialogOpen(true)}><Archive className="size-4" />Arquivar</Button>}
+          {canRestore && diex.archivedAt && <Button variant="outline" className="gap-2" onClick={() => setArchiveDialogOpen(true)}><RotateCcw className="size-4" />Restaurar</Button>}
+          {canDelete && diex.archivedAt && <Button variant="destructive" className="gap-2" onClick={() => setDeleteDialogOpen(true)}><Trash2 className="size-4" />Excluir</Button>}
+          <Button variant="outline" className="gap-2" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("html")}><ExternalLink className="size-4" />{documentLoading === "html" ? "Gerando..." : "Visualizar documento"}</Button>
+          <Button className="gap-2" disabled={!documentReady || Boolean(documentLoading) || Boolean(diex.archivedAt)} onClick={() => handleDocument("pdf")}><FileText className="size-4" />{documentLoading === "pdf" ? "Gerando..." : "Visualizar PDF"}</Button>
+        </div>
+      </div>
+    </div>
 
     {!documentReady && <Alert><AlertTriangle /><AlertTitle>Documento ainda indisponível</AlertTitle><AlertDescription>O número e a data de emissão precisam ser preenchidos pela SALC antes da geração oficial.</AlertDescription></Alert>}
 
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card className="border-none shadow-sm"><CardContent className="p-5"><FileSignature className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Valor requisitado</p><p className="mt-1 text-xl font-semibold">{formatCurrency(diex.totalAmount)}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><Building2 className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Fornecedor</p><p className="mt-1 font-semibold">{diex.supplierName}</p><p className="text-xs text-muted-foreground">{diex.supplierCnpj}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><UserRound className="size-5 text-primary" /><p className="mt-3 text-xs text-muted-foreground">Requisitante</p><p className="mt-1 font-semibold">{diex.requesterRank} {diex.requesterName}</p></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="p-5"><p className="text-xs text-muted-foreground">Vínculos</p><Button asChild variant="link" className="mt-1 h-auto p-0"><Link to={`/projects/${diex.project.id}`}>PRJ-{diex.project.projectCode}</Link></Button><p className="text-sm">EST-{diex.estimate.estimateCode} · {diex.estimate.om?.sigla ?? diex.estimate.omName}</p></CardContent></Card></div>
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <Card className="border-none shadow-sm"><CardContent className="flex items-start gap-3 p-5"><FileSpreadsheet className="mt-0.5 size-5 text-primary" /><div><p className="text-xs text-muted-foreground">Valor requisitado</p><p className="mt-1 text-xl font-semibold">{formatCurrency(diex.totalAmount)}</p></div></CardContent></Card>
+      <Card className="border-none shadow-sm"><CardContent className="flex items-start gap-3 p-5"><PackageCheck className="mt-0.5 size-5 text-primary" /><div><p className="text-xs text-muted-foreground">Itens requisitados</p><p className="mt-1 text-xl font-semibold">{diex.items.length}</p></div></CardContent></Card>
+      <Card className="border-none shadow-sm"><CardContent className="flex items-start gap-3 p-5"><Building2 className="mt-0.5 size-5 text-primary" /><div className="min-w-0"><p className="text-xs text-muted-foreground">Fornecedor</p><p className="mt-1 truncate font-semibold" title={diex.supplierName}>{diex.supplierName}</p><p className="text-xs text-muted-foreground">{diex.supplierCnpj}</p></div></CardContent></Card>
+      <Card className="border-none shadow-sm"><CardContent className="flex items-start gap-3 p-5"><MapPin className="mt-0.5 size-5 text-primary" /><div><p className="text-xs text-muted-foreground">OM de destino</p><p className="mt-1 font-semibold">{diex.estimate.om?.sigla ?? diex.estimate.omName ?? "Não informada"}</p><p className="text-xs text-muted-foreground">{diex.estimate.destinationCityName}/{diex.estimate.destinationStateUf}</p></div></CardContent></Card>
+    </div>
 
-    <Card className="border-none shadow-sm"><CardHeader><CardTitle>Itens requisitados</CardTitle></CardHeader><CardContent><DocumentItemsTable containerLabel="Itens requisitados do DIEx" items={diex.items.map((item) => ({ id: item.id, code: item.itemCode, description: item.description, unit: item.supplyUnit, quantity: formatQuantity(item.quantityRequested), unitPrice: formatCurrency(item.unitPrice), totalPrice: formatCurrency(item.totalPrice) }))} /></CardContent></Card>
+    <div className="grid gap-6 xl:grid-cols-3">
+      <Card className="border-none shadow-sm xl:col-span-2">
+        <CardHeader><CardTitle>Vínculos do DIEx</CardTitle></CardHeader>
+        <CardContent className="grid gap-5 sm:grid-cols-2">
+          <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Projeto</p><Button asChild variant="link" className="h-auto p-0 text-base"><Link to={`/projects/${diex.project.id}`}>PRJ-{diex.project.projectCode} · {diex.project.title}</Link></Button></div>
+          <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Estimativa de preço</p><Button asChild variant="link" className="h-auto p-0 text-base"><Link to={`/estimates/${diex.estimate.id}`}>EST-{diex.estimate.estimateCode}</Link></Button></div>
+          <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Ata de Registro de Preços</p><p className="mt-1 font-medium">{diex.estimate.ata.number} · {diex.estimate.ata.vendorName}</p></div>
+          <div><p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Requisitante</p><p className="mt-1 flex items-center gap-2 font-medium"><UserRound className="size-4 text-primary" />{diex.requesterRank} {diex.requesterName}</p></div>
+        </CardContent>
+      </Card>
+      <Card className="border-none shadow-sm">
+        <CardHeader><CardTitle>Observações</CardTitle></CardHeader>
+        <CardContent><p className="whitespace-pre-wrap text-sm leading-6 text-muted-foreground">{diex.notes || "Nenhuma observação registrada."}</p></CardContent>
+      </Card>
+    </div>
+
+    <Card className="border-none shadow-sm"><CardHeader className="flex flex-row items-center justify-between"><CardTitle>Itens requisitados</CardTitle><Badge variant="outline">{diex.items.length} item(ns)</Badge></CardHeader><CardContent><DocumentItemsTable containerLabel="Itens requisitados do DIEx" items={diex.items.map((item) => ({ id: item.id, code: item.itemCode, description: item.description, unit: item.supplyUnit, quantity: formatQuantity(item.quantityRequested), unitPrice: formatCurrency(item.unitPrice), totalPrice: formatCurrency(item.totalPrice) }))} /><div className="mt-5 flex justify-end border-t pt-5"><div className="text-right"><p className="text-sm text-muted-foreground">Total do DIEx</p><p className="text-2xl font-semibold">{formatCurrency(diex.totalAmount)}</p></div></div></CardContent></Card>
     {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); invalidateProjectFlow(queryClient) }} />}
     {editOpen && <EditDiexDialog diex={diex} open={editOpen} onOpenChange={setEditOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId, includeArchived], updated); invalidateProjectFlow(queryClient) }} />}
     <ArchiveActionDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen} mode={diex.archivedAt ? "restore" : "archive"} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description={diex.archivedAt ? "O documento voltará ao fluxo ativo do projeto." : "A reserva de saldo será liberada e o projeto retornará à etapa documental anterior. A ação é bloqueada quando existe OS ativa vinculada."} pending={archiveMutation.isPending || restoreMutation.isPending} onConfirm={() => diex.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()} />
