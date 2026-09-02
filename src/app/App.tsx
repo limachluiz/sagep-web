@@ -21,6 +21,7 @@ const EstimatesListPage = lazy(() => import("@/features/estimates/pages/estimate
 const CreateEstimatePage = lazy(() => import("@/features/estimates/pages/create-estimate-page").then((module) => ({ default: module.CreateEstimatePage })))
 const MilitaryOrganizationsPage = lazy(() => import("@/features/military-organizations/pages/military-organizations-page").then((module) => ({ default: module.MilitaryOrganizationsPage })))
 const ProjectDetailsPage = lazy(() => import("@/features/projects/pages/project-details-page").then((module) => ({ default: module.ProjectDetailsPage })))
+const ProjectDeliveryReportPage = lazy(() => import("@/features/projects/pages/project-delivery-report-page").then((module) => ({ default: module.ProjectDeliveryReportPage })))
 const ProjectsKanbanPage = lazy(() => import("@/features/projects/pages/projects-kanban-page").then((module) => ({ default: module.ProjectsKanbanPage })))
 const ProjectsListPage = lazy(() => import("@/features/projects/pages/projects-list-page").then((module) => ({ default: module.ProjectsListPage })))
 const ServiceOrdersGanttPage = lazy(() => import("@/features/service-orders/pages/service-orders-gantt-page").then((module) => ({ default: module.ServiceOrdersGanttPage })))
@@ -94,6 +95,14 @@ export default function App() {
             element={
               <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
                 <ProjectDetailsPage />
+              </PermissionRoute>
+            }
+          />
+          <Route
+            path="/projects/:projectId/delivery-report"
+            element={
+              <PermissionRoute anyOf={["projects.view_all", "projects.edit_own"]}>
+                <ProjectDeliveryReportPage />
               </PermissionRoute>
             }
           />

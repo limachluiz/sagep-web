@@ -168,10 +168,20 @@ export type DeliveryReportItemDetail = {
   technicalDescription: string
 }
 
+export type DeliveryReportFormalization = {
+  requiresOmAcknowledgement: boolean
+  recipientName: string
+  recipientRank: string
+  recipientRole: string
+  recipientOrganization: string
+  acknowledgementNotes: string
+}
+
 export type DeliveryReportDraft = {
-  version: 1
+  version: 2
   sections: DeliveryReportSection[]
   itemDetails: DeliveryReportItemDetail[]
+  formalization: DeliveryReportFormalization
 }
 
 export type DeliveryReportDraftResponse = {
@@ -184,7 +194,13 @@ export type DeliveryReportDraftResponse = {
     sourceUnit: string
     sourceQuantity: string
     totalPrice: string
+    suggestedTechnicalDescription: string
   }>
+  documents: {
+    estimate: { id: string; code: string; ataNumber: string; supplierName: string; totalAmount: string } | null
+    diex: { id: string; code: string; issuedAt: string | null; totalAmount: string } | null
+    serviceOrder: { id: string; code: string; issuedAt: string | null; totalAmount: string } | null
+  }
   readiness: {
     sectionsIncluded: number
     sectionsReviewed: number
