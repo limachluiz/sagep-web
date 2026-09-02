@@ -18,7 +18,8 @@ describe("DocumentItemsTable", () => {
     const table = screen.getByRole("table")
     const descriptionCell = screen.getByText(/Serviço com uma descrição extensa/).closest("td")
 
-    expect(table).toHaveClass("min-w-[58rem]", "table-fixed")
+    expect(table).toHaveClass("w-full", "table-fixed")
+    expect(table).not.toHaveClass("min-w-[58rem]")
     expect(descriptionCell).toHaveClass("whitespace-normal")
     expect(screen.getByRole("region", { name: "Itens requisitados" })).toBeInTheDocument()
   })
