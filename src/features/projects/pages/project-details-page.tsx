@@ -52,6 +52,7 @@ import { ProjectTeamSummary } from "@/features/projects/components/project-team-
 import { ProjectTasksOverview, ProjectTasksPanel } from "@/features/projects/components/project-tasks-panel"
 import { ProjectWorkflowProgress } from "@/features/projects/components/project-workflow-progress"
 import { dateInputValue } from "@/features/projects/project-execution-flow"
+import { visibleProjectMilestones } from "@/features/projects/project-milestones"
 import {
   resolveProjectDetailsTab,
   searchParamsForProjectTab,
@@ -127,6 +128,7 @@ const milestoneLabels: Record<string, string> = {
   asBuiltApprovedAt: "Aprovação do As-Built",
   asBuiltRejectedAt: "Reprovação do As-Built",
   asBuiltRejectionReason: "Motivo da reprovação",
+  asBuiltLink: "Documento As-Built",
   invoiceAttestedAt: "Atesto da Nota Fiscal",
   serviceCompletedAt: "Conclusão do serviço",
   deliveryReportGeneratedAt: "Geração do relatório de entrega",
@@ -162,9 +164,7 @@ function ProjectOverview({
   onShowTeam: () => void
   onShowTasks: () => void
 }) {
-  const milestoneEntries = Object.entries(details.workflow.milestones).filter(
-    ([key]) => key !== "asBuiltRejectionReason" || details.workflow.milestones[key],
-  )
+  const milestoneEntries = visibleProjectMilestones(details.workflow.milestones)
 
   return (
     <div className="space-y-6">
