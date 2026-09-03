@@ -29,7 +29,10 @@ export function isDiexReadyForCommitmentNote(details: ProjectDetailsResponse) {
 export function buildProjectDocumentFlow(details: ProjectDetailsResponse): ProjectDocumentFlowStep[] {
   const { estimate, diex, serviceOrder } = getActiveWorkflowDocuments(details)
   const milestones = details.workflow.milestones
-  const creditNoteReady = Boolean(milestones.creditNoteNumber || milestones.creditNoteReceivedAt)
+  const requiredCredit = Number(details.workflow.creditFunding.requiredAmount)
+  const receivedCredit = Number(details.workflow.creditFunding.receivedAmount)
+  const creditNoteCount = details.workflow.creditFunding.notes.length
+  const creditNoteReady = requiredCredit > 0 && receivedCredit >= requiredCredit
   const diexReady = Boolean(diex?.diexNumber && diex.issuedAt)
   const commitmentNoteReady = Boolean(
     milestones.commitmentNoteNumber || milestones.commitmentNoteReceivedAt,
@@ -50,11 +53,15 @@ export function buildProjectDocumentFlow(details: ProjectDetailsResponse): Proje
     {
       key: "credit-note" as const,
       label: "Nota de Crédito",
-      code: milestones.creditNoteNumber,
-      description: creditNoteReady ? "Crédito recebido" : "Aguardando descentralização",
+      code: details.workflow.creditFunding.notes.map((note) => note.number).join(" + ") || milestones.creditNoteNumber,
+      description: creditNoteReady
+        ? `${creditNoteCount} ${creditNoteCount === 1 ? "NC" : "NCs"} · crédito integral`
+        : receivedCredit > 0
+          ? `Crédito parcial · faltam ${(requiredCredit - receivedCredit).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`
+          : "Aguardando descentralização",
       completed: creditNoteReady,
       href: null,
-      amount: null,
+      amount: receivedCredit > 0 ? receivedCredit.toFixed(2) : null,
     },
     {
       key: "diex" as const,

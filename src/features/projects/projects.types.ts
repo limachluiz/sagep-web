@@ -141,6 +141,20 @@ export type ProjectMutationResponse = {
 
 export type ProjectFlowPayload = {
   stage: ProjectStage
+  creditNoteMode?: "SINGLE" | "MULTIPLE"
+  creditNotes?: Array<{
+    number: string
+    receivedAt: string
+    amount: number
+    issuingManagementUnit?: string
+    fundingSource?: string
+    ptres?: string
+    expenseNature?: string
+    internalPlan?: string
+    documentLink?: string
+    notes?: string
+  }>
+  creditNoteOverflowJustification?: string
   creditNoteNumber?: string
   creditNoteReceivedAt?: string
   commitmentNoteNumber?: string
@@ -168,20 +182,10 @@ export type DeliveryReportItemDetail = {
   technicalDescription: string
 }
 
-export type DeliveryReportFormalization = {
-  requiresOmAcknowledgement: boolean
-  recipientName: string
-  recipientRank: string
-  recipientRole: string
-  recipientOrganization: string
-  acknowledgementNotes: string
-}
-
 export type DeliveryReportDraft = {
-  version: 2
+  version: 1
   sections: DeliveryReportSection[]
   itemDetails: DeliveryReportItemDetail[]
-  formalization: DeliveryReportFormalization
 }
 
 export type DeliveryReportDraftResponse = {
@@ -194,13 +198,7 @@ export type DeliveryReportDraftResponse = {
     sourceUnit: string
     sourceQuantity: string
     totalPrice: string
-    suggestedTechnicalDescription: string
   }>
-  documents: {
-    estimate: { id: string; code: string; ataNumber: string; supplierName: string; totalAmount: string } | null
-    diex: { id: string; code: string; issuedAt: string | null; totalAmount: string } | null
-    serviceOrder: { id: string; code: string; issuedAt: string | null; totalAmount: string } | null
-  }
   readiness: {
     sectionsIncluded: number
     sectionsReviewed: number
@@ -320,6 +318,27 @@ export type ProjectDetailsResponse = {
       receivedAt: string | null
       notes: string | null
       registeredBy: ProjectPerson | null
+    }
+    creditFunding: {
+      mode: "SINGLE" | "MULTIPLE"
+      notes: Array<{
+        id: string
+        number: string
+        receivedAt: string
+        amount: string
+        cancelledAmount: string
+        status: "ACTIVE" | "PARTIALLY_CANCELLED" | "CANCELLED"
+        issuingManagementUnit: string | null
+        fundingSource: string | null
+        ptres: string | null
+        expenseNature: string | null
+        internalPlan: string | null
+        documentLink: string | null
+        notes: string | null
+      }>
+      requiredAmount: string
+      receivedAmount: string
+      overflowJustification: string | null
     }
   }
   pendingActions: Array<{

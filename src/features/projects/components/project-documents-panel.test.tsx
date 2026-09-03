@@ -7,6 +7,20 @@ import type { ProjectDetailsResponse } from "@/features/projects/projects.types"
 
 const details = {
   workflow: {
+    creditFunding: {
+      mode: "SINGLE",
+      notes: [{
+        id: "credit-note-1",
+        number: "NC-TESTE",
+        receivedAt: "2026-07-20T12:00:00.000Z",
+        amount: "1000.00",
+        issuingManagementUnit: null,
+        documentLink: null,
+      }],
+      requiredAmount: "1000.00",
+      receivedAmount: "1000.00",
+      overflowJustification: null,
+    },
     milestones: {
       creditNoteNumber: "NC-TESTE",
       creditNoteReceivedAt: "2026-07-20T12:00:00.000Z",

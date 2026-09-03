@@ -104,6 +104,46 @@ export function ProjectDocumentFlowPanel({
             )
           })}
         </ol>
+        {details.workflow.creditFunding.notes.length > 0 && (
+          <div className="mt-5 rounded-xl border bg-muted/10 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <p className="font-medium">Notas de Crédito vinculadas</p>
+                <p className="text-xs text-muted-foreground">
+                  {details.workflow.creditFunding.mode === "MULTIPLE"
+                    ? "Crédito composto por múltiplas descentralizações"
+                    : "Crédito recebido em uma única descentralização"}
+                </p>
+              </div>
+              <Badge variant="outline">
+                {details.workflow.creditFunding.notes.length} {details.workflow.creditFunding.notes.length === 1 ? "NC" : "NCs"}
+              </Badge>
+            </div>
+            <div className="mt-3 grid gap-2 md:grid-cols-2">
+              {details.workflow.creditFunding.notes.map((note) => (
+                <div key={note.id} className="flex items-center justify-between gap-3 rounded-lg border bg-background p-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{note.number}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {new Date(note.receivedAt).toLocaleDateString("pt-BR", { timeZone: "UTC" })}
+                      {note.issuingManagementUnit ? ` · UG ${note.issuingManagementUnit}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <span className="text-sm font-semibold">{money(note.amount)}</span>
+                    {note.documentLink && (
+                      <Button asChild variant="ghost" size="icon" title="Comprovante da NC">
+                        <a href={note.documentLink} target="_blank" rel="noreferrer">
+                          <ExternalLink className="size-4" />
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
