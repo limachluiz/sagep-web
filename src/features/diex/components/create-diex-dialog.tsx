@@ -128,7 +128,7 @@ export function CreateDiexDialog({ details, open, onOpenChange, onCreated }: Cre
             <p className="text-xs text-muted-foreground">
               {eligibleEstimates.find((estimate) => estimate.id === estimateId)?.ata.vendorCnpj
                 ? `Preenchido automaticamente pela ATA ${eligibleEstimates.find((estimate) => estimate.id === estimateId)?.ata.number}. Você pode editar em caso excepcional.`
-                : "A ATA selecionada ainda não possui CNPJ cadastrado. Informe-o aqui ou atualize os dados da ATA."}
+                : "Esta ATA é anterior ao cadastro de CNPJ. Informe-o uma única vez: ao criar o DIEx, o sistema também atualizará a ATA para os próximos documentos."}
             </p>
           </div>
 
