@@ -13,6 +13,11 @@ export type ServiceOrder = {
   requesterRank: string
   requesterCpf: string | null
   requesterRole: string
+  hasProjectInspector: boolean
+  projectInspectorName: string | null
+  projectInspectorRank: string | null
+  projectInspectorCpf: string | null
+  projectInspectorRole: string | null
   issuingOrganization: string
   isEmergency: boolean
   plannedStartDate: string | null
@@ -88,6 +93,11 @@ export type CreateServiceOrderPayload = {
   requesterRank: string
   requesterCpf: string
   requesterRole?: string
+  hasProjectInspector?: boolean
+  projectInspectorName?: string
+  projectInspectorRank?: string
+  projectInspectorCpf?: string
+  projectInspectorRole?: string
   issuingOrganization?: string
   isEmergency?: boolean
   requestingArea?: string
@@ -119,6 +129,11 @@ export type UpdateServiceOrderPayload = {
   requesterRank?: string
   requesterCpf?: string
   requesterRole?: string
+  hasProjectInspector?: boolean
+  projectInspectorName?: string
+  projectInspectorRank?: string
+  projectInspectorCpf?: string
+  projectInspectorRole?: string
   issuingOrganization?: string
   isEmergency?: boolean
   requestingArea?: string
