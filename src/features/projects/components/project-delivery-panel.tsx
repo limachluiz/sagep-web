@@ -32,6 +32,18 @@ function formatDateOnly(value: string) {
   return year && month && day ? `${day}/${month}/${year}` : value;
 }
 
+function manausDateInputValue(value = new Date()) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Manaus",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(value);
+  const part = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((item) => item.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
+
 export function ProjectDeliveryPanel({
   details,
   canManage,
@@ -43,7 +55,7 @@ export function ProjectDeliveryPanel({
 }) {
   const client = useQueryClient();
   const [signedAt, setSignedAt] = useState(
-    new Date().toISOString().slice(0, 10),
+    () => manausDateInputValue(),
   );
   const [signedLink, setSignedLink] = useState("");
   const [awaitingNewSignature, setAwaitingNewSignature] = useState(false);
@@ -284,6 +296,8 @@ export function ProjectDeliveryPanel({
                   <Input
                     type="date"
                     value={signedAt}
+                    min={manausDateInputValue(new Date(generatedAt))}
+                    max={manausDateInputValue()}
                     onChange={(event) => setSignedAt(event.target.value)}
                   />
                 </div>
