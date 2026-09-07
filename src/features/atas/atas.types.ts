@@ -138,6 +138,38 @@ export type AtaItemMovement = {
   createdAt: string
 }
 
+export type ExternalAtaBalance = {
+  source: "CONTRATOS_GOV_TRANSPARENCIA"
+  sourceLabel: "Contratos.gov.br"
+  sourceUrl: string
+  checkedAt: string
+  sourceUpdatedAt: null
+  identity: {
+    ataNumber: string
+    uasg: string
+    pregaoNumber: string
+    pregaoYear: string
+    pncpControlNumber: string | null
+    contratosAtaId: string
+  }
+  items: Array<{
+    ataItemId: string
+    itemNumber: string
+    referenceCode: string
+    description: string
+    unit: string
+    managerRegisteredQuantity: string | null
+    managerCommittedQuantity: string | null
+    managerAvailableQuantity: string | null
+    publishedTotalRegisteredAuthorized: string
+    publishedTotalAvailableForCommitment: string
+    publishedAdhesionLimit: string
+    publishedAvailableForAdhesion: string
+    detailUrl: string
+  }>
+  warnings: string[]
+}
+
 export type ListEnvelope<T> = {
   items: T[]
   meta: { page: number; pageSize: number; totalItems: number; totalPages: number; hasNextPage: boolean; hasPreviousPage: boolean }

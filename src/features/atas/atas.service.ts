@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 import type { FederativeUnit } from "@/features/projects/projects.types"
-import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ListEnvelope, Pregao, PregaoPayload } from "./atas.types"
+import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ExternalAtaBalance, ListEnvelope, Pregao, PregaoPayload } from "./atas.types"
 
 export const atasService = {
   list(filters: { page?: number; pageSize?: number; search?: string; type?: AtaType; stateUf?: FederativeUnit; active?: boolean; pregaoId?: string } = {}) {
@@ -21,6 +21,7 @@ export const atasService = {
     return api.put<Ata["coverageGroups"][number]>(`/atas/${ataId}/coverage`, payload)
   },
   syncPncp(ataId: string) { return api.post<{ controlNumber: string; lastSyncAt: string; snapshot: NonNullable<Ata["pncpSnapshot"]> }>(`/atas/${ataId}/sync-pncp`) },
+  externalBalance(ataId: string) { return api.get<ExternalAtaBalance>(`/atas/${ataId}/external-balance`) },
 
   listItems(ataId: string, filters: { page?: number; pageSize?: number; search?: string; active?: boolean } = {}) {
     const query = new URLSearchParams({ page: String(filters.page ?? 1), pageSize: String(filters.pageSize ?? 25) })
