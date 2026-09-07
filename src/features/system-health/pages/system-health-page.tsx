@@ -21,6 +21,7 @@ import {
   Area,
   AreaChart,
   CartesianGrid,
+  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -37,7 +38,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { SettingsNavigation } from "@/features/system-health/components/settings-navigation"
 import { systemHealthService } from "@/features/system-health/system-health.service"
-import type { HealthComponent, HealthStatus, SystemHealthSnapshot } from "@/features/system-health/system-health.types"
+import type { HealthComponent, HealthStatus, HealthWindow, SystemHealthSnapshot } from "@/features/system-health/system-health.types"
 import { cn } from "@/lib/utils"
 
 const statusMeta: Record<HealthStatus, { label: string; className: string; dot: string }> = {
@@ -51,9 +52,20 @@ function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "medium" }).format(new Date(value))
 }
 
-function formatTime(value: string) {
-  return new Intl.DateTimeFormat("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }).format(new Date(value))
+function formatChartTime(value: string, window: HealthWindow) {
+  const options: Intl.DateTimeFormatOptions = window === "7d"
+    ? { day: "2-digit", month: "2-digit", hour: "2-digit" }
+    : { hour: "2-digit", minute: "2-digit" }
+  return new Intl.DateTimeFormat("pt-BR", options).format(new Date(value))
 }
+
+const windowOptions: Array<{ value: HealthWindow; label: string }> = [
+  { value: "3h", label: "3 horas" },
+  { value: "6h", label: "6 horas" },
+  { value: "12h", label: "12 horas" },
+  { value: "24h", label: "1 dia" },
+  { value: "7d", label: "7 dias" },
+]
 
 function formatDuration(seconds: number) {
   const days = Math.floor(seconds / 86400)
@@ -108,6 +120,8 @@ function disconnectedSnapshot(): SystemHealthSnapshot {
   const now = new Date().toISOString()
   return {
     status: "unavailable", checkedAt: now, uptimeSeconds: 0, availabilityPercent: 0, observationWindowStartedAt: now,
+    historyWindow: "3h", sampleCount: 0,
+    performance: { incidentCount: 1, apiAverageMs: null, apiP95Ms: null, apiMaximumMs: null, databaseAverageMs: null, databaseP95Ms: null, databaseMaximumMs: null },
     components: [
       { id: "api", name: "API SAGEP", description: "Comunicação entre frontend e backend", status: "unavailable", latencyMs: null, critical: true, message: "O navegador não conseguiu alcançar a API" },
       { id: "database", name: "PostgreSQL", description: "Persistência e consultas do SAGEP", status: "not_monitored", latencyMs: null, critical: true, message: "Sem comunicação com a API para executar o diagnóstico" },
@@ -120,17 +134,18 @@ function disconnectedSnapshot(): SystemHealthSnapshot {
 export function SystemHealthPage() {
   const queryClient = useQueryClient()
   const [manualRefreshing, setManualRefreshing] = useState(false)
+  const [historyWindow, setHistoryWindow] = useState<HealthWindow>("3h")
   const hasPermission = useAuthStore((state) => state.hasPermission)
   const canViewDetails = hasPermission("system_health.view_details")
   const statusQuery = useQuery({
-    queryKey: ["system-health", "status"],
-    queryFn: () => systemHealthService.getStatus(),
+    queryKey: ["system-health", "status", historyWindow],
+    queryFn: () => systemHealthService.getStatus(false, historyWindow),
     refetchInterval: 30_000,
     retry: 1,
   })
   const detailsQuery = useQuery({
-    queryKey: ["system-health", "details"],
-    queryFn: () => systemHealthService.getDetails(),
+    queryKey: ["system-health", "details", historyWindow],
+    queryFn: () => systemHealthService.getDetails(false, historyWindow),
     enabled: canViewDetails && Boolean(statusQuery.data),
     refetchInterval: 60_000,
     retry: false,
@@ -140,11 +155,11 @@ export function SystemHealthPage() {
     setManualRefreshing(true)
     try {
       const [status, details] = await Promise.all([
-        systemHealthService.getStatus(true),
-        canViewDetails ? systemHealthService.getDetails(true).catch(() => null) : Promise.resolve(null),
+        systemHealthService.getStatus(true, historyWindow),
+        canViewDetails ? systemHealthService.getDetails(true, historyWindow).catch(() => null) : Promise.resolve(null),
       ])
-      queryClient.setQueryData(["system-health", "status"], status)
-      if (details) queryClient.setQueryData(["system-health", "details"], details)
+      queryClient.setQueryData(["system-health", "status", historyWindow], status)
+      if (details) queryClient.setQueryData(["system-health", "details", historyWindow], details)
     } finally {
       setManualRefreshing(false)
     }
@@ -166,7 +181,7 @@ export function SystemHealthPage() {
   }
   const combinedStatus = disconnected ? "unavailable" : !navigator.onLine && snapshot.status === "operational" ? "degraded" : snapshot.status
   const databaseLatency = snapshot.components.find((item) => item.id === "database")?.latencyMs ?? null
-  const chartData = snapshot.history.map((point) => ({ ...point, time: formatTime(point.timestamp), availability: point.status === "operational" ? 100 : point.status === "degraded" ? 60 : 0 }))
+  const chartData = snapshot.history.map((point) => ({ ...point, time: formatChartTime(point.timestamp, historyWindow), availability: point.status === "operational" ? 100 : point.status === "degraded" ? 60 : 0 }))
   const componentIcons = { api: ServerCog, database: Database, pgadmin: HardDrive } as const
   const transitions = snapshot.history.filter((point, index, items) => index > 0 && point.status !== items[index - 1].status).slice(-5).reverse()
 
@@ -201,7 +216,7 @@ export function SystemHealthPage() {
       </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricCard label="Disponibilidade observada" value={`${snapshot.availabilityPercent}%`} helper="Desde a inicialização da API" icon={CircleGauge} />
+        <MetricCard label="Disponibilidade observada" value={`${snapshot.availabilityPercent}%`} helper={`Nas últimas ${windowOptions.find((item) => item.value === historyWindow)?.label}`} icon={CircleGauge} />
         <MetricCard label="Resposta frontend → API" value={roundTripMs === null ? "—" : `${roundTripMs} ms`} helper="Tempo completo da requisição" icon={Activity} />
         <MetricCard label="Resposta do PostgreSQL" value={databaseLatency === null ? "—" : `${databaseLatency} ms`} helper="Consulta real SELECT 1" icon={Database} />
         <MetricCard label="Uptime da API" value={formatDuration(snapshot.uptimeSeconds)} helper="Desde a última inicialização" icon={Clock3} />
@@ -215,9 +230,23 @@ export function SystemHealthPage() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,.8fr)]">
-        <Card className="border-none shadow-sm"><CardHeader><CardTitle>Latência dos serviços</CardTitle><CardDescription>Histórico das últimas {snapshot.history.length} verificações armazenadas em memória.</CardDescription></CardHeader><CardContent><div className="h-[270px] w-full">{chartData.length > 1 ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} margin={{ left: -14, right: 12, top: 8 }}><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.28} /><XAxis dataKey="time" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={30} /><YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} unit=" ms" /><Tooltip contentStyle={{ borderRadius: 8, borderColor: "hsl(var(--border))" }} /><Line type="monotone" dataKey="apiLatencyMs" name="API" stroke="#b58a2d" strokeWidth={2.2} dot={false} /><Line type="monotone" dataKey="databaseLatencyMs" name="PostgreSQL" stroke="#3f7d61" strokeWidth={2.2} dot={false} connectNulls /></LineChart></ResponsiveContainer> : <div className="flex h-full flex-col items-center justify-center text-center"><Activity className="size-9 text-muted-foreground" /><p className="mt-3 text-sm font-medium">Histórico em formação</p><p className="mt-1 text-xs text-muted-foreground">O gráfico aparecerá após a próxima verificação automática.</p></div>}</div></CardContent></Card>
-        <Card className="border-none shadow-sm"><CardHeader><CardTitle>Estabilidade observada</CardTitle><CardDescription>Percentual de saúde em cada amostra.</CardDescription></CardHeader><CardContent><div className="h-[190px] w-full">{chartData.length > 1 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ left: -28, right: 4, top: 8 }}><defs><linearGradient id="healthFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3f7d61" stopOpacity={0.45} /><stop offset="95%" stopColor="#3f7d61" stopOpacity={0.03} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.25} /><XAxis dataKey="time" hide /><YAxis domain={[0, 100]} ticks={[0, 50, 100]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} unit="%" /><Tooltip /><Area type="stepAfter" dataKey="availability" name="Saúde" stroke="#3f7d61" fill="url(#healthFill)" strokeWidth={2} /></AreaChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Aguardando novas amostras</div>}</div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-md bg-emerald-500/10 p-2"><p className="font-semibold text-emerald-700 dark:text-emerald-300">{snapshot.summary.operational}</p><p className="text-[10px] text-muted-foreground">Operacionais</p></div><div className="rounded-md bg-amber-500/10 p-2"><p className="font-semibold text-amber-700 dark:text-amber-300">{snapshot.summary.degraded}</p><p className="text-[10px] text-muted-foreground">Atenção</p></div><div className="rounded-md bg-red-500/10 p-2"><p className="font-semibold text-red-700 dark:text-red-300">{snapshot.summary.unavailable}</p><p className="text-[10px] text-muted-foreground">Indisponíveis</p></div></div></CardContent></Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricCard label="Latência média da API" value={snapshot.performance.apiAverageMs === null ? "—" : `${snapshot.performance.apiAverageMs} ms`} helper={`P95 de ${snapshot.performance.apiP95Ms ?? "—"} ms`} icon={Gauge} />
+        <MetricCard label="Pico da API" value={snapshot.performance.apiMaximumMs === null ? "—" : `${snapshot.performance.apiMaximumMs} ms`} helper="Maior amostra do período" icon={Activity} />
+        <MetricCard label="Média do PostgreSQL" value={snapshot.performance.databaseAverageMs === null ? "—" : `${snapshot.performance.databaseAverageMs} ms`} helper={`P95 de ${snapshot.performance.databaseP95Ms ?? "—"} ms`} icon={Database} />
+        <MetricCard label="Ocorrências" value={String(snapshot.performance.incidentCount)} helper={`${snapshot.sampleCount} amostras analisadas`} icon={AlertTriangle} />
+      </div>
+
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div><h2 className="text-xl font-semibold">Histórico e desempenho</h2><p className="mt-1 text-sm text-muted-foreground">Selecione a janela de observação para analisar tendências, picos e indisponibilidades.</p></div>
+        <div className="flex flex-wrap gap-1 rounded-lg border bg-muted/30 p-1" role="group" aria-label="Período do histórico">
+          {windowOptions.map((option) => <Button key={option.value} size="sm" variant={historyWindow === option.value ? "default" : "ghost"} onClick={() => setHistoryWindow(option.value)}>{option.label}</Button>)}
+        </div>
+      </div>
+
+      <div className="grid gap-6">
+        <Card className="border-none shadow-sm"><CardHeader><CardTitle>Latência dos serviços</CardTitle><CardDescription>{snapshot.sampleCount} amostras na janela selecionada. Em períodos extensos, os pontos são consolidados preservando os maiores picos.</CardDescription></CardHeader><CardContent><div className="h-[380px] w-full">{chartData.length > 1 ? <ResponsiveContainer width="100%" height="100%"><LineChart data={chartData} margin={{ left: -8, right: 20, top: 8, bottom: 8 }}><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.28} /><XAxis dataKey="time" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={40} /><YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} unit=" ms" width={58} /><Tooltip contentStyle={{ borderRadius: 8, borderColor: "hsl(var(--border))" }} /><Legend /><Line type="monotone" dataKey="apiLatencyMs" name="API" stroke="#b58a2d" strokeWidth={2.2} dot={false} activeDot={{ r: 4 }} /><Line type="monotone" dataKey="databaseLatencyMs" name="PostgreSQL" stroke="#3f7d61" strokeWidth={2.2} dot={false} activeDot={{ r: 4 }} connectNulls /></LineChart></ResponsiveContainer> : <div className="flex h-full flex-col items-center justify-center text-center"><Activity className="size-9 text-muted-foreground" /><p className="mt-3 text-sm font-medium">Histórico em formação</p><p className="mt-1 text-xs text-muted-foreground">A coleta automática registrará uma nova amostra por minuto.</p></div>}</div></CardContent></Card>
+        <Card className="border-none shadow-sm"><CardHeader><CardTitle>Estabilidade observada</CardTitle><CardDescription>Continuidade operacional ao longo das últimas {windowOptions.find((item) => item.value === historyWindow)?.label}.</CardDescription></CardHeader><CardContent><div className="h-[260px] w-full">{chartData.length > 1 ? <ResponsiveContainer width="100%" height="100%"><AreaChart data={chartData} margin={{ left: -8, right: 20, top: 8, bottom: 8 }}><defs><linearGradient id="healthFill" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3f7d61" stopOpacity={0.45} /><stop offset="95%" stopColor="#3f7d61" stopOpacity={0.03} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.25} /><XAxis dataKey="time" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} minTickGap={40} /><YAxis domain={[0, 100]} ticks={[0, 50, 100]} tick={{ fontSize: 10 }} tickLine={false} axisLine={false} unit="%" width={52} /><Tooltip /><Area type="stepAfter" dataKey="availability" name="Saúde" stroke="#3f7d61" fill="url(#healthFill)" strokeWidth={2} /></AreaChart></ResponsiveContainer> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Aguardando novas amostras</div>}</div><div className="mt-4 grid grid-cols-3 gap-2 text-center"><div className="rounded-md bg-emerald-500/10 p-2"><p className="font-semibold text-emerald-700 dark:text-emerald-300">{snapshot.summary.operational}</p><p className="text-[10px] text-muted-foreground">Operacionais agora</p></div><div className="rounded-md bg-amber-500/10 p-2"><p className="font-semibold text-amber-700 dark:text-amber-300">{snapshot.summary.degraded}</p><p className="text-[10px] text-muted-foreground">Em atenção agora</p></div><div className="rounded-md bg-red-500/10 p-2"><p className="font-semibold text-red-700 dark:text-red-300">{snapshot.summary.unavailable}</p><p className="text-[10px] text-muted-foreground">Indisponíveis agora</p></div></div></CardContent></Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-2">

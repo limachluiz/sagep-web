@@ -13,7 +13,7 @@ describe("systemHealthService", () => {
 
     const result = await systemHealthService.getStatus()
 
-    expect(api.get).toHaveBeenCalledWith("/health/status", { skipAuth: true })
+    expect(api.get).toHaveBeenCalledWith("/health/status?window=3h", { skipAuth: true })
     expect(result.snapshot).toEqual({ status: "operational" })
     expect(result.roundTripMs).toBeGreaterThanOrEqual(0)
   })
@@ -21,10 +21,10 @@ describe("systemHealthService", () => {
   it("solicita uma nova sonda quando o usuario executa o diagnostico", async () => {
     vi.mocked(api.get).mockResolvedValue({ status: "operational" })
 
-    await systemHealthService.getStatus(true)
-    await systemHealthService.getDetails(true)
+    await systemHealthService.getStatus(true, "7d")
+    await systemHealthService.getDetails(true, "7d")
 
-    expect(api.get).toHaveBeenNthCalledWith(1, "/health/status?refresh=true", { skipAuth: true })
-    expect(api.get).toHaveBeenNthCalledWith(2, "/health/details?refresh=true")
+    expect(api.get).toHaveBeenNthCalledWith(1, "/health/status?window=7d&refresh=true", { skipAuth: true })
+    expect(api.get).toHaveBeenNthCalledWith(2, "/health/details?window=7d&refresh=true")
   })
 })

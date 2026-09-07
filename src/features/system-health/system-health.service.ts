@@ -1,10 +1,10 @@
 import { api } from "@/lib/api"
-import type { MeasuredHealthSnapshot, SystemHealthDetails, SystemHealthSnapshot } from "./system-health.types"
+import type { HealthWindow, MeasuredHealthSnapshot, SystemHealthDetails, SystemHealthSnapshot } from "./system-health.types"
 
 export const systemHealthService = {
-  async getStatus(force = false): Promise<MeasuredHealthSnapshot> {
+  async getStatus(force = false, window: HealthWindow = "3h"): Promise<MeasuredHealthSnapshot> {
     const startedAt = performance.now()
-    const suffix = force ? "?refresh=true" : ""
+    const suffix = `?window=${window}${force ? "&refresh=true" : ""}`
     const snapshot = await api.get<SystemHealthSnapshot>(`/health/status${suffix}`, { skipAuth: true })
 
     return {
@@ -13,7 +13,7 @@ export const systemHealthService = {
     }
   },
 
-  getDetails(force = false) {
-    return api.get<SystemHealthDetails>(`/health/details${force ? "?refresh=true" : ""}`)
+  getDetails(force = false, window: HealthWindow = "3h") {
+    return api.get<SystemHealthDetails>(`/health/details?window=${window}${force ? "&refresh=true" : ""}`)
   },
 }
