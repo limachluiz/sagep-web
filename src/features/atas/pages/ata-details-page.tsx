@@ -7,6 +7,7 @@ import {
   Boxes,
   CircleDollarSign,
   CloudDownload,
+  Database,
   ExternalLink,
   History,
   Landmark,
@@ -39,6 +40,7 @@ import { AtaCoverageDialog } from "@/features/atas/components/ata-coverage-dialo
 import { AtaDialog } from "@/features/atas/components/ata-dialog"
 import { AtaItemDialog } from "@/features/atas/components/ata-item-dialog"
 import { AtaItemMovementsDialog } from "@/features/atas/components/ata-item-movements-dialog"
+import { AtaItemExternalBalanceDialog } from "@/features/atas/components/ata-item-external-balance-dialog"
 import { atasService } from "@/features/atas/atas.service"
 import type {
   AtaItem,
@@ -91,6 +93,7 @@ export function AtaDetailsPage() {
   const [itemOpen, setItemOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<AtaItem | null>(null)
   const [movementItem, setMovementItem] = useState<AtaItem | null>(null)
+  const [externalBalanceItem, setExternalBalanceItem] = useState<AtaItem | null>(null)
   const [referenceTime] = useState(() => Date.now())
 
   const ataQuery = useQuery({
@@ -171,6 +174,15 @@ export function AtaDetailsPage() {
     onSuccess: () => {
       invalidate()
       toast.success("Dados da ATA atualizados no PNCP.")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const importExternalBalanceMutation = useMutation({
+    mutationFn: () => atasService.importExternalBalance(ataId!),
+    onSuccess: (result) => {
+      queryClient.setQueryData(["atas", "external-balance", ataId], result)
+      queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
+      toast.success(`${result.import.itemsImported} saldo(s) oficial(is) importado(s).`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -478,11 +490,19 @@ export function AtaDetailsPage() {
                     <p className="font-medium">UASG {externalBalanceQuery.data.identity.uasg} · PE {externalBalanceQuery.data.identity.pregaoNumber}/{externalBalanceQuery.data.identity.pregaoYear}</p>
                     <p className="mt-1 text-xs text-muted-foreground">Consultado em {formatAtaDate(externalBalanceQuery.data.checkedAt, true)} · resultado mantido por 10 minutos</p>
                   </div>
-                  <Button asChild variant="ghost" size="sm">
-                    <a href={externalBalanceQuery.data.sourceUrl} target="_blank" rel="noreferrer">
-                      Abrir fonte pública <ExternalLink className="size-4" />
-                    </a>
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    <Button asChild variant="ghost" size="sm">
+                      <a href={externalBalanceQuery.data.sourceUrl} target="_blank" rel="noreferrer">
+                        Abrir fonte pública <ExternalLink className="size-4" />
+                      </a>
+                    </Button>
+                    {canManage && (
+                      <Button size="sm" onClick={() => importExternalBalanceMutation.mutate()} disabled={importExternalBalanceMutation.isPending}>
+                        <Database className="size-4" />
+                        {importExternalBalanceMutation.isPending ? "Importando..." : "Importar todos os saldos"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 {externalBalanceQuery.data.warnings.map((warning) => (
                   <Alert key={warning} className="mx-5 mb-4 w-auto"><AlertTriangle /><AlertDescription>{warning}</AlertDescription></Alert>
@@ -676,10 +696,26 @@ export function AtaDetailsPage() {
                       <TableCell>
                         <p className="font-semibold tabular-nums">{formatAtaQuantity(localAvailable)} {item.unit}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{formatAtaCurrency(item.balance.availableAmount)}</p>
+                        {item.externalBalanceSnapshot && (
+                          <p className="mt-1 text-xs text-primary">
+                            Oficial importado: {item.externalBalanceSnapshot.managerAvailableQuantity === null ? "não informado" : formatAtaQuantity(item.externalBalanceSnapshot.managerAvailableQuantity)} · {formatAtaDate(item.externalBalanceSnapshot.checkedAt, true)}
+                          </p>
+                        )}
                       </TableCell>
                       <TableCell><Badge variant={presentation.variant}>{presentation.label}</Badge></TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
+                          {ata.externalSource === "COMPRAS_GOV" && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Consultar saldo oficial deste item"
+                              aria-label={`Consultar saldo oficial do item ${item.referenceCode}`}
+                              onClick={() => setExternalBalanceItem(item)}
+                            >
+                              <CloudDownload className="size-4 text-primary" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -766,6 +802,14 @@ export function AtaDetailsPage() {
           item={movementItem}
           open={Boolean(movementItem)}
           onOpenChange={(open) => !open && setMovementItem(null)}
+        />
+      )}
+      {externalBalanceItem && (
+        <AtaItemExternalBalanceDialog
+          item={externalBalanceItem}
+          open={Boolean(externalBalanceItem)}
+          canManage={canManage}
+          onOpenChange={(open) => !open && setExternalBalanceItem(null)}
         />
       )}
     </div>

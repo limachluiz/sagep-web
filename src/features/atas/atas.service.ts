@@ -1,6 +1,6 @@
 import { api } from "@/lib/api"
 import type { FederativeUnit } from "@/features/projects/projects.types"
-import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ExternalAtaBalance, ListEnvelope, Pregao, PregaoPayload } from "./atas.types"
+import type { Ata, AtaItem, AtaItemMovement, AtaItemPayload, AtaPayload, AtaType, AtaUpdatePayload, ComprasGovImportPayload, ComprasGovImportResult, ComprasGovPreview, ExternalAtaBalance, ExternalAtaBalanceImport, ListEnvelope, Pregao, PregaoPayload } from "./atas.types"
 
 export const atasService = {
   list(filters: { page?: number; pageSize?: number; search?: string; type?: AtaType; stateUf?: FederativeUnit; active?: boolean; pregaoId?: string } = {}) {
@@ -22,6 +22,7 @@ export const atasService = {
   },
   syncPncp(ataId: string) { return api.post<{ controlNumber: string; lastSyncAt: string; snapshot: NonNullable<Ata["pncpSnapshot"]> }>(`/atas/${ataId}/sync-pncp`) },
   externalBalance(ataId: string) { return api.get<ExternalAtaBalance>(`/atas/${ataId}/external-balance`) },
+  importExternalBalance(ataId: string) { return api.post<ExternalAtaBalanceImport>(`/atas/${ataId}/external-balance/sync`, {}) },
 
   listItems(ataId: string, filters: { page?: number; pageSize?: number; search?: string; active?: boolean } = {}) {
     const query = new URLSearchParams({ page: String(filters.page ?? 1), pageSize: String(filters.pageSize ?? 25) })
@@ -35,6 +36,8 @@ export const atasService = {
   correctItemDescription(itemId: string) { return api.post<{ itemId: string; changed: boolean; description: string; unresolvedCharacters: number; unresolvedTokens: string[] }>(`/ata-items/${itemId}/correct-description`, {}) },
   correctAllItemDescriptions(ataId: string) { return api.post<{ ataId: string; total: number; corrected: number; unchanged: number; unresolvedCharacters: number; unresolvedTokens: string[] }>(`/atas/${ataId}/items/correct-descriptions`, {}) },
   listItemMovements(itemId: string) { return api.get<AtaItemMovement[]>(`/ata-items/${itemId}/movements`) },
+  itemExternalBalance(itemId: string) { return api.get<ExternalAtaBalance>(`/ata-items/${itemId}/external-balance`) },
+  importItemExternalBalance(itemId: string) { return api.post<ExternalAtaBalanceImport>(`/ata-items/${itemId}/external-balance/sync`, {}) },
 
   previewComprasGov(filters: { uasg: string; numeroPregao: string; anoPregao: string; numeroAta?: string }) {
     const query = new URLSearchParams({ uasg: filters.uasg, numeroPregao: filters.numeroPregao, anoPregao: filters.anoPregao })

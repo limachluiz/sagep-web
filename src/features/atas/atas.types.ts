@@ -103,6 +103,18 @@ export type AtaItem = {
   isActive: boolean
   deletedAt: string | null
   balance: AtaBalance
+  externalBalanceSnapshot?: {
+    source: string
+    externalItemNumber: string
+    managerRegisteredQuantity: string | null
+    managerCommittedQuantity: string | null
+    managerAvailableQuantity: string | null
+    publishedTotalAvailableForCommitment: string
+    publishedAvailableForAdhesion: string
+    sourceUrl: string
+    checkedAt: string
+    updatedAt: string
+  } | null
   createdAt: string
   updatedAt: string
   ata: Pick<Ata, "id" | "ataCode" | "number" | "type" | "vendorName" | "isActive" | "externalUasg">
@@ -168,6 +180,14 @@ export type ExternalAtaBalance = {
     detailUrl: string
   }>
   warnings: string[]
+}
+
+export type ExternalAtaBalanceImport = ExternalAtaBalance & {
+  import: {
+    importedAt: string
+    itemsImported: number
+    operationalBalanceChanged: false
+  }
 }
 
 export type ListEnvelope<T> = {
