@@ -177,6 +177,18 @@ export type ExternalAtaBalance = {
     publishedTotalAvailableForCommitment: string
     publishedAdhesionLimit: string
     publishedAvailableForAdhesion: string
+    commitments: Array<{
+      number: string
+      unit: string
+      supplier: string
+      commitmentDate: string
+      includedQuantity: string
+      reinforcementQuantity: string
+      annulledQuantity: string
+      committedQuantity: string
+      value: string
+      transparencyUrl: string
+    }>
     detailUrl: string
   }>
   warnings: string[]

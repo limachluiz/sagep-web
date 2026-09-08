@@ -7,8 +7,6 @@ import {
   Boxes,
   CircleDollarSign,
   CloudDownload,
-  Database,
-  ExternalLink,
   History,
   Landmark,
   MapPin,
@@ -38,9 +36,9 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { AtaCoverageDialog } from "@/features/atas/components/ata-coverage-dialog"
 import { AtaDialog } from "@/features/atas/components/ata-dialog"
+import { AtaExternalBalanceDialog } from "@/features/atas/components/ata-external-balance-dialog"
 import { AtaItemDialog } from "@/features/atas/components/ata-item-dialog"
 import { AtaItemMovementsDialog } from "@/features/atas/components/ata-item-movements-dialog"
-import { AtaItemExternalBalanceDialog } from "@/features/atas/components/ata-item-external-balance-dialog"
 import { atasService } from "@/features/atas/atas.service"
 import type {
   AtaItem,
@@ -93,7 +91,7 @@ export function AtaDetailsPage() {
   const [itemOpen, setItemOpen] = useState(false)
   const [selectedItem, setSelectedItem] = useState<AtaItem | null>(null)
   const [movementItem, setMovementItem] = useState<AtaItem | null>(null)
-  const [externalBalanceItem, setExternalBalanceItem] = useState<AtaItem | null>(null)
+  const [externalBalanceOpen, setExternalBalanceOpen] = useState(false)
   const [referenceTime] = useState(() => Date.now())
 
   const ataQuery = useQuery({
@@ -105,13 +103,6 @@ export function AtaDetailsPage() {
     queryKey: ["atas", "items", ataId],
     queryFn: () => atasService.listItems(ataId!, { page: 1, pageSize: 100 }),
     enabled: Boolean(ataId),
-  })
-  const externalBalanceQuery = useQuery({
-    queryKey: ["atas", "external-balance", ataId],
-    queryFn: () => atasService.externalBalance(ataId!),
-    enabled: false,
-    retry: false,
-    staleTime: 10 * 60 * 1000,
   })
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["atas"] })
@@ -174,15 +165,6 @@ export function AtaDetailsPage() {
     onSuccess: () => {
       invalidate()
       toast.success("Dados da ATA atualizados no PNCP.")
-    },
-    onError: (error) => toast.error(error.message),
-  })
-  const importExternalBalanceMutation = useMutation({
-    mutationFn: () => atasService.importExternalBalance(ataId!),
-    onSuccess: (result) => {
-      queryClient.setQueryData(["atas", "external-balance", ataId], result)
-      queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
-      toast.success(`${result.import.itemsImported} saldo(s) oficial(is) importado(s).`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -449,125 +431,6 @@ export function AtaDetailsPage() {
         </Card>
       </div>
 
-      {ata.externalSource === "COMPRAS_GOV" && (
-        <Card className="overflow-hidden border-primary/15 shadow-sm">
-          <CardHeader className="flex flex-col justify-between gap-3 border-b bg-primary/[0.03] sm:flex-row sm:items-center">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <CloudDownload className="size-5 text-primary" />
-                Saldo publicado no Contratos.gov.br
-              </CardTitle>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Compare o controle interno do SAGEP com o saldo público da unidade gerenciadora.
-              </p>
-            </div>
-            <Button
-              variant={externalBalanceQuery.data ? "outline" : "default"}
-              onClick={() => externalBalanceQuery.refetch()}
-              disabled={externalBalanceQuery.isFetching}
-            >
-              <RefreshCw className={externalBalanceQuery.isFetching ? "size-4 animate-spin" : "size-4"} />
-              {externalBalanceQuery.isFetching ? "Consultando..." : externalBalanceQuery.data ? "Consultar novamente" : "Consultar saldo oficial"}
-            </Button>
-          </CardHeader>
-          <CardContent className="p-0">
-            {!externalBalanceQuery.data && !externalBalanceQuery.isError && (
-              <div className="p-6 text-sm leading-6 text-muted-foreground">
-                A consulta é feita sob demanda na área pública do Governo Federal. Nenhuma quantidade será alterada no SAGEP.
-              </div>
-            )}
-            {externalBalanceQuery.isError && (
-              <Alert variant="destructive" className="m-5 w-auto">
-                <AlertTriangle />
-                <AlertTitle>Não foi possível consultar o saldo público</AlertTitle>
-                <AlertDescription>{externalBalanceQuery.error.message}</AlertDescription>
-              </Alert>
-            )}
-            {externalBalanceQuery.data && (
-              <div>
-                <div className="flex flex-col justify-between gap-3 p-5 sm:flex-row sm:items-center">
-                  <div className="text-sm">
-                    <p className="font-medium">UASG {externalBalanceQuery.data.identity.uasg} · PE {externalBalanceQuery.data.identity.pregaoNumber}/{externalBalanceQuery.data.identity.pregaoYear}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">Consultado em {formatAtaDate(externalBalanceQuery.data.checkedAt, true)} · resultado mantido por 10 minutos</p>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild variant="ghost" size="sm">
-                      <a href={externalBalanceQuery.data.sourceUrl} target="_blank" rel="noreferrer">
-                        Abrir fonte pública <ExternalLink className="size-4" />
-                      </a>
-                    </Button>
-                    {canManage && (
-                      <Button size="sm" onClick={() => importExternalBalanceMutation.mutate()} disabled={importExternalBalanceMutation.isPending}>
-                        <Database className="size-4" />
-                        {importExternalBalanceMutation.isPending ? "Importando..." : "Importar todos os saldos"}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-                {externalBalanceQuery.data.warnings.map((warning) => (
-                  <Alert key={warning} className="mx-5 mb-4 w-auto"><AlertTriangle /><AlertDescription>{warning}</AlertDescription></Alert>
-                ))}
-                <div className="overflow-x-auto border-t">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Item</TableHead>
-                        <TableHead>Saldo SAGEP</TableHead>
-                        <TableHead>Saldo UASG</TableHead>
-                        <TableHead>Diferença</TableHead>
-                        <TableHead>Total público</TableHead>
-                        <TableHead>Adesão disponível</TableHead>
-                        <TableHead className="text-right">Fonte</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {externalBalanceQuery.data.items.map((officialItem) => {
-                        const localItem = items.find((item) => item.id === officialItem.ataItemId)
-                        const localAvailable = localItem ? Number(localItem.balance.availableQuantity) : null
-                        const officialAvailable = officialItem.managerAvailableQuantity === null ? null : Number(officialItem.managerAvailableQuantity)
-                        const difference = localAvailable !== null && officialAvailable !== null ? officialAvailable - localAvailable : null
-                        return (
-                          <TableRow key={officialItem.ataItemId}>
-                            <TableCell className="min-w-52">
-                              <p className="font-medium">Item {Number(officialItem.itemNumber)}</p>
-                              <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{officialItem.description}</p>
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap font-medium tabular-nums">
-                              {localAvailable === null ? "—" : `${formatAtaQuantity(localAvailable)} ${localItem?.unit ?? officialItem.unit}`}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap">
-                              <p className="font-semibold tabular-nums">{officialAvailable === null ? "Não informado" : `${formatAtaQuantity(officialAvailable)} ${officialItem.unit}`}</p>
-                              <p className="mt-1 text-xs text-muted-foreground">Empenhado: {officialItem.managerCommittedQuantity === null ? "não detalhado" : formatAtaQuantity(officialItem.managerCommittedQuantity)}</p>
-                            </TableCell>
-                            <TableCell>
-                              {difference === null ? <Badge variant="secondary">Indisponível</Badge> : (
-                                <Badge variant={Math.abs(difference) < 0.00001 ? "outline" : "secondary"} className="whitespace-nowrap tabular-nums">
-                                  {difference > 0 ? "+" : ""}{formatAtaQuantity(difference)}
-                                </Badge>
-                              )}
-                            </TableCell>
-                            <TableCell className="whitespace-nowrap tabular-nums">{formatAtaQuantity(officialItem.publishedTotalAvailableForCommitment)} {officialItem.unit}</TableCell>
-                            <TableCell className="whitespace-nowrap tabular-nums">{formatAtaQuantity(officialItem.publishedAvailableForAdhesion)} {officialItem.unit}</TableCell>
-                            <TableCell className="text-right">
-                              <Button asChild variant="ghost" size="icon" title={`Abrir item ${Number(officialItem.itemNumber)} no Contratos.gov.br`}>
-                                <a href={officialItem.detailUrl} target="_blank" rel="noreferrer"><ExternalLink className="size-4" /></a>
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        )
-                      })}
-                    </TableBody>
-                  </Table>
-                </div>
-                <p className="border-t px-5 py-4 text-xs leading-5 text-muted-foreground">
-                  “Saldo UASG” considera a unidade gerenciadora. “Total público” também pode incluir unidades participantes. Use o saldo interno para o fluxo do SAGEP e confirme a disponibilidade oficial antes do empenho.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       <Card className="border-primary/10 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2"><MapPin className="size-5 text-primary" />Cobertura territorial</CardTitle>
@@ -639,6 +502,11 @@ export function AtaDetailsPage() {
           </div>
           <div className="flex items-center gap-2">
             {totals.riskCount > 0 && <Badge variant="destructive">{totals.riskCount} saldo(s) crítico(s)</Badge>}
+            {ata.externalSource === "COMPRAS_GOV" && (
+              <Button variant="outline" size="sm" onClick={() => setExternalBalanceOpen(true)}>
+                <CloudDownload className="size-4" />Consultar saldo oficial
+              </Button>
+            )}
             {canManage && <Button variant="outline" size="sm" disabled={correctAllItemsMutation.isPending} onClick={() => correctAllItemsMutation.mutate()}><SpellCheck2 className="size-4" />Corrigir todas as descrições</Button>}
           </div>
         </CardHeader>
@@ -705,17 +573,6 @@ export function AtaDetailsPage() {
                       <TableCell><Badge variant={presentation.variant}>{presentation.label}</Badge></TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1">
-                          {ata.externalSource === "COMPRAS_GOV" && (
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              title="Consultar saldo oficial deste item"
-                              aria-label={`Consultar saldo oficial do item ${item.referenceCode}`}
-                              onClick={() => setExternalBalanceItem(item)}
-                            >
-                              <CloudDownload className="size-4 text-primary" />
-                            </Button>
-                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -804,12 +661,13 @@ export function AtaDetailsPage() {
           onOpenChange={(open) => !open && setMovementItem(null)}
         />
       )}
-      {externalBalanceItem && (
-        <AtaItemExternalBalanceDialog
-          item={externalBalanceItem}
-          open={Boolean(externalBalanceItem)}
+      {ata.externalSource === "COMPRAS_GOV" && (
+        <AtaExternalBalanceDialog
+          ataId={ata.id}
+          items={items}
+          open={externalBalanceOpen}
           canManage={canManage}
-          onOpenChange={(open) => !open && setExternalBalanceItem(null)}
+          onOpenChange={setExternalBalanceOpen}
         />
       )}
     </div>
