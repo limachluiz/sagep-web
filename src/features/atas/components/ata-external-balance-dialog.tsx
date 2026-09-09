@@ -1,13 +1,18 @@
+import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangle, Database, ExternalLink, Loader2, RefreshCw, Scale } from "lucide-react"
 import { toast } from "sonner"
 
+import { ConfirmationDialog } from "@/components/confirmation-dialog"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Textarea } from "@/components/ui/textarea"
 import { atasService } from "@/features/atas/atas.service"
+import { useAuthStore } from "@/features/auth/auth.store"
+import { systemSettingsService } from "@/features/system-settings/system-settings.service"
 import type { AtaItem } from "@/features/atas/atas.types"
 import { formatAtaCurrency, formatAtaDate, formatAtaQuantity } from "@/features/atas/atas.utils"
 
@@ -21,6 +26,11 @@ type Props = {
 
 export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpenChange }: Props) {
   const queryClient = useQueryClient()
+  const user = useAuthStore((state) => state.user)
+  const canApplyOpeningBalance = useAuthStore((state) => state.hasPermission("settings.manage"))
+  const [openingReason, setOpeningReason] = useState("")
+  const [openingConfirmationOpen, setOpeningConfirmationOpen] = useState(false)
+  const settingsQuery = useQuery({ queryKey: ["system-settings"], queryFn: systemSettingsService.get, enabled: open })
   const balanceQuery = useQuery({
     queryKey: ["atas", "external-balance", ataId],
     queryFn: () => atasService.externalBalance(ataId),
@@ -37,9 +47,20 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
     },
     onError: (error) => toast.error(error.message),
   })
+  const openingMutation = useMutation({
+    mutationFn: () => atasService.applyOpeningBalance(ataId, openingReason.trim()),
+    onSuccess: (response) => {
+      queryClient.setQueryData(["atas", "external-balance", ataId], response)
+      queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
+      setOpeningReason("")
+      setOpeningConfirmationOpen(false)
+      toast.success(`Saldo de abertura aplicado em ${response.openingBalance.itemsApplied} item(ns).`)
+    },
+    onError: (error) => toast.error(error.message),
+  })
   const result = balanceQuery.data
 
-  return (
+  return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-6xl">
         <DialogHeader>
@@ -69,6 +90,8 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
             </div>
 
             {result.warnings.map((warning) => <Alert key={warning}><AlertTriangle /><AlertDescription>{warning}</AlertDescription></Alert>)}
+
+            {settingsQuery.data?.implantationModeActive && user?.role === "ADMIN" && canApplyOpeningBalance && <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"><div><p className="font-semibold text-amber-700 dark:text-amber-300">Aplicar como saldo de abertura</p><p className="mt-1 text-sm text-muted-foreground">A diferença entre a quantidade inicial e o saldo oficial será registrada como consumo histórico anterior ao SAGEP. Esta ação não altera a quantidade original da ATA.</p></div><Textarea value={openingReason} onChange={(event) => setOpeningReason(event.target.value)} placeholder="Justificativa, ex.: carga inicial da ATA na implantação do SAGEP" maxLength={500} /><Button size="sm" variant="outline" onClick={() => setOpeningConfirmationOpen(true)} disabled={openingReason.trim().length < 10 || openingMutation.isPending}><Database className="size-4" />Aplicar saldo de abertura</Button></div>}
 
             <div className="space-y-3">
               {result.items.map((officialItem) => {
@@ -109,10 +132,20 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
                 )
               })}
             </div>
-            <p className="text-xs leading-5 text-muted-foreground">Os números das NEs abrem o detalhamento do documento no Portal da Transparência. O saldo oficial é apenas comparativo e não altera as movimentações internas do SAGEP.</p>
+            <p className="text-xs leading-5 text-muted-foreground">Os números das NEs abrem o detalhamento do documento no Portal da Transparência. A consulta e a importação comum são comparativas; somente a ação administrativa “Aplicar saldo de abertura” altera a composição operacional.</p>
           </div>
         )}
       </DialogContent>
     </Dialog>
-  )
+    <ConfirmationDialog
+      open={openingConfirmationOpen}
+      onOpenChange={setOpeningConfirmationOpen}
+      title="Aplicar o saldo oficial como abertura?"
+      description="A diferença entre a quantidade original e o saldo oficial será persistida como consumo histórico. Esta operação será auditada e não poderá ser refeita depois que existirem consumos operacionais do SAGEP."
+      confirmLabel="Confirmar saldo de abertura"
+      variant="warning"
+      pending={openingMutation.isPending}
+      onConfirm={() => openingMutation.mutate()}
+    />
+  </>
 }

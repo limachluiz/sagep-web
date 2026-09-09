@@ -557,8 +557,9 @@ export function AtaDetailsPage() {
                         </div>
                         <Progress className="mt-2 h-1.5" value={allocationPercentage} />
                         <p className="mt-2 text-xs text-muted-foreground">
+                          {formatAtaQuantity(item.balance.openingConsumedQuantity)} histórico ·{" "}
                           {formatAtaQuantity(item.balance.reservedQuantity)} reservado ·{" "}
-                          {formatAtaQuantity(item.balance.consumedQuantity)} consumido
+                          {formatAtaQuantity(item.balance.consumedQuantity)} consumido no SAGEP
                         </p>
                       </TableCell>
                       <TableCell>

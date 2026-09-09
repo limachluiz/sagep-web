@@ -36,10 +36,10 @@ afterEach(() => vi.unstubAllGlobals())
 
 describe("registro da Nota de Empenho", () => {
   it("consulta a fonte oficial e exige confirmação do impacto financeiro", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(preview), {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(preview), {
       status: 200,
       headers: { "Content-Type": "application/json" },
-    })))
+    }))))
     const user = userEvent.setup()
     const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
 
@@ -55,15 +55,15 @@ describe("registro da Nota de Empenho", () => {
     const submit = await screen.findByRole("button", { name: "Validar, registrar e liberar OS" })
     expect(submit).toBeDisabled()
 
-    await user.click(screen.getByRole("checkbox", { name: /Confirmo os dados oficiais/ }))
+    await user.click(screen.getByRole("checkbox", { name: /Confirmo os dados e autorizo/ }))
     expect(submit).toBeEnabled()
   })
 
   it("permite registro manual somente com justificativa e confirmação explícita", async () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ commitmentNote: {} }), {
+    const fetchMock = vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ commitmentNote: {} }), {
       status: 201,
       headers: { "Content-Type": "application/json" },
-    }))
+    })))
     vi.stubGlobal("fetch", fetchMock)
     const user = userEvent.setup()
     const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
@@ -81,6 +81,7 @@ describe("registro da Nota de Empenho", () => {
 
     await user.type(screen.getByLabelText("Justificativa do registro manual"), "Portal indisponível durante o registro")
     await user.click(screen.getByRole("checkbox", { name: /Confirmo que conferi/ }))
+    await user.click(screen.getByRole("checkbox", { name: /Confirmo os dados/ }))
     expect(submit).toBeEnabled()
     await user.click(submit)
 

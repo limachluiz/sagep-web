@@ -28,6 +28,11 @@ export type SystemSettings = {
   defaultBiddingYear: number | null
   defaultImmediateCommitment: boolean
   defaultEstimateGroup: string
+  implantationModeActive: boolean
+  implantationCutoffAt: string | null
+  implantationReason: string | null
+  implantationChangedAt: string | null
+  implantationChangedById: string | null
   portalApiToken: {
     configured: boolean
     source: "DATABASE" | "ENVIRONMENT" | null
@@ -37,4 +42,4 @@ export type SystemSettings = {
   connections: Partial<Record<IntegrationProvider, ConnectionCheck>>
 }
 
-export type UpdateSystemSettings = Omit<SystemSettings, "id" | "portalApiToken" | "connections">
+export type UpdateSystemSettings = Omit<SystemSettings, "id" | "portalApiToken" | "connections" | "implantationModeActive" | "implantationCutoffAt" | "implantationReason" | "implantationChangedAt" | "implantationChangedById">

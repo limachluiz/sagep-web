@@ -38,6 +38,8 @@ export type CommitmentNote = {
   financialStatus: CommitmentFinancialStatus
   syncStatus: CommitmentSyncStatus
   divergenceReason: string | null
+  balanceImpactMode: "CONSUME" | "ALREADY_INCLUDED"
+  balanceImpactReason: string | null
   lastSyncAt: string
   lastSyncError: string | null
   updatedAt: string

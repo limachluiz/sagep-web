@@ -23,6 +23,7 @@ import {
   House,
   Settings,
   ShieldCheck,
+  ShieldAlert,
   Users,
   WalletCards,
 } from "lucide-react"
@@ -366,6 +367,7 @@ export function AuthenticatedLayout() {
       </aside>
 
       <div className={`pt-16 transition-[padding] duration-200 ${sidebarCollapsed ? "lg:pl-20" : "lg:pl-[248px]"}`}>
+        {settingsQuery.data?.implantationModeActive && <div className="flex flex-wrap items-center justify-center gap-2 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-center text-xs font-medium text-amber-800 dark:text-amber-200"><ShieldAlert className="size-4" /><span>Modo de implantação ativo — NEs históricas podem ser registradas sem novo consumo.</span>{settingsQuery.data.implantationCutoffAt && <span className="font-normal">Data de corte: {new Date(settingsQuery.data.implantationCutoffAt).toLocaleDateString("pt-BR", { timeZone: "UTC" })}</span>}</div>}
         <main id="main-content" tabIndex={-1} className="sagep-grid-pattern min-h-[calc(100vh-4rem)] p-3 outline-none sm:p-5 lg:p-7 xl:p-8">
           <Outlet />
         </main>

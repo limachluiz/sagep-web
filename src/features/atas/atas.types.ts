@@ -75,10 +75,12 @@ export type AtaBalance = {
   initialQuantity: string
   reservedQuantity: string
   consumedQuantity: string
+  openingConsumedQuantity: string
   availableQuantity: string
   initialAmount: string
   reservedAmount: string
   consumedAmount: string
+  openingConsumedAmount: string
   availableAmount: string
   lowStock: boolean
   insufficient: boolean
@@ -199,6 +201,14 @@ export type ExternalAtaBalanceImport = ExternalAtaBalance & {
     importedAt: string
     itemsImported: number
     operationalBalanceChanged: false
+  }
+}
+
+export type OpeningBalanceApplication = ExternalAtaBalance & {
+  openingBalance: {
+    appliedAt: string
+    itemsApplied: number
+    operationalBalanceChanged: true
   }
 }
 

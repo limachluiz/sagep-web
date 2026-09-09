@@ -4,6 +4,7 @@ import type { ConnectionCheck, IntegrationProvider, SystemSettings, UpdateSystem
 export const systemSettingsService = {
   get: () => api.get<SystemSettings>("/system-settings"),
   update: (input: UpdateSystemSettings) => api.put<SystemSettings>("/system-settings", input),
+  setImplantationMode: (input: { active: boolean; cutoffAt?: string; reason: string; confirm: true }) => api.put<SystemSettings>("/system-settings/implantation-mode", input),
   savePortalApiToken: (token: string) => api.put<Pick<SystemSettings, "portalApiToken">>("/system-settings/portal-api-token", { token }),
   removePortalApiToken: () => api.delete<Pick<SystemSettings, "portalApiToken">>("/system-settings/portal-api-token"),
   test: (provider: IntegrationProvider) => api.post<ConnectionCheck>(`/system-settings/connections/${provider}/test`),
