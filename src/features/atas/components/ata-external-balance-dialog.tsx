@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Database, ExternalLink, Loader2, RefreshCw, Scale } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Database, ExternalLink, Loader2, RefreshCw, Scale, Settings2 } from "lucide-react"
+import { Link } from "react-router"
 import { toast } from "sonner"
 
 import { ConfirmationDialog } from "@/components/confirmation-dialog"
@@ -50,20 +51,27 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
   })
   const openingMutation = useMutation({
     mutationFn: () => atasService.applyOpeningBalance(ataId, openingReason.trim(), openingSource),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       queryClient.setQueryData(["atas", "external-balance", ataId], response)
-      queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
-      queryClient.invalidateQueries({ queryKey: ["atas", "details", ataId] })
+      await Promise.all([
+        queryClient.refetchQueries({ queryKey: ["atas", "items", ataId], type: "active" }),
+        queryClient.refetchQueries({ queryKey: ["atas", "details", ataId], type: "active" }),
+      ])
       queryClient.invalidateQueries({ queryKey: ["ata-items"] })
       queryClient.invalidateQueries({ queryKey: ["pregoes"] })
       queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       setOpeningReason("")
       setOpeningConfirmationOpen(false)
+      onOpenChange(false)
       toast.success(`Saldo de abertura aplicado em ${response.openingBalance.itemsApplied} item(ns) a partir ${response.openingBalance.appliedFrom === "SAVED_SNAPSHOT" ? "do snapshot salvo" : "da consulta ao vivo"}.`)
     },
     onError: (error) => toast.error(error.message),
   })
   const result = balanceQuery.data
+  const pendingItems = items.filter((item) => item.externalBalanceSnapshot && !item.openingBalanceAppliedAt)
+  const implantationModeActive = Boolean(settingsQuery.data?.implantationModeActive)
+  const isAdmin = user?.role === "ADMIN"
+  const canApply = implantationModeActive && isAdmin && canApplyOpeningBalance
 
   return <>
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -90,13 +98,56 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
                 <Button variant="outline" size="sm" onClick={() => balanceQuery.refetch()} disabled={balanceQuery.isFetching}>
                   <RefreshCw className={balanceQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Consultar novamente
                 </Button>
-                {canManage && <Button size="sm" variant="outline" onClick={() => importMutation.mutate()} disabled={result.retrieval !== "LIVE" || importMutation.isPending}><Database className="size-4" />{importMutation.isPending ? "Salvando..." : "Salvar consulta (sem alterar saldo)"}</Button>}
+                {canManage && result.retrieval === "LIVE" && <Button size="sm" variant="outline" onClick={() => importMutation.mutate()} disabled={importMutation.isPending}><Database className="size-4" />{importMutation.isPending ? "Salvando consulta..." : "Guardar consulta para revisar depois"}</Button>}
               </div>
             </div>
 
             {result.warnings.map((warning) => <Alert key={warning}><AlertTriangle /><AlertDescription>{warning}</AlertDescription></Alert>)}
 
-            {settingsQuery.data?.implantationModeActive && user?.role === "ADMIN" && canApplyOpeningBalance && (
+            {pendingItems.length > 0 && settingsQuery.isLoading && (
+              <div className="flex items-center gap-2 rounded-xl border p-4 text-sm text-muted-foreground">
+                <Loader2 className="size-4 animate-spin" />Verificando autorização para aplicar o saldo ao SAGEP...
+              </div>
+            )}
+
+            {pendingItems.length > 0 && settingsQuery.isError && (
+              <Alert variant="destructive">
+                <AlertTriangle />
+                <AlertTitle>Não foi possível verificar o modo de implantação</AlertTitle>
+                <AlertDescription>Atualize a página e tente novamente. Nenhum saldo foi alterado.</AlertDescription>
+              </Alert>
+            )}
+
+            {pendingItems.length > 0 && !settingsQuery.isLoading && !settingsQuery.isError && !implantationModeActive && (
+              <Alert className="border-amber-500/30 bg-amber-500/5">
+                <AlertTriangle />
+                <AlertTitle>Ative o modo de implantação para aplicar este saldo</AlertTitle>
+                <AlertDescription className="space-y-3">
+                  <p>A consulta já está salva no banco, mas ainda não alterou o saldo operacional. A aplicação controlada só é liberada durante o modo de implantação.</p>
+                  {isAdmin && canApplyOpeningBalance && (
+                    <Button asChild size="sm" variant="outline"><Link to="/settings/integrations"><Settings2 className="size-4" />Abrir modo de implantação</Link></Button>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {pendingItems.length > 0 && implantationModeActive && (!isAdmin || !canApplyOpeningBalance) && (
+              <Alert>
+                <AlertTriangle />
+                <AlertTitle>Aplicação restrita ao administrador</AlertTitle>
+                <AlertDescription>A consulta está salva. Entre com um administrador que possua a permissão de gerenciar configurações para aplicá-la ao saldo.</AlertDescription>
+              </Alert>
+            )}
+
+            {pendingItems.length === 0 && snapshotItemsApplied(items) && (
+              <Alert className="border-emerald-500/30 bg-emerald-500/5">
+                <CheckCircle2 />
+                <AlertTitle>Saldo oficial já aplicado</AlertTitle>
+                <AlertDescription>Os itens desta consulta já compõem o saldo operacional do SAGEP.</AlertDescription>
+              </Alert>
+            )}
+
+            {pendingItems.length > 0 && canApply && (
               <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
                 <div>
                   <p className="font-semibold text-amber-700 dark:text-amber-300">Aplicar como saldo de abertura</p>
@@ -108,9 +159,9 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
                   </p>
                 </div>
                 <Textarea value={openingReason} onChange={(event) => setOpeningReason(event.target.value)} placeholder="Justificativa, ex.: carga inicial da ATA na implantação do SAGEP" maxLength={500} />
-                <Button size="sm" variant="outline" onClick={() => setOpeningConfirmationOpen(true)} disabled={openingReason.trim().length < 10 || openingMutation.isPending}>
+                <Button size="sm" onClick={() => setOpeningConfirmationOpen(true)} disabled={openingReason.trim().length < 10 || openingMutation.isPending}>
                   <Database className="size-4" />
-                  {result.retrieval === "LIVE" ? "Aplicar saldo de abertura" : "Aplicar snapshot salvo"}
+                  {result.retrieval === "LIVE" ? `Aplicar saldo ao SAGEP (${pendingItems.length} itens)` : `Aplicar snapshot salvo (${pendingItems.length} itens)`}
                 </Button>
                 {result.retrieval !== "LIVE" && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">A origem e a data desse snapshot serão registradas na auditoria.</p>}
               </div>
@@ -171,4 +222,9 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
       onConfirm={() => openingMutation.mutate()}
     />
   </>
+}
+
+function snapshotItemsApplied(items: AtaItem[]) {
+  const snapshotItems = items.filter((item) => item.externalBalanceSnapshot)
+  return snapshotItems.length > 0 && snapshotItems.every((item) => item.openingBalanceAppliedAt)
 }
