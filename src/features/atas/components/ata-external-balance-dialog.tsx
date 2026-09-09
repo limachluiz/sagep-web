@@ -78,20 +78,20 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
           <div className="space-y-4">
             <div className="flex flex-col justify-between gap-3 rounded-xl border bg-muted/15 p-4 sm:flex-row sm:items-center">
               <div>
-                <p className="font-medium">UASG {result.identity.uasg} · PE {result.identity.pregaoNumber}/{result.identity.pregaoYear} · ATA {result.identity.ataNumber}</p>
+                <div className="flex flex-wrap items-center gap-2"><p className="font-medium">UASG {result.identity.uasg} · PE {result.identity.pregaoNumber}/{result.identity.pregaoYear} · ATA {result.identity.ataNumber}</p><Badge variant={result.retrieval === "LIVE" ? "secondary" : "outline"}>{result.retrieval === "LIVE" ? "Consulta ao vivo" : "Último snapshot"}</Badge></div>
                 <p className="mt-1 text-xs text-muted-foreground">Consultado em {formatAtaDate(result.checkedAt, true)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button variant="outline" size="sm" onClick={() => balanceQuery.refetch()} disabled={balanceQuery.isFetching}>
                   <RefreshCw className={balanceQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Consultar novamente
                 </Button>
-                {canManage && <Button size="sm" variant="outline" onClick={() => importMutation.mutate()} disabled={importMutation.isPending}><Database className="size-4" />{importMutation.isPending ? "Salvando..." : "Salvar consulta (sem alterar saldo)"}</Button>}
+                {canManage && <Button size="sm" variant="outline" onClick={() => importMutation.mutate()} disabled={result.retrieval !== "LIVE" || importMutation.isPending}><Database className="size-4" />{importMutation.isPending ? "Salvando..." : "Salvar consulta (sem alterar saldo)"}</Button>}
               </div>
             </div>
 
             {result.warnings.map((warning) => <Alert key={warning}><AlertTriangle /><AlertDescription>{warning}</AlertDescription></Alert>)}
 
-            {settingsQuery.data?.implantationModeActive && user?.role === "ADMIN" && canApplyOpeningBalance && <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"><div><p className="font-semibold text-amber-700 dark:text-amber-300">Aplicar como saldo de abertura</p><p className="mt-1 text-sm text-muted-foreground">A diferença entre a quantidade inicial e o saldo oficial será registrada como consumo histórico anterior ao SAGEP. Esta ação não altera a quantidade original da ATA.</p></div><Textarea value={openingReason} onChange={(event) => setOpeningReason(event.target.value)} placeholder="Justificativa, ex.: carga inicial da ATA na implantação do SAGEP" maxLength={500} /><Button size="sm" variant="outline" onClick={() => setOpeningConfirmationOpen(true)} disabled={openingReason.trim().length < 10 || openingMutation.isPending}><Database className="size-4" />Aplicar saldo de abertura</Button></div>}
+            {settingsQuery.data?.implantationModeActive && user?.role === "ADMIN" && canApplyOpeningBalance && <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"><div><p className="font-semibold text-amber-700 dark:text-amber-300">Aplicar como saldo de abertura</p><p className="mt-1 text-sm text-muted-foreground">A diferença entre a quantidade inicial e o saldo oficial será registrada como consumo histórico anterior ao SAGEP. Esta ação exige uma consulta ao vivo e não altera a quantidade original da ATA.</p></div><Textarea value={openingReason} onChange={(event) => setOpeningReason(event.target.value)} placeholder="Justificativa, ex.: carga inicial da ATA na implantação do SAGEP" maxLength={500} disabled={result.retrieval !== "LIVE"} /><Button size="sm" variant="outline" onClick={() => setOpeningConfirmationOpen(true)} disabled={result.retrieval !== "LIVE" || openingReason.trim().length < 10 || openingMutation.isPending}><Database className="size-4" />Aplicar saldo de abertura</Button>{result.retrieval !== "LIVE" && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">O snapshot permanece disponível para consulta, mas só poderá ser aplicado depois que o portal oficial responder novamente.</p>}</div>}
 
             <div className="space-y-3">
               {result.items.map((officialItem) => {

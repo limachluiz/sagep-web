@@ -163,6 +163,7 @@ export type ExternalAtaBalance = {
   sourceUrl: string
   checkedAt: string
   sourceUpdatedAt: null
+  retrieval: "LIVE" | "SNAPSHOT_FALLBACK"
   identity: {
     ataNumber: string
     uasg: string
