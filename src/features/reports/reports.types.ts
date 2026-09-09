@@ -15,6 +15,11 @@ export type ExecutiveProjectsReportFilters = DashboardExecutiveFilters & {
 
 export type ConsolidatedReportType = "executive" | "operational" | "financial"
 
+export type AtaBalanceReportFilters = {
+  ataType?: "CFTV" | "FIBRA_OPTICA"
+  status?: "ALL" | "ACTIVE" | "EXPIRED" | "INACTIVE"
+}
+
 export type ProjectDossier = {
   generatedAt: string
   project: ProjectDetailsResponse["project"]

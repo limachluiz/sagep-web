@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { AlertTriangle, BarChart3, Download, FileChartColumn, FileSpreadsheet, FolderOpen, Landmark, ListChecks, Presentation, RefreshCw, Search, ShieldCheck } from "lucide-react"
+import { AlertTriangle, BarChart3, Database, Download, Eye, FileChartColumn, FileSpreadsheet, FolderOpen, Landmark, ListChecks, PieChart, Presentation, RefreshCw, Search, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -17,7 +17,8 @@ import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
 import type { ProjectStatus } from "@/features/projects/projects.types"
 import { reportsService } from "@/features/reports/reports.service"
-import type { ConsolidatedReportType, ProjectExportFilters } from "@/features/reports/reports.types"
+import type { AtaBalanceReportFilters, ConsolidatedReportType, ProjectExportFilters } from "@/features/reports/reports.types"
+import { openPdfPreview } from "@/lib/pdf-preview"
 import { cn } from "@/lib/utils"
 
 const statusLabels: Record<ProjectStatus, string> = {
@@ -104,6 +105,8 @@ export function ReportsPage() {
   const [portfolioScope, setPortfolioScope] = useState<
     "all" | "CFTV" | "FIBRA_OPTICA_PONTO_LOGICO"
   >("all")
+  const [ataReportType, setAtaReportType] = useState<"all" | "CFTV" | "FIBRA_OPTICA">("all")
+  const [ataReportStatus, setAtaReportStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "INACTIVE">("ALL")
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350)
@@ -161,6 +164,25 @@ export function ReportsPage() {
     },
     onError: (error) => toast.error(error.message),
   })
+  const ataReportFilters = useMemo<AtaBalanceReportFilters>(() => ({
+    ataType: ataReportType === "all" ? undefined : ataReportType,
+    status: ataReportStatus,
+  }), [ataReportStatus, ataReportType])
+  const ataPdfPreviewMutation = useMutation({
+    mutationFn: () => openPdfPreview(
+      () => reportsService.ataBalancePositionPdf(ataReportFilters),
+      "Relatório de Posição das ATAs e Saldos",
+    ),
+    onError: (error) => toast.error(error.message),
+  })
+  const ataPdfDownloadMutation = useMutation({
+    mutationFn: () => reportsService.ataBalancePositionPdf(ataReportFilters),
+    onSuccess: (blob) => {
+      downloadBlob(blob, `posicao-atas-saldos-${new Date().toISOString().slice(0, 10)}.pdf`)
+      toast.success("Relatório de posição das ATAs gerado com sucesso.")
+    },
+    onError: (error) => toast.error(error.message),
+  })
 
   const projects = projectsQuery.data?.items ?? []
   const canIncludeArchived = hasPermission("projects.view_all")
@@ -168,9 +190,9 @@ export function ReportsPage() {
   const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStatus("all"); setStage("all"); setIncludeArchived(false) }
 
   return <div className="space-y-6">
-    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><Badge className="mb-3">Análise e prestação de contas</Badge><h1 className="text-3xl font-semibold tracking-tight">Relatórios e exportações</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Gere a planilha consolidada do portfólio e dossiês individuais com dados financeiros, documentos, pendências e histórico do projeto.</p></div><Button variant="outline" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}><RefreshCw className={cn("size-4", projectsQuery.isFetching && "animate-spin")} />Atualizar dados</Button></div>
+    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><Badge className="mb-3">Análise e prestação de contas</Badge><h1 className="text-3xl font-semibold tracking-tight">Relatórios e exportações</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Gere relatórios gerenciais da carteira e das ATAs, planilhas consolidadas e dossiês individuais com rastreabilidade financeira e operacional.</p></div><Button variant="outline" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}><RefreshCw className={cn("size-4", projectsQuery.isFetching && "animate-spin")} />Atualizar dados</Button></div>
 
-    <div className="grid gap-4 md:grid-cols-3"><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Projetos encontrados</p><p className="mt-2 text-2xl font-semibold">{projectsQuery.isLoading ? "—" : projectsQuery.data?.meta.totalItems ?? 0}</p></div><FolderOpen className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Formato consolidado</p><p className="mt-2 text-lg font-semibold">Excel (.xlsx)</p></div><FileSpreadsheet className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Dossiê individual</p><p className="mt-2 text-lg font-semibold">PDF auditável</p></div><ShieldCheck className="size-6 text-primary" /></CardContent></Card></div>
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Projetos encontrados</p><p className="mt-2 text-2xl font-semibold">{projectsQuery.isLoading ? "—" : projectsQuery.data?.meta.totalItems ?? 0}</p></div><FolderOpen className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Posição das ATAs</p><p className="mt-2 text-lg font-semibold">PDF gerencial</p></div><Database className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Formato consolidado</p><p className="mt-2 text-lg font-semibold">Excel (.xlsx)</p></div><FileSpreadsheet className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Dossiê individual</p><p className="mt-2 text-lg font-semibold">PDF auditável</p></div><ShieldCheck className="size-6 text-primary" /></CardContent></Card></div>
 
     {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
       <CardContent className="relative overflow-hidden bg-gradient-to-br from-[#27321f] via-[#3f4d2a] to-[#66733c] p-6 text-white lg:p-8">
@@ -250,6 +272,35 @@ export function ReportsPage() {
             {consolidatedPdfMutation.isPending ? "Montando relatório..." : "Gerar PDF profissional"}
           </Button>
           <p className="mt-3 text-center text-xs text-muted-foreground">PDF A4 paisagem com identidade institucional do 4º CTA.</p>
+        </div>
+      </CardContent>
+    </Card>}
+
+    {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
+      <CardHeader className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+          <div><Badge variant="outline" className="mb-3 border-primary/30 bg-background/70">Controle patrimonial das atas</Badge><CardTitle className="flex items-center gap-2 text-xl"><Database className="size-5 text-primary" />Posição das ATAs e Saldos</CardTitle><CardDescription className="mt-2 max-w-3xl leading-6">Relatório completo do estoque contratual, conciliando saldo de implantação, consumo por NE, reservas ativas e disponibilidade real de cada item.</CardDescription></div>
+          <div className="flex items-center gap-3 rounded-xl border bg-background/70 px-4 py-3 shadow-sm"><PieChart className="size-5 text-primary" /><div><p className="text-xs font-semibold">PDF gerencial e auditável</p><p className="text-[11px] text-muted-foreground">Fonte: saldo operacional do SAGEP</p></div></div>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
+        <div>
+          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Conteúdo do documento</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
+            ["Composição financeira", "Inicial, histórico, SAGEP, reservado e disponível"],
+            ["Gráficos executivos", "Distribuição por tipo de solução e fornecedor"],
+            ["Governança", "Cobertura dos snapshots e saldos de abertura"],
+            ["Rastreabilidade", "Posição detalhada e itens críticos por ATA"],
+          ].map(([title, description]) => <div key={title} className="rounded-xl border bg-muted/15 p-4"><p className="text-sm font-semibold">{title}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p></div>)}</div>
+          <Alert className="mt-4 border-primary/20 bg-primary/5"><ShieldCheck className="size-4" /><AlertTitle>Saldo coerente em toda a cadeia</AlertTitle><AlertDescription>O relatório usa a mesma composição que alimenta a página da ATA e os dashboards. Um snapshot somente afeta os números depois de aplicado como saldo de abertura.</AlertDescription></Alert>
+        </div>
+        <div className="rounded-xl border bg-muted/15 p-5">
+          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Filtros do relatório</p>
+          <label className="mt-5 block text-sm font-medium" htmlFor="ata-report-type">Natureza da ATA</label>
+          <Select value={ataReportType} onValueChange={(value) => setAtaReportType(value as typeof ataReportType)}><SelectTrigger id="ata-report-type" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as ATAs</SelectItem><SelectItem value="CFTV">Somente CFTV</SelectItem><SelectItem value="FIBRA_OPTICA">Somente Fibra Óptica</SelectItem></SelectContent></Select>
+          <label className="mt-4 block text-sm font-medium" htmlFor="ata-report-status">Situação contratual</label>
+          <Select value={ataReportStatus} onValueChange={(value) => setAtaReportStatus(value as typeof ataReportStatus)}><SelectTrigger id="ata-report-status" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">Todas as situações</SelectItem><SelectItem value="ACTIVE">Vigentes</SelectItem><SelectItem value="EXPIRED">Expiradas</SelectItem><SelectItem value="INACTIVE">Inativas</SelectItem></SelectContent></Select>
+          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Button variant="outline" onClick={() => ataPdfPreviewMutation.mutate()} disabled={ataPdfPreviewMutation.isPending || ataPdfDownloadMutation.isPending}><Eye className="size-4" />{ataPdfPreviewMutation.isPending ? "Abrindo..." : "Visualizar PDF"}</Button><Button onClick={() => ataPdfDownloadMutation.mutate()} disabled={ataPdfDownloadMutation.isPending || ataPdfPreviewMutation.isPending}><Download className="size-4" />{ataPdfDownloadMutation.isPending ? "Gerando..." : "Baixar PDF"}</Button></div>
         </div>
       </CardContent>
     </Card>}

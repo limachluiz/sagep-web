@@ -1,10 +1,18 @@
 import { api } from "@/lib/api"
 import type {
+  AtaBalanceReportFilters,
   ExecutiveProjectsReportFilters,
   ConsolidatedReportType,
   ProjectDossier,
   ProjectExportFilters,
 } from "./reports.types"
+
+function ataBalanceQuery(filters: AtaBalanceReportFilters) {
+  const query = new URLSearchParams()
+  if (filters.ataType) query.set("ataType", filters.ataType)
+  if (filters.status && filters.status !== "ALL") query.set("status", filters.status)
+  return query.size ? `?${query.toString()}` : ""
+}
 
 function exportQuery(filters: ProjectExportFilters) {
   const query = new URLSearchParams()
@@ -26,6 +34,10 @@ function executiveQuery(
 }
 
 export const reportsService = {
+  ataBalancePositionPdf(filters: AtaBalanceReportFilters = {}) {
+    return api.getBlob(`/reports/atas/balance-position.pdf${ataBalanceQuery(filters)}`)
+  },
+
   exportProjects(filters: ProjectExportFilters) {
     return api.getBlob(`/exports/projects.xlsx${exportQuery(filters)}`)
   },

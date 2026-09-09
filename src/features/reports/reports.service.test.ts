@@ -71,4 +71,21 @@ describe("reportsService", () => {
     expect(query.get("projectType")).toBe("CFTV")
     expect(query.get("staleDays")).toBe("30")
   })
+
+  it("gera a posição das ATAs com filtros de natureza e situação", () => {
+    reportsService.ataBalancePositionPdf({ ataType: "FIBRA_OPTICA", status: "ACTIVE" })
+
+    const url = vi.mocked(api.getBlob).mock.calls[0][0]
+    const query = new URL(url, "https://sagep.test").searchParams
+
+    expect(url).toContain("/reports/atas/balance-position.pdf")
+    expect(query.get("ataType")).toBe("FIBRA_OPTICA")
+    expect(query.get("status")).toBe("ACTIVE")
+  })
+
+  it("omite filtros neutros da posição das ATAs", () => {
+    reportsService.ataBalancePositionPdf({ status: "ALL" })
+
+    expect(api.getBlob).toHaveBeenCalledWith("/reports/atas/balance-position.pdf")
+  })
 })
