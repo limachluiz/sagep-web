@@ -120,7 +120,8 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
   const inventoryData = [
     { name: "Disponível", value: Number(data.inventory.summary.totalAvailableAmount), color: "var(--chart-1)" },
     { name: "Reservado", value: Number(data.inventory.summary.totalReservedAmount), color: "#f4b942" },
-    { name: "Consumido", value: Number(data.inventory.summary.totalConsumedAmount), color: "#718078" },
+    { name: "Consumo histórico", value: Number(data.inventory.summary.totalOpeningConsumedAmount), color: "#718078" },
+    { name: "Consumo SAGEP", value: Number(data.inventory.summary.totalSagepConsumedAmount), color: "#415c4b" },
   ]
 
   const metrics = [

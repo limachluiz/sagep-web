@@ -220,6 +220,8 @@ export function AtaDetailsPage() {
   const ata = ataQuery.data
   const items = itemsQuery.data?.items ?? []
   const totals = summarizeAtaItems(items)
+  const snapshotItems = items.filter((item) => item.externalBalanceSnapshot)
+  const unappliedSnapshotItems = snapshotItems.filter((item) => !item.openingBalanceAppliedAt)
   const validity = getAtaValidityStatus(ata, referenceTime)
   const normalizedSearch = search.trim().toLowerCase()
   const filteredItems = items.filter((item) => {
@@ -340,12 +342,23 @@ export function AtaDetailsPage() {
         </Alert>
       )}
 
+      {unappliedSnapshotItems.length > 0 && (
+        <Alert className="border-amber-500/30 bg-amber-500/5">
+          <AlertTriangle />
+          <AlertTitle>Consulta oficial salva, mas ainda não aplicada</AlertTitle>
+          <AlertDescription className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <span>{unappliedSnapshotItems.length} de {snapshotItems.length} item(ns) continuam usando o saldo inicial do SAGEP. No modo de implantação, aplique o saldo de abertura para atualizar toda a composição financeira.</span>
+            <Button variant="outline" size="sm" className="shrink-0" onClick={() => setExternalBalanceOpen(true)}>Revisar e aplicar</Button>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {[
           { label: "Valor inicial", value: totals.initialAmount, icon: CircleDollarSign },
           { label: "Saldo disponível", value: totals.availableAmount, icon: Scale },
           { label: "Valor reservado", value: totals.reservedAmount, icon: Boxes },
-          { label: "Valor consumido", value: totals.consumedAmount, icon: ArrowDownToLine },
+          { label: "Valor consumido total", value: totals.consumedAmount, icon: ArrowDownToLine },
         ].map(({ label, value, icon: Icon }) => (
           <Card key={label} className="border-primary/10 bg-card/80 shadow-sm">
             <CardContent className="flex items-center justify-between p-5">
@@ -378,6 +391,7 @@ export function AtaDetailsPage() {
                 <p className="mt-1 text-sm text-muted-foreground">
                   {formatAtaCurrency(totals.allocatedAmount)} entre reservado e consumido
                 </p>
+                <p className="mt-1 text-xs text-muted-foreground">Consumo: {formatAtaCurrency(totals.openingConsumedAmount)} histórico + {formatAtaCurrency(totals.sagepConsumedAmount)} no SAGEP</p>
               </div>
               <p className="text-right text-xs text-muted-foreground">
                 Último movimento<br />
@@ -531,8 +545,7 @@ export function AtaDetailsPage() {
                   const status = getAtaItemBalanceStatus(item)
                   const presentation = itemStatusPresentation[status]
                   const initialQuantity = Number(item.balance.initialQuantity)
-                  const allocatedQuantity =
-                    Number(item.balance.reservedQuantity) + Number(item.balance.consumedQuantity)
+                  const allocatedQuantity = Number(item.balance.reservedQuantity) + Number(item.balance.totalConsumedQuantity)
                   const allocationPercentage =
                     initialQuantity > 0 ? Math.min(100, (allocatedQuantity / initialQuantity) * 100) : 0
                   const localAvailable = Number(item.balance.availableQuantity)
@@ -565,11 +578,7 @@ export function AtaDetailsPage() {
                       <TableCell>
                         <p className="font-semibold tabular-nums">{formatAtaQuantity(localAvailable)} {item.unit}</p>
                         <p className="mt-1 text-xs text-muted-foreground">{formatAtaCurrency(item.balance.availableAmount)}</p>
-                        {item.externalBalanceSnapshot && (
-                          <p className="mt-1 text-xs text-primary">
-                            Oficial importado: {item.externalBalanceSnapshot.managerAvailableQuantity === null ? "não informado" : formatAtaQuantity(item.externalBalanceSnapshot.managerAvailableQuantity)} · {formatAtaDate(item.externalBalanceSnapshot.checkedAt, true)}
-                          </p>
-                        )}
+                        {item.externalBalanceSnapshot && <p className={`mt-1 text-xs ${item.openingBalanceAppliedAt ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>{item.openingBalanceAppliedAt ? "Abertura aplicada" : "Consulta salva, não aplicada"}: {item.externalBalanceSnapshot.managerAvailableQuantity === null ? "não informado" : formatAtaQuantity(item.externalBalanceSnapshot.managerAvailableQuantity)} · {formatAtaDate(item.openingBalanceAppliedAt ?? item.externalBalanceSnapshot.checkedAt, true)}</p>}
                       </TableCell>
                       <TableCell><Badge variant={presentation.variant}>{presentation.label}</Badge></TableCell>
                       <TableCell>

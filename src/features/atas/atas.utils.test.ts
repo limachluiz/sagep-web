@@ -32,11 +32,13 @@ function item(
       reservedQuantity: "2",
       consumedQuantity: "3",
       openingConsumedQuantity: "0",
+      totalConsumedQuantity: "3",
       availableQuantity: "5",
       initialAmount: "100",
       reservedAmount: "20",
       consumedAmount: "30",
       openingConsumedAmount: "0",
+      totalConsumedAmount: "30",
       availableAmount: "50",
       lowStock: false,
       insufficient: false,
@@ -90,10 +92,13 @@ describe("ATA item balances", () => {
       item(),
       item({
         id: "item-2",
+        openingBalanceAppliedAt: "2026-07-29T12:00:00.000Z",
         balance: {
           initialAmount: "200",
           reservedAmount: "40",
           consumedAmount: "60",
+          openingConsumedAmount: "20",
+          totalConsumedAmount: "80",
           availableAmount: "100",
           lastMovementAt: "2026-07-27T12:00:00.000Z",
         },
@@ -101,8 +106,11 @@ describe("ATA item balances", () => {
     ])
 
     expect(result.initialAmount).toBe(300)
-    expect(result.allocatedAmount).toBe(150)
-    expect(result.utilizationPercentage).toBe(50)
-    expect(result.lastMovementAt).toBe("2026-07-27T12:00:00.000Z")
+    expect(result.openingConsumedAmount).toBe(20)
+    expect(result.sagepConsumedAmount).toBe(90)
+    expect(result.consumedAmount).toBe(110)
+    expect(result.allocatedAmount).toBe(170)
+    expect(result.utilizationPercentage).toBeCloseTo(56.67, 2)
+    expect(result.lastMovementAt).toBe("2026-07-29T12:00:00.000Z")
   })
 })

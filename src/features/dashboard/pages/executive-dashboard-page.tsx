@@ -219,7 +219,8 @@ function ExecutiveContent({
   const inventory = [
     { label: "Disponível", value: Number(data.financial.inventoryCurrentAvailableAmount) },
     { label: "Reservado", value: Number(data.financial.inventoryCurrentReservedAmount) },
-    { label: "Consumido", value: Number(data.financial.inventoryCurrentConsumedAmount) },
+    { label: "Consumo histórico", value: Number(data.financial.inventoryCurrentOpeningConsumedAmount) },
+    { label: "Consumo SAGEP", value: Number(data.financial.inventoryCurrentSagepConsumedAmount) },
   ]
 
   const comparisonMetrics: ComparisonMetric[] = previousData

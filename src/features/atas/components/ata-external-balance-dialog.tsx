@@ -43,7 +43,7 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
     onSuccess: (result) => {
       queryClient.setQueryData(["atas", "external-balance", ataId], result)
       queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
-      toast.success(`${result.import.itemsImported} saldo(s) oficial(is) importado(s).`)
+      toast.success(`${result.import.itemsImported} consulta(s) oficial(is) salva(s). O saldo operacional não foi alterado.`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -85,7 +85,7 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
                 <Button variant="outline" size="sm" onClick={() => balanceQuery.refetch()} disabled={balanceQuery.isFetching}>
                   <RefreshCw className={balanceQuery.isFetching ? "size-4 animate-spin" : "size-4"} />Consultar novamente
                 </Button>
-                {canManage && <Button size="sm" onClick={() => importMutation.mutate()} disabled={importMutation.isPending}><Database className="size-4" />{importMutation.isPending ? "Importando..." : "Importar saldos"}</Button>}
+                {canManage && <Button size="sm" variant="outline" onClick={() => importMutation.mutate()} disabled={importMutation.isPending}><Database className="size-4" />{importMutation.isPending ? "Salvando..." : "Salvar consulta (sem alterar saldo)"}</Button>}
               </div>
             </div>
 
@@ -102,7 +102,7 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
                 return (
                   <section key={officialItem.ataItemId} className="overflow-hidden rounded-xl border">
                     <div className="grid gap-3 bg-muted/15 p-4 md:grid-cols-[minmax(240px,1.6fr)_repeat(3,minmax(110px,.55fr))_auto] md:items-center">
-                      <div><p className="font-semibold">Item {Number(officialItem.itemNumber)}</p><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{officialItem.description}</p></div>
+                      <div><div className="flex flex-wrap items-center gap-2"><p className="font-semibold">Item {Number(officialItem.itemNumber)}</p><Badge variant={localItem?.openingBalanceAppliedAt ? "secondary" : "outline"}>{localItem?.openingBalanceAppliedAt ? "Abertura aplicada" : "Somente consulta"}</Badge></div><p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{officialItem.description}</p></div>
                       <div><p className="text-xs text-muted-foreground">Saldo SAGEP</p><p className="mt-1 font-semibold tabular-nums">{localAvailable === null ? "—" : `${formatAtaQuantity(localAvailable)} ${officialItem.unit}`}</p></div>
                       <div><p className="text-xs text-muted-foreground">Saldo UASG</p><p className="mt-1 font-semibold tabular-nums">{officialAvailable === null ? "—" : `${formatAtaQuantity(officialAvailable)} ${officialItem.unit}`}</p></div>
                       <div><p className="text-xs text-muted-foreground">Diferença</p><p className="mt-1 font-semibold tabular-nums">{difference === null ? "—" : `${difference > 0 ? "+" : ""}${formatAtaQuantity(difference)}`}</p></div>
@@ -132,7 +132,7 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
                 )
               })}
             </div>
-            <p className="text-xs leading-5 text-muted-foreground">Os números das NEs abrem o detalhamento do documento no Portal da Transparência. A consulta e a importação comum são comparativas; somente a ação administrativa “Aplicar saldo de abertura” altera a composição operacional.</p>
+            <p className="text-xs leading-5 text-muted-foreground">Os números das NEs abrem o detalhamento do documento no Portal da Transparência. Salvar a consulta preserva apenas o snapshot para conferência; somente “Aplicar saldo de abertura” altera itens, valores, utilização financeira, dashboards e saldo disponível.</p>
           </div>
         )}
       </DialogContent>

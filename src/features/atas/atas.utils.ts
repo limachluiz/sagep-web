@@ -30,22 +30,27 @@ export function getAtaItemBalanceStatus(
 export function summarizeAtaItems(items: AtaItem[]) {
   const summary = items.reduce(
     (accumulator, item) => {
+      const itemLastChange = [item.balance.lastMovementAt, item.openingBalanceAppliedAt]
+        .filter((value): value is string => Boolean(value))
+        .sort((left, right) => new Date(right).getTime() - new Date(left).getTime())[0] ?? null
+
       accumulator.initialAmount += Number(item.balance.initialAmount)
       accumulator.availableAmount += Number(item.balance.availableAmount)
       accumulator.reservedAmount += Number(item.balance.reservedAmount)
-      accumulator.consumedAmount += Number(item.balance.consumedAmount)
+      accumulator.sagepConsumedAmount += Number(item.balance.consumedAmount)
+      accumulator.openingConsumedAmount += Number(item.balance.openingConsumedAmount)
+      accumulator.consumedAmount += Number(item.balance.totalConsumedAmount)
 
       const status = getAtaItemBalanceStatus(item)
       if (status === "LOW" || status === "EXHAUSTED") accumulator.riskCount += 1
       if (status === "INACTIVE") accumulator.inactiveCount += 1
 
       if (
-        item.balance.lastMovementAt &&
+        itemLastChange &&
         (!accumulator.lastMovementAt ||
-          new Date(item.balance.lastMovementAt).getTime() >
-            new Date(accumulator.lastMovementAt).getTime())
+          new Date(itemLastChange).getTime() > new Date(accumulator.lastMovementAt).getTime())
       ) {
-        accumulator.lastMovementAt = item.balance.lastMovementAt
+        accumulator.lastMovementAt = itemLastChange
       }
 
       return accumulator
@@ -55,6 +60,8 @@ export function summarizeAtaItems(items: AtaItem[]) {
       availableAmount: 0,
       reservedAmount: 0,
       consumedAmount: 0,
+      sagepConsumedAmount: 0,
+      openingConsumedAmount: 0,
       riskCount: 0,
       inactiveCount: 0,
       lastMovementAt: null as string | null,

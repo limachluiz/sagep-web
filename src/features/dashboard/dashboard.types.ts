@@ -50,10 +50,14 @@ export type InventoryBalance = {
   initialQuantity: string
   reservedQuantity: string
   consumedQuantity: string
+  openingConsumedQuantity: string
+  totalConsumedQuantity: string
   availableQuantity: string
   initialAmount: string
   reservedAmount: string
   consumedAmount: string
+  openingConsumedAmount: string
+  totalConsumedAmount: string
   availableAmount: string
   lowStock: boolean
   insufficient: boolean
@@ -121,6 +125,8 @@ export type DashboardOperationalResponse = {
       staleReservations: number
       totalReservedAmount: string
       totalConsumedAmount: string
+      totalOpeningConsumedAmount: string
+      totalSagepConsumedAmount: string
       totalAvailableAmount: string
     }
     criticalItems: CriticalInventoryItem[]
@@ -311,6 +317,8 @@ export type DashboardExecutiveResponse = {
     totalWithServiceOrder: string
     inventoryCurrentReservedAmount: string
     inventoryCurrentConsumedAmount: string
+    inventoryCurrentOpeningConsumedAmount: string
+    inventoryCurrentSagepConsumedAmount: string
     inventoryCurrentAvailableAmount: string
     inventoryReversedAmountInPeriod: string
     byEstimateStatus: AmountBreakdown[]
@@ -339,6 +347,8 @@ export type DashboardExecutiveResponse = {
       itemsWithActiveConsumption: number
       totalReservedAmount: string
       totalConsumedAmount: string
+      totalOpeningConsumedAmount: string
+      totalSagepConsumedAmount: string
       totalAvailableAmount: string
     }
     periodActivity: {

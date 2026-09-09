@@ -76,11 +76,13 @@ export type AtaBalance = {
   reservedQuantity: string
   consumedQuantity: string
   openingConsumedQuantity: string
+  totalConsumedQuantity: string
   availableQuantity: string
   initialAmount: string
   reservedAmount: string
   consumedAmount: string
   openingConsumedAmount: string
+  totalConsumedAmount: string
   availableAmount: string
   lowStock: boolean
   insufficient: boolean
@@ -101,6 +103,9 @@ export type AtaItem = {
   unit: string
   unitPrice: string
   initialQuantity: string
+  openingBalanceAppliedAt?: string | null
+  openingBalanceCheckedAt?: string | null
+  openingBalanceReason?: string | null
   notes: string | null
   isActive: boolean
   deletedAt: string | null
