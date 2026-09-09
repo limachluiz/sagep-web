@@ -23,7 +23,7 @@ export const atasService = {
   syncPncp(ataId: string) { return api.post<{ controlNumber: string; lastSyncAt: string; snapshot: NonNullable<Ata["pncpSnapshot"]> }>(`/atas/${ataId}/sync-pncp`) },
   externalBalance(ataId: string) { return api.get<ExternalAtaBalance>(`/atas/${ataId}/external-balance`) },
   importExternalBalance(ataId: string) { return api.post<ExternalAtaBalanceImport>(`/atas/${ataId}/external-balance/sync`, {}) },
-  applyOpeningBalance(ataId: string, reason: string) { return api.post<OpeningBalanceApplication>(`/atas/${ataId}/opening-balance/apply`, { reason, confirm: true }) },
+  applyOpeningBalance(ataId: string, reason: string, source: "LIVE" | "SAVED_SNAPSHOT" = "LIVE") { return api.post<OpeningBalanceApplication>(`/atas/${ataId}/opening-balance/apply`, { reason, confirm: true, source }) },
 
   listItems(ataId: string, filters: { page?: number; pageSize?: number; search?: string; active?: boolean } = {}) {
     const query = new URLSearchParams({ page: String(filters.page ?? 1), pageSize: String(filters.pageSize ?? 25) })
@@ -39,7 +39,7 @@ export const atasService = {
   listItemMovements(itemId: string) { return api.get<AtaItemMovement[]>(`/ata-items/${itemId}/movements`) },
   itemExternalBalance(itemId: string) { return api.get<ExternalAtaBalance>(`/ata-items/${itemId}/external-balance`) },
   importItemExternalBalance(itemId: string) { return api.post<ExternalAtaBalanceImport>(`/ata-items/${itemId}/external-balance/sync`, {}) },
-  applyItemOpeningBalance(itemId: string, reason: string) { return api.post<OpeningBalanceApplication>(`/ata-items/${itemId}/opening-balance/apply`, { reason, confirm: true }) },
+  applyItemOpeningBalance(itemId: string, reason: string, source: "LIVE" | "SAVED_SNAPSHOT" = "LIVE") { return api.post<OpeningBalanceApplication>(`/ata-items/${itemId}/opening-balance/apply`, { reason, confirm: true, source }) },
 
   previewComprasGov(filters: { uasg: string; numeroPregao: string; anoPregao: string; numeroAta?: string }) {
     const query = new URLSearchParams({ uasg: filters.uasg, numeroPregao: filters.numeroPregao, anoPregao: filters.anoPregao })

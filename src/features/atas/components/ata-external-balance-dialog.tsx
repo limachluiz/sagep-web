@@ -38,6 +38,7 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
     retry: false,
     staleTime: 10 * 60 * 1000,
   })
+  const openingSource = balanceQuery.data?.retrieval === "SNAPSHOT_FALLBACK" ? "SAVED_SNAPSHOT" : "LIVE"
   const importMutation = useMutation({
     mutationFn: () => atasService.importExternalBalance(ataId),
     onSuccess: (result) => {
@@ -48,13 +49,17 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
     onError: (error) => toast.error(error.message),
   })
   const openingMutation = useMutation({
-    mutationFn: () => atasService.applyOpeningBalance(ataId, openingReason.trim()),
+    mutationFn: () => atasService.applyOpeningBalance(ataId, openingReason.trim(), openingSource),
     onSuccess: (response) => {
       queryClient.setQueryData(["atas", "external-balance", ataId], response)
       queryClient.invalidateQueries({ queryKey: ["atas", "items", ataId] })
+      queryClient.invalidateQueries({ queryKey: ["atas", "details", ataId] })
+      queryClient.invalidateQueries({ queryKey: ["ata-items"] })
+      queryClient.invalidateQueries({ queryKey: ["pregoes"] })
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] })
       setOpeningReason("")
       setOpeningConfirmationOpen(false)
-      toast.success(`Saldo de abertura aplicado em ${response.openingBalance.itemsApplied} item(ns).`)
+      toast.success(`Saldo de abertura aplicado em ${response.openingBalance.itemsApplied} item(ns) a partir ${response.openingBalance.appliedFrom === "SAVED_SNAPSHOT" ? "do snapshot salvo" : "da consulta ao vivo"}.`)
     },
     onError: (error) => toast.error(error.message),
   })
@@ -91,7 +96,25 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
 
             {result.warnings.map((warning) => <Alert key={warning}><AlertTriangle /><AlertDescription>{warning}</AlertDescription></Alert>)}
 
-            {settingsQuery.data?.implantationModeActive && user?.role === "ADMIN" && canApplyOpeningBalance && <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4"><div><p className="font-semibold text-amber-700 dark:text-amber-300">Aplicar como saldo de abertura</p><p className="mt-1 text-sm text-muted-foreground">A diferença entre a quantidade inicial e o saldo oficial será registrada como consumo histórico anterior ao SAGEP. Esta ação exige uma consulta ao vivo e não altera a quantidade original da ATA.</p></div><Textarea value={openingReason} onChange={(event) => setOpeningReason(event.target.value)} placeholder="Justificativa, ex.: carga inicial da ATA na implantação do SAGEP" maxLength={500} disabled={result.retrieval !== "LIVE"} /><Button size="sm" variant="outline" onClick={() => setOpeningConfirmationOpen(true)} disabled={result.retrieval !== "LIVE" || openingReason.trim().length < 10 || openingMutation.isPending}><Database className="size-4" />Aplicar saldo de abertura</Button>{result.retrieval !== "LIVE" && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">O snapshot permanece disponível para consulta, mas só poderá ser aplicado depois que o portal oficial responder novamente.</p>}</div>}
+            {settingsQuery.data?.implantationModeActive && user?.role === "ADMIN" && canApplyOpeningBalance && (
+              <div className="space-y-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4">
+                <div>
+                  <p className="font-semibold text-amber-700 dark:text-amber-300">Aplicar como saldo de abertura</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    {result.retrieval === "LIVE"
+                      ? "A diferença entre a quantidade inicial e o saldo oficial atual será registrada como consumo histórico anterior ao SAGEP."
+                      : `O portal oficial está indisponível. A diferença será calculada usando o snapshot salvo em ${formatAtaDate(result.checkedAt, true)}.`}
+                    {" "}A quantidade original da ATA não será alterada.
+                  </p>
+                </div>
+                <Textarea value={openingReason} onChange={(event) => setOpeningReason(event.target.value)} placeholder="Justificativa, ex.: carga inicial da ATA na implantação do SAGEP" maxLength={500} />
+                <Button size="sm" variant="outline" onClick={() => setOpeningConfirmationOpen(true)} disabled={openingReason.trim().length < 10 || openingMutation.isPending}>
+                  <Database className="size-4" />
+                  {result.retrieval === "LIVE" ? "Aplicar saldo de abertura" : "Aplicar snapshot salvo"}
+                </Button>
+                {result.retrieval !== "LIVE" && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">A origem e a data desse snapshot serão registradas na auditoria.</p>}
+              </div>
+            )}
 
             <div className="space-y-3">
               {result.items.map((officialItem) => {
@@ -140,9 +163,9 @@ export function AtaExternalBalanceDialog({ ataId, items, open, canManage, onOpen
     <ConfirmationDialog
       open={openingConfirmationOpen}
       onOpenChange={setOpeningConfirmationOpen}
-      title="Aplicar o saldo oficial como abertura?"
-      description="A diferença entre a quantidade original e o saldo oficial será persistida como consumo histórico. Esta operação será auditada e não poderá ser refeita depois que existirem consumos operacionais do SAGEP."
-      confirmLabel="Confirmar saldo de abertura"
+      title={openingSource === "SAVED_SNAPSHOT" ? "Aplicar o snapshot salvo como abertura?" : "Aplicar o saldo oficial como abertura?"}
+      description={openingSource === "SAVED_SNAPSHOT" ? `Será utilizado o snapshot salvo em ${result ? formatAtaDate(result.checkedAt, true) : "data não informada"}. A operação será auditada e atualizará os saldos e dashboards do SAGEP.` : "A diferença entre a quantidade original e o saldo oficial será persistida como consumo histórico. Esta operação será auditada e não poderá ser refeita depois que existirem consumos operacionais do SAGEP."}
+      confirmLabel={openingSource === "SAVED_SNAPSHOT" ? "Confirmar aplicação do snapshot" : "Confirmar saldo de abertura"}
       variant="warning"
       pending={openingMutation.isPending}
       onConfirm={() => openingMutation.mutate()}

@@ -215,6 +215,7 @@ export type OpeningBalanceApplication = ExternalAtaBalance & {
     appliedAt: string
     itemsApplied: number
     operationalBalanceChanged: true
+    appliedFrom: "LIVE_QUERY" | "SAVED_SNAPSHOT"
   }
 }
 
