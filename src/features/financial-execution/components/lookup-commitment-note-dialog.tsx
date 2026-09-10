@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
-import { CheckCircle2, ExternalLink, FileSearch, Landmark, Loader2, Search } from "lucide-react"
+import { AlertCircle, CheckCircle2, ExternalLink, FileSearch, Landmark, Loader2, Search } from "lucide-react"
 import { Link } from "react-router"
 import { toast } from "sonner"
 
@@ -80,6 +80,8 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
         </div>
 
         {!result && <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground"><p className="font-medium text-foreground">Consulta somente para conferência</p><p className="mt-1">A operação não salva a NE. Para vinculá-la, informe o documento na etapa correspondente do projeto.</p></div>}
+
+        {mutation.isError && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" /><div><p className="font-semibold">Não foi possível localizar a Nota de Empenho</p><p className="mt-1">{mutation.error.message}</p></div></div>}
 
         {snapshot && <div className="space-y-4">
           <div className="flex flex-col justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center">

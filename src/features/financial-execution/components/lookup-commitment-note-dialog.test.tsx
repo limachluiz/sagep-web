@@ -50,4 +50,18 @@ describe("consulta de NE avulsa", () => {
       management: undefined,
     })
   })
+
+  it("informa no modal quando a Nota de Empenho não é localizada", async () => {
+    vi.mocked(financialExecutionService.lookup).mockRejectedValueOnce(
+      new Error("Nota de Empenho não localizada no Portal da Transparência"),
+    )
+    const user = userEvent.setup()
+    const queryClient = new QueryClient({ defaultOptions: { mutations: { retry: false } } })
+    render(<QueryClientProvider client={queryClient}><LookupCommitmentNoteDialog open onOpenChange={() => undefined} /></QueryClientProvider>)
+
+    await user.type(screen.getByLabelText("Número da NE"), "2026NE001243")
+    await user.click(screen.getByRole("button", { name: "Consultar NE" }))
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("Nota de Empenho não localizada no Portal da Transparência")
+  })
 })
