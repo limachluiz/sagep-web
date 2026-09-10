@@ -1,7 +1,7 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { Building2, CalendarDays, FileText, Loader2 } from "lucide-react"
-import { useEffect } from "react"
+import { Building2, CalendarDays, FileText, Loader2, Search } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
 
@@ -10,14 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetFooter,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { militaryOrganizationsService } from "@/features/projects/military-organizations.service"
 import type {
@@ -64,6 +57,8 @@ function dateInputValue(value: string | null | undefined) {
 
 export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmit }: ProjectFormSheetProps) {
   const isEditing = Boolean(project)
+  const [cityFilter, setCityFilter] = useState("all")
+  const [organizationSearch, setOrganizationSearch] = useState("")
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -83,17 +78,24 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
     queryKey: ["military-organizations", stateUf, projectType],
     queryFn: () => militaryOrganizationsService.list({
       stateUf,
-      cityName: projectType === "CFTV" ? "Manaus" : undefined,
       active: true,
+      pageSize: 100,
     }),
     enabled: open && Boolean(stateUf && projectType),
   })
 
-  const availableOrganizations = (organizationsQuery.data?.items ?? []).filter((organization) =>
-    organization.isActive &&
-    organization.stateUf === stateUf &&
-    (projectType !== "CFTV" || organization.cityName.trim().toLocaleLowerCase("pt-BR") === "manaus"),
-  )
+  const stateOrganizations = useMemo(() => (organizationsQuery.data?.items ?? []).filter((organization) =>
+    organization.isActive && organization.stateUf === stateUf &&
+    (projectType !== "CFTV" || organization.cityName.trim().toLocaleLowerCase("pt-BR") === "manaus")
+  ), [organizationsQuery.data?.items, projectType, stateUf])
+  const availableCities = useMemo(() => Array.from(new Set(stateOrganizations.map((organization) => organization.cityName.trim()))).sort((a, b) => a.localeCompare(b, "pt-BR")), [stateOrganizations])
+  const availableOrganizations = useMemo(() => {
+    const term = organizationSearch.trim().toLocaleLowerCase("pt-BR")
+    return stateOrganizations.filter((organization) =>
+      (cityFilter === "all" || organization.cityName === cityFilter) &&
+      (!term || organization.sigla.toLocaleLowerCase("pt-BR").includes(term) || organization.name.toLocaleLowerCase("pt-BR").includes(term))
+    )
+  }, [cityFilter, organizationSearch, stateOrganizations])
 
   useEffect(() => {
     if (!open) return
@@ -105,6 +107,8 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
       description: project?.description ?? "",
       startDate: dateInputValue(project?.startDate),
     })
+    setCityFilter(project?.om?.cityName ?? "all")
+    setOrganizationSearch("")
   }, [form, open, project])
 
   const submit = form.handleSubmit(async (values) => {
@@ -121,18 +125,18 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
   })
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto sm:max-w-xl">
-        <SheetHeader className="border-b px-6 py-5">
-          <SheetTitle className="text-xl">{isEditing ? "Editar projeto" : "Novo projeto"}</SheetTitle>
-          <SheetDescription>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-h-[94vh] overflow-y-auto sm:!max-w-4xl">
+        <DialogHeader className="border-b pb-4 pr-8">
+          <DialogTitle className="text-xl">{isEditing ? "Editar projeto" : "Novo projeto"}</DialogTitle>
+          <DialogDescription>
             {isEditing
               ? "Atualize os dados gerais. O responsável permanece vinculado à criação do projeto."
               : "O projeto será criado sob sua responsabilidade e iniciará na etapa de estimativa de preço."}
-          </SheetDescription>
-        </SheetHeader>
+          </DialogDescription>
+        </DialogHeader>
 
-        <form id="project-form" className="space-y-4 px-6 py-2" onSubmit={submit}>
+        <form id="project-form" className="grid gap-4 lg:grid-cols-2" onSubmit={submit}>
           <FormSection icon={FileText} title="Dados principais" description="Identifique o projeto e descreva seu objetivo operacional.">
             <div className="space-y-2">
               <Label htmlFor="project-title">Título</Label>
@@ -149,13 +153,15 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
             <div className="space-y-2">
               <Label>Tipo do projeto</Label>
               <Select
-                value={projectType}
+                value={projectType ?? ""}
                 onValueChange={(value) => {
                   const nextType = value as ProjectType
                   form.setValue("projectType", nextType, { shouldValidate: true })
                   if (nextType === "CFTV") form.setValue("stateUf", "AM", { shouldValidate: true })
                   else form.resetField("stateUf")
                   form.setValue("omId", "", { shouldValidate: false })
+                  setCityFilter("all")
+                  setOrganizationSearch("")
                 }}
               >
                 <SelectTrigger className="w-full" aria-label="Tipo do projeto"><SelectValue placeholder="Selecione o tipo" /></SelectTrigger>
@@ -170,11 +176,13 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
               <div className="space-y-2">
                 <Label>Estado</Label>
                 <Select
-                  value={stateUf}
+                  value={stateUf ?? ""}
                   disabled={!projectType || projectType === "CFTV"}
                   onValueChange={(value) => {
                     form.setValue("stateUf", value as FederativeUnit, { shouldValidate: true })
                     form.setValue("omId", "", { shouldValidate: false })
+                    setCityFilter("all")
+                    setOrganizationSearch("")
                   }}
                 >
                   <SelectTrigger className="w-full" aria-label="Estado"><SelectValue placeholder="Selecione o estado" /></SelectTrigger>
@@ -186,9 +194,16 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
                 {form.formState.errors.stateUf && <p className="text-xs text-destructive">{form.formState.errors.stateUf.message}</p>}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 sm:col-span-2">
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="space-y-2"><Label>Município</Label><Select value={cityFilter} disabled={!stateUf || organizationsQuery.isLoading} onValueChange={(value) => { setCityFilter(value); form.setValue("omId", "", { shouldValidate: false }) }}><SelectTrigger className="w-full" aria-label="Município"><SelectValue placeholder="Todos os municípios" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os municípios</SelectItem>{availableCities.map((city) => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select></div>
+                  <div className="space-y-2"><Label htmlFor="project-om-search">Pesquisar OM</Label><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input id="project-om-search" className="pl-9" value={organizationSearch} onChange={(event) => { setOrganizationSearch(event.target.value); form.setValue("omId", "", { shouldValidate: false }) }} placeholder="Nome ou sigla da OM" disabled={!stateUf} /></div></div>
+                </div>
+              </div>
+
+              <div className="space-y-2 sm:col-span-2">
                 <Label>Organização Militar</Label>
-                <Select value={omId} disabled={!stateUf || organizationsQuery.isLoading || availableOrganizations.length === 0} onValueChange={(value) => form.setValue("omId", value, { shouldValidate: true })}>
+                <Select value={omId ?? ""} disabled={!stateUf || organizationsQuery.isLoading || availableOrganizations.length === 0} onValueChange={(value) => form.setValue("omId", value, { shouldValidate: true })}>
                   <SelectTrigger className="w-full" aria-label="Organização Militar" aria-describedby="project-om-help"><SelectValue placeholder={organizationsQuery.isLoading ? "Carregando OMs..." : "Selecione a OM"} /></SelectTrigger>
                   <SelectContent>
                     {availableOrganizations.map((om) => (
@@ -219,14 +234,14 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
           </FormSection>
         </form>
 
-        <SheetFooter className="border-t px-6 py-5 sm:flex-row sm:justify-end">
+        <DialogFooter className="border-t pt-4">
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={pending}>Cancelar</Button>
           <Button type="submit" form="project-form" disabled={pending}>
             {pending && <Loader2 className="size-4 animate-spin" />}
             {isEditing ? "Salvar alterações" : "Criar projeto"}
           </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

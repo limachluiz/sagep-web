@@ -13,6 +13,7 @@ vi.mock("../military-organizations.service", () => ({
 
 const organizations: MilitaryOrganization[] = [
   { id: "om-am", omCode: 1, sigla: "4º CTA", name: "Centro de Telemática", cityName: "Manaus", stateUf: "AM", isActive: true },
+  { id: "om-am-2", omCode: 4, sigla: "54º BIS", name: "Batalhão de Infantaria", cityName: "Humaitá", stateUf: "AM", isActive: true },
   { id: "om-ro", omCode: 2, sigla: "17º B Log Sl", name: "Batalhão Logístico", cityName: "Porto Velho", stateUf: "RO", isActive: true },
   { id: "om-ro-inativa", omCode: 3, sigla: "OM INATIVA", name: "Organização inativa", cityName: "Porto Velho", stateUf: "RO", isActive: false },
 ]
@@ -49,7 +50,7 @@ describe("ProjectFormSheet", () => {
 
     await choose(user, "Tipo do projeto", "CFTV")
 
-    await waitFor(() => expect(militaryOrganizationsService.list).toHaveBeenCalledWith({ stateUf: "AM", cityName: "Manaus", active: true }))
+    await waitFor(() => expect(militaryOrganizationsService.list).toHaveBeenCalledWith({ stateUf: "AM", active: true, pageSize: 100 }))
     await user.click(screen.getByRole("combobox", { name: "Organização Militar" }))
 
     expect(await screen.findByRole("option", { name: /4º CTA/ })).toBeInTheDocument()
@@ -64,7 +65,7 @@ describe("ProjectFormSheet", () => {
     await choose(user, "Tipo do projeto", "Fibra Óptica / Ponto Lógico")
     await choose(user, "Estado", "Rondônia")
 
-    await waitFor(() => expect(militaryOrganizationsService.list).toHaveBeenLastCalledWith({ stateUf: "RO", cityName: undefined, active: true }))
+    await waitFor(() => expect(militaryOrganizationsService.list).toHaveBeenLastCalledWith({ stateUf: "RO", active: true, pageSize: 100 }))
     await user.click(screen.getByRole("combobox", { name: "Organização Militar" }))
 
     expect(await screen.findByRole("option", { name: /17º B Log Sl/ })).toBeInTheDocument()
@@ -82,5 +83,17 @@ describe("ProjectFormSheet", () => {
 
     expect(await screen.findByText("Nenhuma OM ativa disponível para esta seleção.")).toBeInTheDocument()
     expect(screen.getByRole("combobox", { name: "Organização Militar" })).toBeDisabled()
+  })
+
+  it("filtra OMs por município e pesquisa por nome", async () => {
+    const user = userEvent.setup()
+    renderForm()
+    await choose(user, "Tipo do projeto", "Fibra Óptica / Ponto Lógico")
+    await choose(user, "Estado", "Amazonas")
+    await choose(user, "Município", "Manaus")
+    await user.type(screen.getByLabelText("Pesquisar OM"), "telemática")
+    await user.click(screen.getByRole("combobox", { name: "Organização Militar" }))
+    expect(await screen.findByRole("option", { name: /4º CTA/ })).toBeInTheDocument()
+    expect(screen.queryByRole("option", { name: /54º BIS/ })).not.toBeInTheDocument()
   })
 })
