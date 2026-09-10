@@ -199,7 +199,7 @@ export function EstimateDetailsPage() {
   const canFinalize = isDraft && !estimate.archivedAt && hasPermission("estimates.finalize")
   const canArchive = !estimate.archivedAt && hasPermission("estimates.archive")
   const canRestore = Boolean(estimate.archivedAt) && hasPermission("estimates.restore")
-  const canDelete = Boolean(estimate.archivedAt) && hasPermission("estimates.delete")
+  const canDelete = (Boolean(estimate.archivedAt) || estimate.status === "CANCELADA") && hasPermission("estimates.delete")
 
   return (
     <div className="space-y-6">
@@ -424,7 +424,7 @@ export function EstimateDetailsPage() {
         onOpenChange={setDeleteDialogOpen}
         entityLabel="estimativa"
         entityCode={`EST-${estimate.estimateCode}`}
-        description="DIEx e Ordens de Serviço dependentes também serão excluídos logicamente."
+        description="A estimativa e todos os DIEx e Ordens de Serviço relacionados serão invalidados. Os documentos não poderão mais ser usados no fluxo do projeto."
         pending={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate()}
       />

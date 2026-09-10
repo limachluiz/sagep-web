@@ -440,7 +440,20 @@ export function ProjectDetailsPage() {
     "AGUARDANDO_INICIO_EXECUCAO",
   ].includes(details.workflow.stage)
   const canRestore = Boolean(details.project.archivedAt) && hasPermission("projects.restore")
-  const canDelete = Boolean(details.project.archivedAt) && hasPermission("projects.delete")
+  const canDelete = hasPermission("projects.delete") && (
+    Boolean(details.project.archivedAt) || (
+      canManage && !details.workflow.milestones.executionStartedAt && [
+        "ESTIMATIVA_PRECO",
+        "AGUARDANDO_NOTA_CREDITO",
+        "DIEX_REQUISITORIO",
+        "AGUARDANDO_NOTA_EMPENHO",
+        "OS_LIBERADA",
+        "AGUARDANDO_OS_ASSINADA",
+        "AGUARDANDO_INICIO_EXECUCAO",
+        "CANCELADO",
+      ].includes(details.workflow.stage)
+    )
+  )
   const canCreateTasks = hasPermission("tasks.create") && !details.project.archivedAt
   const activeEstimate = details.documents.estimates.find((estimate) => !estimate.archivedAt)
   const canOpenEstimateStep = hasPermission("estimates.create") && canManage && !details.project.archivedAt
@@ -648,7 +661,7 @@ export function ProjectDetailsPage() {
         onOpenChange={setDeleteDialogOpen}
         entityLabel="projeto"
         entityCode={`PRJ-${details.project.projectCode}`}
-        description="As estimativas, DIEx, Ordens de Serviço e tarefas vinculadas também serão excluídas logicamente."
+        description="O projeto e todas as estimativas, DIEx, Ordens de Serviço e tarefas relacionadas serão invalidados. A exclusão é bloqueada depois do início da execução."
         pending={deleteMutation.isPending}
         onConfirm={() => deleteMutation.mutate()}
       />
