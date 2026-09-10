@@ -53,9 +53,9 @@ describe("ProjectFormSheet", () => {
     await waitFor(() => expect(militaryOrganizationsService.list).toHaveBeenCalledWith({ stateUf: "AM", active: true, pageSize: 100 }))
     await user.click(screen.getByRole("combobox", { name: "Organização Militar" }))
 
-    expect(await screen.findByRole("option", { name: /4º CTA/ })).toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /17º B Log Sl/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /OM INATIVA/ })).not.toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /4º CTA/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /17º B Log Sl/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /OM INATIVA/ })).not.toBeInTheDocument()
   })
 
   it("carrega somente OMs ativas do estado escolhido para fibra", async () => {
@@ -68,9 +68,9 @@ describe("ProjectFormSheet", () => {
     await waitFor(() => expect(militaryOrganizationsService.list).toHaveBeenLastCalledWith({ stateUf: "RO", active: true, pageSize: 100 }))
     await user.click(screen.getByRole("combobox", { name: "Organização Militar" }))
 
-    expect(await screen.findByRole("option", { name: /17º B Log Sl/ })).toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /4º CTA/ })).not.toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /OM INATIVA/ })).not.toBeInTheDocument()
+    expect(await screen.findByRole("button", { name: /17º B Log Sl/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /4º CTA/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /OM INATIVA/ })).not.toBeInTheDocument()
   })
 
   it("informa quando o estado não possui OM ativa", async () => {
@@ -91,9 +91,9 @@ describe("ProjectFormSheet", () => {
     await choose(user, "Tipo do projeto", "Fibra Óptica / Ponto Lógico")
     await choose(user, "Estado", "Amazonas")
     await choose(user, "Município", "Manaus")
-    await user.type(screen.getByLabelText("Pesquisar OM"), "telemática")
     await user.click(screen.getByRole("combobox", { name: "Organização Militar" }))
-    expect(await screen.findByRole("option", { name: /4º CTA/ })).toBeInTheDocument()
-    expect(screen.queryByRole("option", { name: /54º BIS/ })).not.toBeInTheDocument()
+    await user.type(screen.getByRole("textbox", { name: "Pesquisar Organização Militar" }), "telemática")
+    expect(await screen.findByRole("button", { name: /4º CTA/ })).toBeInTheDocument()
+    expect(screen.queryByRole("button", { name: /54º BIS/ })).not.toBeInTheDocument()
   })
 })

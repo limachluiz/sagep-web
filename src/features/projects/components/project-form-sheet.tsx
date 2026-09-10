@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useQuery } from "@tanstack/react-query"
-import { Building2, CalendarDays, FileText, Loader2, Search } from "lucide-react"
+import { Building2, CalendarDays, Check, ChevronsUpDown, FileText, Loader2, Search } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { z } from "zod"
@@ -9,6 +9,7 @@ import { FormSection } from "@/components/form-section"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
@@ -59,6 +60,7 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
   const isEditing = Boolean(project)
   const [cityFilter, setCityFilter] = useState("all")
   const [organizationSearch, setOrganizationSearch] = useState("")
+  const [organizationPickerOpen, setOrganizationPickerOpen] = useState(false)
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
@@ -96,6 +98,7 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
       (!term || organization.sigla.toLocaleLowerCase("pt-BR").includes(term) || organization.name.toLocaleLowerCase("pt-BR").includes(term))
     )
   }, [cityFilter, organizationSearch, stateOrganizations])
+  const selectedOrganization = stateOrganizations.find((organization) => organization.id === omId)
 
   useEffect(() => {
     if (!open) return
@@ -109,6 +112,7 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
     })
     setCityFilter(project?.om?.cityName ?? "all")
     setOrganizationSearch("")
+    setOrganizationPickerOpen(false)
   }, [form, open, project])
 
   const submit = form.handleSubmit(async (values) => {
@@ -195,22 +199,36 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="space-y-2"><Label>Município</Label><Select value={cityFilter} disabled={!stateUf || organizationsQuery.isLoading} onValueChange={(value) => { setCityFilter(value); form.setValue("omId", "", { shouldValidate: false }) }}><SelectTrigger className="w-full" aria-label="Município"><SelectValue placeholder="Todos os municípios" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os municípios</SelectItem>{availableCities.map((city) => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select></div>
-                  <div className="space-y-2"><Label htmlFor="project-om-search">Pesquisar OM</Label><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input id="project-om-search" className="pl-9" value={organizationSearch} onChange={(event) => { setOrganizationSearch(event.target.value); form.setValue("omId", "", { shouldValidate: false }) }} placeholder="Nome ou sigla da OM" disabled={!stateUf} /></div></div>
-                </div>
+                <Label>Município</Label>
+                <Select value={cityFilter} disabled={!stateUf || organizationsQuery.isLoading} onValueChange={(value) => { setCityFilter(value); form.setValue("omId", "", { shouldValidate: false }); setOrganizationSearch("") }}><SelectTrigger className="w-full" aria-label="Município"><SelectValue placeholder="Todos os municípios" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os municípios</SelectItem>{availableCities.map((city) => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select>
               </div>
 
               <div className="space-y-2 sm:col-span-2">
                 <Label>Organização Militar</Label>
-                <Select value={omId ?? ""} disabled={!stateUf || organizationsQuery.isLoading || availableOrganizations.length === 0} onValueChange={(value) => form.setValue("omId", value, { shouldValidate: true })}>
-                  <SelectTrigger className="w-full" aria-label="Organização Militar" aria-describedby="project-om-help"><SelectValue placeholder={organizationsQuery.isLoading ? "Carregando OMs..." : "Selecione a OM"} /></SelectTrigger>
-                  <SelectContent>
-                    {availableOrganizations.map((om) => (
-                      <SelectItem key={om.id} value={om.id}>{om.sigla} · {om.name} ({om.cityName})</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Popover open={organizationPickerOpen} onOpenChange={(nextOpen) => { setOrganizationPickerOpen(nextOpen); if (!nextOpen) setOrganizationSearch("") }}>
+                  <PopoverTrigger asChild>
+                    <Button type="button" variant="outline" role="combobox" aria-label="Organização Militar" aria-expanded={organizationPickerOpen} aria-describedby="project-om-help" disabled={!stateUf || organizationsQuery.isLoading || stateOrganizations.length === 0} className="w-full justify-between px-3 font-normal">
+                      <span className={selectedOrganization ? "truncate" : "text-muted-foreground"}>{organizationsQuery.isLoading ? "Carregando OMs..." : selectedOrganization ? `${selectedOrganization.sigla} · ${selectedOrganization.name} (${selectedOrganization.cityName})` : "Selecione a OM"}</span>
+                      <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="p-0" onOpenAutoFocus={(event) => event.preventDefault()}>
+                    <div className="sticky top-0 z-10 border-b bg-popover p-2">
+                      <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                        <Input autoFocus aria-label="Pesquisar Organização Militar" className="pl-9" value={organizationSearch} onChange={(event) => setOrganizationSearch(event.target.value)} placeholder="Pesquisar por nome ou sigla..." />
+                      </div>
+                    </div>
+                    <div className="max-h-64 overflow-y-auto p-1">
+                      {availableOrganizations.length === 0 ? <p className="px-3 py-6 text-center text-sm text-muted-foreground">Nenhuma OM encontrada.</p> : availableOrganizations.map((om) => (
+                        <button key={om.id} type="button" className="flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" onClick={() => { form.setValue("omId", om.id, { shouldValidate: true }); setOrganizationPickerOpen(false); setOrganizationSearch("") }}>
+                          <Check className={`mt-0.5 size-4 shrink-0 ${om.id === omId ? "opacity-100" : "opacity-0"}`} />
+                          <span>{om.sigla} · {om.name} <span className="text-muted-foreground">({om.cityName})</span></span>
+                        </button>
+                      ))}
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <div id="project-om-help" aria-live="polite">
                   {organizationsQuery.isError && <p className="text-xs text-destructive">Não foi possível carregar as OMs deste estado.</p>}
                   {organizationsQuery.isSuccess && availableOrganizations.length === 0 && <p className="text-xs text-muted-foreground">Nenhuma OM ativa disponível para esta seleção.</p>}
