@@ -18,6 +18,7 @@ export type MilitaryOrganization = {
   cityName: string
   stateUf: FederativeUnit
   isActive: boolean
+  archivedAt?: string | null
 }
 
 export type ProjectListItem = {

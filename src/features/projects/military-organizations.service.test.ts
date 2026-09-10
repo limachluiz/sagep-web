@@ -42,4 +42,14 @@ describe("militaryOrganizationsService CSV", () => {
 
     expect(api.delete).toHaveBeenCalledWith("/military-organizations/om-1")
   })
+
+  it("envia ação em lote com confirmação administrativa", async () => {
+    vi.mocked(api.post).mockResolvedValue({ succeeded: 2, failed: 0 })
+    await militaryOrganizationsService.bulkAction({ action: "ARCHIVE", ids: ["om-1", "om-2"], allMatching: false }, "step-up-token")
+    expect(api.post).toHaveBeenCalledWith(
+      "/military-organizations/bulk-action",
+      { action: "ARCHIVE", ids: ["om-1", "om-2"], allMatching: false },
+      { headers: { "X-SAGEP-Reauth": "step-up-token" }, skipStepUp: true },
+    )
+  })
 })

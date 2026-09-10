@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Building2, ChevronLeft, ChevronRight, FileUp, MapPin, Pencil, Plus, Power, RefreshCw, Search, Trash2, X } from "lucide-react"
+import { AlertTriangle, Archive, Building2, ChevronLeft, ChevronRight, FileUp, MapPin, Pencil, Plus, Power, RefreshCw, Search, Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -14,7 +14,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { MilitaryOrganizationDialog } from "@/features/military-organizations/components/military-organization-dialog"
 import { MilitaryOrganizationsImportDialog } from "@/features/military-organizations/components/military-organizations-import-dialog"
-import { militaryOrganizationsService, type MilitaryOrganizationPayload } from "@/features/projects/military-organizations.service"
+import { militaryOrganizationsService, type MilitaryOrganizationBulkAction, type MilitaryOrganizationPayload } from "@/features/projects/military-organizations.service"
+import { requestStepUpToken } from "@/features/auth/step-up.manager"
 import type { FederativeUnit, MilitaryOrganization } from "@/features/projects/projects.types"
 
 const stateLabels: Record<FederativeUnit, string> = { AM: "Amazonas", RO: "Rondônia", RR: "Roraima", AC: "Acre" }
@@ -25,13 +26,16 @@ export function MilitaryOrganizationsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("")
   const [stateUf, setStateUf] = useState<FederativeUnit | "all">("all")
   const [cityName, setCityName] = useState("all")
-  const [activity, setActivity] = useState<"all" | "active" | "inactive">("all")
+  const [activity, setActivity] = useState<"all" | "active" | "inactive" | "archived">("all")
   const [page, setPage] = useState(1)
   const [formOpen, setFormOpen] = useState(false)
   const [selected, setSelected] = useState<MilitaryOrganization | null>(null)
   const [toggleTarget, setToggleTarget] = useState<MilitaryOrganization | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<MilitaryOrganization | null>(null)
   const [importOpen, setImportOpen] = useState(false)
+  const [checkedIds, setCheckedIds] = useState<Set<string>>(new Set())
+  const [allMatching, setAllMatching] = useState(false)
+  const [bulkAction, setBulkAction] = useState<MilitaryOrganizationBulkAction | null>(null)
 
   useEffect(() => {
     const timeout = window.setTimeout(() => { setDebouncedSearch(search.trim()); setPage(1) }, 350)
@@ -44,7 +48,8 @@ export function MilitaryOrganizationsPage() {
     search: debouncedSearch || undefined,
     stateUf: stateUf === "all" ? undefined : stateUf,
     cityName: cityName === "all" ? undefined : cityName,
-    active: activity === "all" ? undefined : activity === "active",
+    active: activity === "all" || activity === "archived" ? undefined : activity === "active",
+    archived: activity === "archived" ? "archived" as const : "active" as const,
   }), [activity, cityName, debouncedSearch, page, stateUf])
 
   const listQuery = useQuery({
@@ -54,7 +59,7 @@ export function MilitaryOrganizationsPage() {
   })
   const summaryQuery = useQuery({
     queryKey: ["military-organizations", "summary"],
-    queryFn: () => militaryOrganizationsService.list({ page: 1, pageSize: 100 }),
+    queryFn: () => militaryOrganizationsService.list({ page: 1, pageSize: 100, archived: "all" }),
   })
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["military-organizations"] })
@@ -88,6 +93,20 @@ export function MilitaryOrganizationsPage() {
     },
     onError: (error) => toast.error(error.message),
   })
+  const bulkMutation = useMutation({
+    mutationFn: async (action: MilitaryOrganizationBulkAction) => militaryOrganizationsService.bulkAction({
+      action,
+      allMatching,
+      ids: allMatching ? undefined : [...checkedIds],
+      filters: allMatching ? { search: debouncedSearch || undefined, stateUf: stateUf === "all" ? undefined : stateUf, cityName: cityName === "all" ? undefined : cityName, active: activity === "all" || activity === "archived" ? undefined : activity === "active", archived: activity === "archived" ? "archived" : "active" } : undefined,
+    }, await requestStepUpToken(true)),
+    onSuccess: (result) => {
+      toast.success(`${result.succeeded} OM(s) processada(s).${result.failed ? ` ${result.failed} preservada(s) por possuir vínculos.` : ""}`)
+      if (result.failures.length) toast.warning(result.failures.map((item) => `${item.sigla}: ${item.reason}`).join("; "))
+      setCheckedIds(new Set()); setAllMatching(false); setBulkAction(null); invalidate()
+    },
+    onError: (error) => toast.error(error.message),
+  })
 
   const allOrganizations = summaryQuery.data?.items ?? []
   const availableCities = useMemo(() => Array.from(new Set(
@@ -100,6 +119,11 @@ export function MilitaryOrganizationsPage() {
   const representedStates = new Set(allOrganizations.map((item) => item.stateUf)).size
   const hasFilters = Boolean(search || stateUf !== "all" || cityName !== "all" || activity !== "all")
   const meta = listQuery.data?.meta
+  const pageItems = listQuery.data?.items ?? []
+  const pageAllChecked = pageItems.length > 0 && pageItems.every((item) => checkedIds.has(item.id))
+  const selectedCount = allMatching ? (meta?.totalItems ?? 0) : checkedIds.size
+  const togglePage = () => setCheckedIds((current) => { const next = new Set(current); if (pageAllChecked) pageItems.forEach((item) => next.delete(item.id)); else pageItems.forEach((item) => next.add(item.id)); return next })
+  const toggleOne = (id: string) => { setAllMatching(false); setCheckedIds((current) => { const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next }) }
 
   const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStateUf("all"); setCityName("all"); setActivity("all"); setPage(1) }
   const openCreate = () => { setSelected(null); setFormOpen(true) }
@@ -130,22 +154,25 @@ export function MilitaryOrganizationsPage() {
         <div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" placeholder="Buscar por sigla, nome ou cidade..." value={search} onChange={(event) => setSearch(event.target.value)} /></div>
         <Select value={stateUf} onValueChange={(value) => { setStateUf(value as FederativeUnit | "all"); setCityName("all"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os estados</SelectItem>{Object.entries(stateLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
         <Select value={cityName} onValueChange={(value) => { setCityName(value); setPage(1) }} disabled={summaryQuery.isLoading || availableCities.length === 0}><SelectTrigger><SelectValue placeholder="Todos os municípios" /></SelectTrigger><SelectContent><SelectItem value="all">Todos os municípios</SelectItem>{availableCities.map((city) => <SelectItem key={city} value={city}>{city}</SelectItem>)}</SelectContent></Select>
-        <Select value={activity} onValueChange={(value) => { setActivity(value as "all" | "active" | "inactive"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Ativas e inativas</SelectItem><SelectItem value="active">Somente ativas</SelectItem><SelectItem value="inactive">Somente inativas</SelectItem></SelectContent></Select>
+        <Select value={activity} onValueChange={(value) => { setActivity(value as "all" | "active" | "inactive" | "archived"); setPage(1) }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Ativas e inativas</SelectItem><SelectItem value="active">Somente ativas</SelectItem><SelectItem value="inactive">Somente inativas</SelectItem><SelectItem value="archived">Somente arquivadas</SelectItem></SelectContent></Select>
         {hasFilters && <Button variant="ghost" onClick={clearFilters}><X className="size-4" />Limpar</Button>}
       </CardContent></Card>
 
       {listQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar as OMs</AlertTitle><AlertDescription>{listQuery.error.message}</AlertDescription></Alert>}
 
       <Card className="border-none shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between"><CardTitle className="flex items-center gap-2"><Building2 className="size-5 text-primary" />Cadastro de OMs</CardTitle>{meta && <Badge variant="outline">{meta.totalItems} registro(s)</Badge>}</CardHeader>
+        <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3"><CardTitle className="flex items-center gap-2"><Building2 className="size-5 text-primary" />Cadastro de OMs</CardTitle><div className="flex flex-wrap items-center gap-2">{selectedCount > 0 && <><Badge variant="outline">{selectedCount} selecionada(s)</Badge><Button variant="outline" size="sm" onClick={() => setBulkAction("INACTIVATE")}><Power className="size-4" />Inativar</Button><Button variant="outline" size="sm" onClick={() => setBulkAction("ARCHIVE")}><Archive className="size-4" />Arquivar</Button><Button variant="destructive" size="sm" onClick={() => setBulkAction("DELETE")}><Trash2 className="size-4" />Excluir</Button></>}{meta && <Badge variant="outline">{meta.totalItems} registro(s)</Badge>}</div></CardHeader>
         <CardContent className="overflow-x-auto">
+          {checkedIds.size > 0 && !allMatching && meta && meta.totalItems > checkedIds.size && <div className="mb-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm">{checkedIds.size} OM(s) selecionada(s). <button className="font-semibold text-primary underline" onClick={() => setAllMatching(true)}>Selecionar todos os {meta.totalItems} resultados</button></div>}
+          {allMatching && <div className="mb-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2 text-sm">Todos os {meta?.totalItems ?? 0} resultados filtrados estão selecionados. <button className="font-semibold text-primary underline" onClick={() => { setAllMatching(false); setCheckedIds(new Set()) }}>Limpar seleção</button></div>}
           {listQuery.isLoading ? <div className="space-y-3">{Array.from({ length: 6 }).map((_, index) => <Skeleton key={index} className="h-14" />)}</div> : listQuery.data?.items.length ? (
-            <Table><TableHeader><TableRow><TableHead>Código</TableHead><TableHead>Organização Militar</TableHead><TableHead>Localidade</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>
+            <Table><TableHeader><TableRow><TableHead className="w-10"><input type="checkbox" aria-label="Selecionar OMs desta página" checked={pageAllChecked || allMatching} onChange={togglePage} /></TableHead><TableHead>Código</TableHead><TableHead>Organização Militar</TableHead><TableHead>Localidade</TableHead><TableHead>Status</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>
               {listQuery.data.items.map((organization) => <TableRow key={organization.id}>
+                <TableCell><input type="checkbox" aria-label={`Selecionar ${organization.sigla}`} checked={allMatching || checkedIds.has(organization.id)} onChange={() => toggleOne(organization.id)} /></TableCell>
                 <TableCell className="font-mono text-xs">OM-{organization.omCode}</TableCell>
                 <TableCell><p className="font-medium">{organization.sigla}</p><p className="mt-1 max-w-md text-xs text-muted-foreground">{organization.name}</p></TableCell>
                 <TableCell><p className="font-medium">{organization.cityName}</p><p className="mt-1 text-xs text-muted-foreground">{stateLabels[organization.stateUf]} · {organization.stateUf}</p></TableCell>
-                <TableCell><Badge variant={organization.isActive ? "default" : "secondary"}>{organization.isActive ? "Ativa" : "Inativa"}</Badge></TableCell>
+                <TableCell><Badge variant={organization.isActive ? "default" : "secondary"}>{organization.archivedAt ? "Arquivada" : organization.isActive ? "Ativa" : "Inativa"}</Badge></TableCell>
                 <TableCell><div className="flex justify-end gap-1"><Button variant="ghost" size="sm" onClick={() => openEdit(organization)}><Pencil className="size-4" />Editar</Button><Button variant="ghost" size="sm" className={organization.isActive ? "text-destructive hover:text-destructive" : "text-primary hover:text-primary"} onClick={() => setToggleTarget(organization)}><Power className="size-4" />{organization.isActive ? "Inativar" : "Ativar"}</Button><Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => setDeleteTarget(organization)}><Trash2 className="size-4" />Excluir</Button></div></TableCell>
               </TableRow>)}
             </TableBody></Table>
@@ -161,6 +188,8 @@ export function MilitaryOrganizationsPage() {
       <Dialog open={Boolean(toggleTarget)} onOpenChange={(open) => !open && setToggleTarget(null)}><DialogContent><DialogHeader><DialogTitle>{toggleTarget?.isActive ? "Inativar" : "Ativar"} Organização Militar?</DialogTitle><DialogDescription>{toggleTarget?.isActive ? `${toggleTarget.sigla} deixará de aparecer em novos projetos e estimativas, mas os vínculos históricos serão preservados.` : `${toggleTarget?.sigla} voltará a ficar disponível nos fluxos operacionais.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setToggleTarget(null)} disabled={toggleMutation.isPending}>Cancelar</Button><Button variant={toggleTarget?.isActive ? "destructive" : "default"} onClick={() => toggleTarget && toggleMutation.mutate(toggleTarget)} disabled={!toggleTarget || toggleMutation.isPending}>{toggleTarget?.isActive ? "Confirmar inativação" : "Confirmar ativação"}</Button></DialogFooter></DialogContent></Dialog>
 
       <Dialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)}><DialogContent><DialogHeader><DialogTitle>Excluir Organização Militar?</DialogTitle><DialogDescription>{deleteTarget?.isActive ? `${deleteTarget.sigla} ainda está ativa. Para excluí-la com segurança, cancele esta ação e inative a OM primeiro.` : `O SAGEP verificará se ${deleteTarget?.sigla} possui projetos ou estimativas vinculados. Se houver qualquer vínculo, a exclusão será bloqueada e o histórico permanecerá preservado.`}</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleteMutation.isPending}>{deleteTarget?.isActive ? "Voltar e inativar" : "Cancelar"}</Button><Button variant="destructive" onClick={() => deleteTarget && deleteMutation.mutate(deleteTarget)} disabled={!deleteTarget || deleteTarget.isActive || deleteMutation.isPending}><Trash2 className="size-4" />Confirmar exclusão</Button></DialogFooter></DialogContent></Dialog>
+
+      <Dialog open={Boolean(bulkAction)} onOpenChange={(open) => !open && setBulkAction(null)}><DialogContent><DialogHeader><DialogTitle>{bulkAction === "DELETE" ? "Excluir" : bulkAction === "ARCHIVE" ? "Arquivar" : "Inativar"} {selectedCount} Organização(ões) Militar(es)?</DialogTitle><DialogDescription>{bulkAction === "DELETE" ? "A exclusão é permanente. OMs com projetos ou estimativas serão preservadas e informadas no resultado." : bulkAction === "ARCHIVE" ? "As OMs serão inativadas e ocultadas das listagens operacionais, mantendo o histórico." : "As OMs deixarão de ficar disponíveis para novos usos, mantendo os vínculos existentes."} Sua senha administrativa será solicitada e cada alteração ficará registrada na auditoria.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={() => setBulkAction(null)} disabled={bulkMutation.isPending}>Cancelar</Button><Button variant={bulkAction === "DELETE" ? "destructive" : "default"} onClick={() => bulkAction && bulkMutation.mutate(bulkAction)} disabled={!bulkAction || bulkMutation.isPending}>{bulkAction === "DELETE" ? <Trash2 className="size-4" /> : bulkAction === "ARCHIVE" ? <Archive className="size-4" /> : <Power className="size-4" />}Confirmar operação</Button></DialogFooter></DialogContent></Dialog>
     </div>
   )
 }

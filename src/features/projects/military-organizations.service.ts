@@ -20,7 +20,10 @@ export type MilitaryOrganizationsFilters = {
   cityName?: string
   search?: string
   active?: boolean
+  archived?: "active" | "archived" | "all"
 }
+
+export type MilitaryOrganizationBulkAction = "INACTIVATE" | "ARCHIVE" | "DELETE"
 
 export type MilitaryOrganizationPayload = {
   sigla: string
@@ -48,7 +51,7 @@ export type MilitaryOrganizationImportPreview = {
 }
 
 export const militaryOrganizationsService = {
-  list({ page = 1, pageSize = 100, stateUf, cityName, search, active }: MilitaryOrganizationsFilters = {}) {
+  list({ page = 1, pageSize = 100, stateUf, cityName, search, active, archived }: MilitaryOrganizationsFilters = {}) {
     const query = new URLSearchParams({
       page: String(page),
       pageSize: String(pageSize),
@@ -58,6 +61,7 @@ export const militaryOrganizationsService = {
     if (cityName) query.set("cityName", cityName)
     if (search) query.set("search", search)
     if (active !== undefined) query.set("active", String(active))
+    if (archived) query.set("archived", archived)
 
     return api.get<MilitaryOrganizationsResponse>(`/military-organizations?${query.toString()}`)
   },
@@ -72,6 +76,10 @@ export const militaryOrganizationsService = {
 
   remove(id: string) {
     return api.delete<{ message: string }>(`/military-organizations/${id}`)
+  },
+
+  bulkAction(payload: { action: MilitaryOrganizationBulkAction; ids?: string[]; allMatching: boolean; filters?: Omit<MilitaryOrganizationsFilters, "page" | "pageSize"> }, stepUpToken: string) {
+    return api.post<{ action: MilitaryOrganizationBulkAction; requested: number; succeeded: number; failed: number; succeededIds: string[]; failures: Array<{ id: string; sigla: string; reason: string }> }>("/military-organizations/bulk-action", payload, { headers: { "X-SAGEP-Reauth": stepUpToken }, skipStepUp: true })
   },
 
   template: () => api.getBlob("/military-organizations/import/template"),
