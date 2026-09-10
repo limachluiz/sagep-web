@@ -219,7 +219,10 @@ export function ProjectFormSheet({ open, onOpenChange, project, pending, onSubmi
                         <Input autoFocus aria-label="Pesquisar Organização Militar" className="pl-9" value={organizationSearch} onChange={(event) => setOrganizationSearch(event.target.value)} placeholder="Pesquisar por nome ou sigla..." />
                       </div>
                     </div>
-                    <div className="max-h-64 overflow-y-auto p-1">
+                    <div
+                      className="max-h-64 overscroll-contain overflow-y-auto p-1"
+                      onWheel={(event) => event.stopPropagation()}
+                    >
                       {availableOrganizations.length === 0 ? <p className="px-3 py-6 text-center text-sm text-muted-foreground">Nenhuma OM encontrada.</p> : availableOrganizations.map((om) => (
                         <button key={om.id} type="button" className="flex w-full items-start gap-2 rounded-sm px-2 py-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none" onClick={() => { form.setValue("omId", om.id, { shouldValidate: true }); setOrganizationPickerOpen(false); setOrganizationSearch("") }}>
                           <Check className={`mt-0.5 size-4 shrink-0 ${om.id === omId ? "opacity-100" : "opacity-0"}`} />
