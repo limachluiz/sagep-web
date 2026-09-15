@@ -1,3 +1,4 @@
+import { NeDiscoveryPanel } from "../components/ne-discovery-panel"
 import { useMemo, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangle, Banknote, CheckCircle2, CircleDollarSign, FileCheck2, Landmark, Loader2, RefreshCw, Search } from "lucide-react"
@@ -120,6 +121,8 @@ export function FinancialExecutionPage() {
     </section>
 
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(({ label, value, icon: Icon, helper }) => <Card key={label}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle><Icon className="size-4 text-primary" /></CardHeader><CardContent><p className="text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{helper}</p></CardContent></Card>)}</div>
+
+    <NeDiscoveryPanel />
 
     <Card>
       <CardHeader className="gap-4 lg:flex-row lg:items-center lg:justify-between"><div><CardTitle>Carteira de empenhos</CardTitle><p className="mt-1 text-sm text-muted-foreground">A etapa do projeto é exibida ao lado da situação financeira, sem movimentação automática do workflow.</p></div><div className="flex flex-col gap-2 sm:flex-row"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9 sm:w-72" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="NE, fornecedor, CNPJ ou projeto" /></div><select className="h-9 rounded-md border bg-background px-3 text-sm" value={status} onChange={(event) => setStatus(event.target.value)}><option value="">Todas as situações</option>{Object.entries(financialLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div></CardHeader>
