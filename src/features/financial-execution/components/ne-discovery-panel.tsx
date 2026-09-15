@@ -48,6 +48,7 @@ export function NeDiscoveryPanel() {
     const filters = `${start} a ${end} · UGs ${ugs.join(", ")} · ${suppliers.length} fornecedor(es)`
     setCoverage({ completed: 0, total, pages: 0, updated: "", filters })
     const found = new Map<string, Row>()
+    let currentRequest = ""
     try {
       for (const cnpj of suppliers) for (const ug of ugs) for (let year = first; year <= last; year++) {
         const fingerprints = new Set<string>()
@@ -56,6 +57,8 @@ export function NeDiscoveryPanel() {
           if (stop.current) throw new Error("Consulta interrompida; cobertura parcial.")
           await new Promise(resolve => setTimeout(resolve, 1500))
           if (stop.current) throw new Error("Consulta interrompida; cobertura parcial.")
+          currentRequest = `CNPJ ${cnpj} · UG ${ug} · ano ${year} · página ${page}`
+          setMessage(`Consultando ${currentRequest}…`)
           const result = await api.post<Page>("/financial-execution/discovery/page", { pregaoIds: selected, cnpj, ug, startDate: start, endDate: end, year, page })
           if (stop.current) throw new Error("Consulta interrompida; cobertura parcial.")
           if (!result.exhausted && fingerprints.has(result.fingerprint)) throw new Error("A fonte repetiu uma página; cobertura parcial.")
@@ -71,8 +74,9 @@ export function NeDiscoveryPanel() {
         }
         if (!exhausted) throw new Error("Limite de páginas atingido; cobertura parcial.")
       }
-      setMessage("Consulta concluída para os filtros selecionados. A cobertura corresponde aos dados disponibilizados pela fonte.")
-    } catch (error) { setMessage(`${error instanceof Error ? error.message : "Falha na consulta"} Os resultados já obtidos permanecem visíveis; não representam uma busca completa.`) }
+      const skipped = pregoes.flatMap(p => p.atas).filter(a => !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).length
+      setMessage(`Consulta concluída para os fornecedores com CNPJ válido. A cobertura corresponde aos dados disponibilizados pela fonte.${skipped ? ` Atenção: ${skipped} ATA(s) sem CNPJ válido ficaram fora da busca; revise o cadastro em Pregões e Atas.` : ""}`)
+    } catch (error) { setMessage(`${error instanceof Error ? error.message : "Falha na consulta"}${currentRequest ? ` (${currentRequest})` : ""}. Os resultados já obtidos permanecem visíveis; não representam uma busca completa.`) }
     finally { busy.current = false; setRunning(false) }
   }
   return <Card>
