@@ -23,6 +23,7 @@ export function NeDiscoveryPanel() {
   const [supplierErrors, setSupplierErrors] = useState<string[]>([])
   const [resultPage, setResultPage] = useState(1)
   const importer = useMutation({ mutationFn: (code: string) => api.post(`/financial-execution/discovery/archive/${code}`), onSuccess: () => { client.invalidateQueries({ queryKey: ["ne-archive"] }); toast.success("NE importada/atualizada na base de consulta, sem alterar saldos.") }, onError: e => toast.error(e.message) })
+  const resolveOne = useMutation({ mutationFn: (id: string) => api.post<{ updated: boolean; cnpj: string; source?: string }>(`/financial-execution/discovery/suppliers/${id}/resolve`), onSuccess: result => { client.invalidateQueries({ queryKey: ["ne-discovery-options"] }); toast.success(`CNPJ encontrado: ${result.cnpj}${result.source ? ` · ${result.source}` : ""}`) }, onError: e => toast.error(e.message) })
   const saveSupplier = useMutation({ mutationFn: (value: { id: string; cnpj: string }) => api.patch(`/atas/${value.id}`, { vendorCnpj: value.cnpj.replace(/\D/g, "") }), onSuccess: () => { setSupplier(null); client.invalidateQueries({ queryKey: ["ne-discovery-options"] }); toast.success("CNPJ da ATA atualizado. Execute a busca novamente.") }, onError: e => toast.error(e.message) })
   const options = useQuery({ queryKey: ["ne-discovery-options"], queryFn: () => api.get<{ defaultUg: string; pregoes: Pregao[] }>("/financial-execution/discovery/options") })
   const [selected, setSelected] = useState<string[]>([])
@@ -49,10 +50,15 @@ export function NeDiscoveryPanel() {
     setResolving(true); setSupplierErrors([])
     const failures: string[] = []
     try {
-      for (const ata of pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? ""))) {
-        try { await api.post(`/financial-execution/discovery/suppliers/${ata.id}/resolve`) }
-        catch (error) { failures.push(`ATA ${ata.number}: ${error instanceof Error ? error.message : "Fonte indisponível"}`) }
-      }
+      const pending = pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? ""))
+      let next = 0
+      await Promise.all(Array.from({ length: Math.min(2, pending.length) }, async () => {
+        while (next < pending.length) {
+          const ata = pending[next++]
+          try { await api.post(`/financial-execution/discovery/suppliers/${ata.id}/resolve`) }
+          catch (error) { failures.push(`ATA ${ata.number}: ${error instanceof Error ? error.message : "Fonte indisponível"}`) }
+        }
+      }))
       setSupplierErrors(failures)
       const refreshed = await options.refetch()
       if (refreshed.error) throw refreshed.error
@@ -116,14 +122,14 @@ export function NeDiscoveryPanel() {
     <CardContent className="space-y-4">
       {options.isError && <p role="alert">Falha ao carregar os pregões: {options.error.message}</p>}
       {options.isLoading && <p>Carregando pregões…</p>}
-      <fieldset disabled={running || resolving} className="space-y-3">
+      <fieldset disabled={running || resolving || resolveOne.isPending} className="space-y-3">
         <legend className="font-medium">Pregões e vigências das ATAs</legend>
         <Button variant="outline" size="sm" onClick={() => select((options.data?.pregoes ?? []).map(p => p.id))}>Selecionar todos</Button>
         {options.data?.pregoes.map(p => <label key={p.id} className="flex items-start gap-3 rounded-lg border p-3">
           <input type="checkbox" checked={selected.includes(p.id)} onChange={e => select(e.target.checked ? [...selected, p.id] : selected.filter(id => id !== p.id))} />
           <span><strong>{p.number}/{p.year} · {p.type ?? "Pregão"} · UASG {p.uasg}</strong>{p.atas.map((a, i) => <span key={i} className="block text-xs text-muted-foreground">ATA {a.number} · {a.vendorName} · {a.validFrom?.slice(0, 10) ?? "Início não informado"} a {a.validUntil?.slice(0, 10) ?? "Fim não informado"}{!a.vendorCnpj?.replace(/\D/g, "").match(/^\d{14}$/) ? " · CNPJ ausente/inválido: fornecedor não será consultado" : ""}</span>)}</span>
         </label>)}
-        {canEditAta && pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-300 p-2 text-sm"><span>ATA {a.number} · {a.vendorName}: CNPJ pendente (busca automática ao consultar NEs)</span><Button size="sm" variant="outline" onClick={() => setSupplier({ id: a.id!, name: a.vendorName, cnpj: a.vendorCnpj ?? "" })}>Informar CNPJ</Button></div>)}
+        {canEditAta && pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-300 p-2 text-sm"><span>ATA {a.number} · {a.vendorName}: CNPJ pendente (busca automática ao consultar NEs)</span><Button size="sm" onClick={() => resolveOne.mutate(a.id!)}>{resolveOne.isPending ? "Consultando…" : "Buscar CNPJ"}</Button><Button size="sm" variant="outline" onClick={() => setSupplier({ id: a.id!, name: a.vendorName, cnpj: a.vendorCnpj ?? "" })}>Informar CNPJ</Button></div>)}
         {period.incomplete && selected.length > 0 && <p className="text-sm text-amber-700">Há vigências ausentes. Confira e complete manualmente o intervalo.</p>}
         <div className="grid gap-3 md:grid-cols-3">
           <label className="text-sm">UGs emitentes<Input value={units ?? options.data?.defaultUg ?? ""} placeholder="160016, 167016" onChange={e => setUnits(e.target.value)} /></label>
@@ -132,7 +138,7 @@ export function NeDiscoveryPanel() {
         </div>
         <Button onClick={search} disabled={!options.data}>Buscar NEs</Button>
       </fieldset>
-      {resolving && <p role="status">Consultando CNPJs na fonte oficial das ATAs selecionadas…</p>}
+      {resolving && <p role="status">Consultando CNPJs das ATAs selecionadas, aproveitando dados salvos e resultados oficiais do PNCP…</p>}
       {supplierErrors.length > 0 && <div role="alert" className="rounded border border-amber-300 p-3 text-sm"><p>Não foi possível preencher automaticamente:</p>{supplierErrors.map(error => <p key={error}>{error}</p>)}</div>}
       {running && <Button variant="outline" onClick={() => { stop.current = true }}>Interromper consulta</Button>}
       {message && <p role="status" className="rounded-lg border p-3 text-sm">{message}</p>}
