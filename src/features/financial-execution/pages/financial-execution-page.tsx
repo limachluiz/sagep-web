@@ -1,3 +1,4 @@
+import { NeArchivePanel } from "../components/ne-archive-panel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NeDiscoveryPanel } from "../components/ne-discovery-panel"
 import { useMemo, useState } from "react"
@@ -126,9 +127,11 @@ export function FinancialExecutionPage() {
         <TabsTrigger value="portfolio">Carteira de empenhos</TabsTrigger>
         <TabsTrigger value="single">Consulta de NE avulsa</TabsTrigger>
         <TabsTrigger value="discovery">Buscar por pregão e fornecedor</TabsTrigger>
+        <TabsTrigger value="archive">NEs importadas</TabsTrigger>
       </TabsList>
       <TabsContent value="single"><Card><CardHeader><CardTitle>Consulta de NE avulsa</CardTitle></CardHeader><CardContent className="space-y-4"><p className="text-sm text-muted-foreground">Consulte uma nota pelo número, UG emitente e gestão.</p><Button onClick={() => setLookupOpen(true)}><Search className="size-4" />Consultar NE avulsa</Button></CardContent></Card></TabsContent>
       <TabsContent value="discovery" forceMount className="data-[state=inactive]:hidden"><NeDiscoveryPanel /></TabsContent>
+      <TabsContent value="archive"><NeArchivePanel /></TabsContent>
       <TabsContent value="portfolio" className="space-y-4">
         {canSync && <Button onClick={() => syncAll.mutate()} disabled={syncAll.isPending}>{syncAll.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar carteira</Button>}
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(({ label, value, icon: Icon, helper }) => <Card key={label}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle><Icon className="size-4 text-primary" /></CardHeader><CardContent><p className="text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{helper}</p></CardContent></Card>)}</div>

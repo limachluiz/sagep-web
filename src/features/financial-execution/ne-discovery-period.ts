@@ -1,4 +1,4 @@
-type Ata = { number: string; vendorName: string; vendorCnpj: string | null; validFrom: string | null; validUntil: string | null }
+type Ata = { id?: string; number: string; vendorName: string; vendorCnpj: string | null; validFrom: string | null; validUntil: string | null }
 export type Pregao = { id: string; number: string; year: string; uasg: string; type: string | null; atas: Ata[] }
 
 export function suggestedPeriod(pregoes: Pregao[]) {

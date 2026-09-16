@@ -1,6 +1,8 @@
+import { useAuthStore } from "@/features/auth/auth.store"
+import { toast } from "sonner"
 import { suggestedPeriod, type Pregao } from "../ne-discovery-period"
 import { useEffect, useRef, useState } from "react"
-import { useQuery } from "@tanstack/react-query"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,6 +15,13 @@ const text = (value: unknown) => value == null ? "—" : typeof value === "objec
 
 
 export function NeDiscoveryPanel() {
+  const client = useQueryClient()
+  const canManage = useAuthStore(s => s.hasPermission("financial_execution.manage"))
+  const canEditAta = useAuthStore(s => s.hasPermission("atas.manage"))
+  const [supplier, setSupplier] = useState<{ id: string; name: string; cnpj: string } | null>(null)
+  const [resultPage, setResultPage] = useState(1)
+  const importer = useMutation({ mutationFn: (code: string) => api.post(`/financial-execution/discovery/archive/${code}`), onSuccess: () => { client.invalidateQueries({ queryKey: ["ne-archive"] }); toast.success("NE importada/atualizada na base de consulta, sem alterar saldos.") }, onError: e => toast.error(e.message) })
+  const saveSupplier = useMutation({ mutationFn: (value: { id: string; cnpj: string }) => api.patch(`/atas/${value.id}`, { vendorCnpj: value.cnpj.replace(/\D/g, "") }), onSuccess: () => { setSupplier(null); client.invalidateQueries({ queryKey: ["ne-discovery-options"] }); toast.success("CNPJ da ATA atualizado. Execute a busca novamente.") }, onError: e => toast.error(e.message) })
   const options = useQuery({ queryKey: ["ne-discovery-options"], queryFn: () => api.get<{ defaultUg: string; pregoes: Pregao[] }>("/financial-execution/discovery/options") })
   const [selected, setSelected] = useState<string[]>([])
   const [units, setUnits] = useState<string | null>(null)
@@ -44,7 +53,7 @@ export function NeDiscoveryPanel() {
     const first = Number(start.slice(0, 4)), last = Number(end.slice(0, 4))
     if (first < 2000 || last > 2100) { setMessage("Informe anos entre 2000 e 2100."); return }
     const total = suppliers.length * ugs.length * (last - first + 1)
-    busy.current = true; stop.current = false; setRunning(true); setRows([]); setMessage("Consulta em andamento…")
+    busy.current = true; stop.current = false; setRunning(true); setRows([]); setResultPage(1); setMessage("Consulta em andamento…")
     const filters = `${start} a ${end} · UGs ${ugs.join(", ")} · ${suppliers.length} fornecedor(es)`
     setCoverage({ completed: 0, total, pages: 0, updated: "", filters })
     const found = new Map<string, Row>()
@@ -91,6 +100,7 @@ export function NeDiscoveryPanel() {
           <input type="checkbox" checked={selected.includes(p.id)} onChange={e => select(e.target.checked ? [...selected, p.id] : selected.filter(id => id !== p.id))} />
           <span><strong>{p.number}/{p.year} · {p.type ?? "Pregão"} · UASG {p.uasg}</strong>{p.atas.map((a, i) => <span key={i} className="block text-xs text-muted-foreground">ATA {a.number} · {a.vendorName} · {a.validFrom?.slice(0, 10) ?? "Início não informado"} a {a.validUntil?.slice(0, 10) ?? "Fim não informado"}{!a.vendorCnpj?.replace(/\D/g, "").match(/^\d{14}$/) ? " · CNPJ ausente/inválido: fornecedor não será consultado" : ""}</span>)}</span>
         </label>)}
+        {canEditAta && pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-300 p-2 text-sm"><span>ATA {a.number} · {a.vendorName}: CNPJ pendente</span><Button size="sm" variant="outline" onClick={() => setSupplier({ id: a.id!, name: a.vendorName, cnpj: a.vendorCnpj ?? "" })}>Informar CNPJ</Button></div>)}
         {period.incomplete && selected.length > 0 && <p className="text-sm text-amber-700">Há vigências ausentes. Confira e complete manualmente o intervalo.</p>}
         <div className="grid gap-3 md:grid-cols-3">
           <label className="text-sm">UGs emitentes<Input value={units ?? options.data?.defaultUg ?? ""} placeholder="160016, 167016" onChange={e => setUnits(e.target.value)} /></label>
@@ -101,8 +111,10 @@ export function NeDiscoveryPanel() {
       </fieldset>
       {running && <Button variant="outline" onClick={() => { stop.current = true }}>Interromper consulta</Button>}
       {message && <p role="status" className="rounded-lg border p-3 text-sm">{message}</p>}
-      {coverage.total > 0 && <div className="rounded-lg bg-muted p-3 text-sm"><p>{coverage.filters}</p><p>{rows.length} NEs únicas · {coverage.completed}/{coverage.total} combinações fornecedor/UG/ano concluídas · {coverage.pages} páginas</p><p>Fonte: Portal da Transparência · Última resposta: {coverage.updated ? new Date(coverage.updated).toLocaleString("pt-BR") : "Aguardando"}</p></div>}
-      {rows.length > 0 && <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left">{["NE", "UG", "Fornecedor", "Emissão", "Valor informado pela fonte", "Conferência"].map(h => <th className="p-2" key={h}>{h}</th>)}</tr></thead><tbody>{rows.map(row => <tr className="border-b" key={String(row.documento)}><td className="p-2"><Button variant="link" onClick={() => setCode(String(row.documento))}>{text(row.documentoResumido ?? row.documento)}</Button></td><td className="p-2">{text(row.codigoUg)}</td><td className="p-2">{text(row.nomeFavorecido ?? row.favorecido)}</td><td className="p-2">{text(row.data)}</td><td className="p-2">{text(row.valor)}</td><td className="p-2">{row.dateUnverified ? "Data não confirmada · " : ""}Vínculo com pregão pendente</td></tr>)}</tbody></table></div>}
+      {coverage.total > 0 && <div className="rounded-lg bg-muted p-3 text-sm"><p>{coverage.filters}</p><p>{rows.length} NEs únicas · {coverage.completed}/{coverage.total} combinações fornecedor/UG/ano concluídas · {coverage.pages} respostas de páginas da API já processadas automaticamente</p><p>Fonte: Portal da Transparência · Última resposta: {coverage.updated ? new Date(coverage.updated).toLocaleString("pt-BR") : "Aguardando"}</p></div>}
+      {rows.length > 0 && <div className="overflow-x-auto"><table className="w-full text-sm"><thead><tr className="border-b text-left">{["NE", "UG", "Fornecedor", "Emissão", "Valor informado pela fonte", "Conferência", "Ações"].map(h => <th className="p-2" key={h}>{h}</th>)}</tr></thead><tbody>{rows.slice((resultPage - 1) * 20, resultPage * 20).map(row => <tr className="border-b" key={String(row.documento)}><td className="p-2"><Button variant="link" onClick={() => setCode(String(row.documento))}>{text(row.documentoResumido ?? row.documento)}</Button></td><td className="p-2">{text(row.codigoUg)}</td><td className="p-2">{text(row.nomeFavorecido ?? row.favorecido)}</td><td className="p-2">{text(row.data)}</td><td className="p-2">{text(row.valor)}</td><td className="p-2">{row.dateUnverified ? "Data não confirmada · " : ""}Vínculo com pregão pendente</td><td className="p-2">{canManage && <Button size="sm" disabled={importer.isPending} onClick={() => importer.mutate(String(row.documento))}>Importar / atualizar</Button>}</td></tr>)}</tbody></table></div>}
+      {rows.length > 0 && <div className="flex items-center gap-3"><Button variant="outline" disabled={resultPage === 1} onClick={() => setResultPage(p => p - 1)}>Anterior</Button><span>Página {resultPage} de {Math.ceil(rows.length / 20)} · {rows.length} NEs encontradas</span><Button variant="outline" disabled={resultPage * 20 >= rows.length} onClick={() => setResultPage(p => p + 1)}>Próxima</Button><Button variant="outline" disabled={running} onClick={() => { setRows([]); setResultPage(1); setMessage(""); setCoverage({ completed: 0, total: 0, pages: 0, updated: "", filters: "" }) }}>Limpar resultados</Button></div>}
+      <Dialog open={Boolean(supplier)} onOpenChange={open => { if (!open) setSupplier(null) }}><DialogContent><DialogHeader><DialogTitle>Informar CNPJ da ATA</DialogTitle><DialogDescription>{supplier?.name} · confira o CNPJ no documento oficial antes de salvar.</DialogDescription></DialogHeader><Input aria-label="CNPJ do fornecedor" value={supplier?.cnpj ?? ""} onChange={e => setSupplier(s => s ? { ...s, cnpj: e.target.value } : s)} /><Button disabled={saveSupplier.isPending || !supplier || !/^\d{14}$/.test(supplier.cnpj.replace(/\D/g, ""))} onClick={() => supplier && saveSupplier.mutate(supplier)}>Salvar CNPJ</Button></DialogContent></Dialog>
       <p className="text-xs text-muted-foreground">Esta busca não altera saldos. O valor retornado na listagem não é um total validado de pagamentos ou liquidações. Documentos relacionados são consultados sem restringir suas datas à vigência da ATA.</p>
       <Dialog open={Boolean(code)} onOpenChange={open => { if (!open) setCode(null) }}><DialogContent className="max-h-[85vh] overflow-auto sm:max-w-3xl"><DialogHeader><DialogTitle>Documentos da NE</DialogTitle><DialogDescription>{code} · Portal da Transparência</DialogDescription></DialogHeader>
         {detail.isLoading && <p>Consultando documento e vínculos…</p>}{detail.isError && <p role="alert">Consulta incompleta: {detail.error.message}</p>}
