@@ -1,10 +1,14 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { render, screen } from "@testing-library/react"
+import { render, screen, fireEvent, waitFor } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
 import { LookupCommitmentNoteDialog } from "./lookup-commitment-note-dialog"
+import { api, ApiError } from "@/lib/api"
 import { financialExecutionService } from "../financial-execution.service"
+
+vi.mock("@/features/auth/auth.store", () => ({ useAuthStore: (select: (s: unknown) => unknown) => select({ hasPermission: () => true }) }))
+vi.mock("@/lib/api", async original => ({ ...await original<typeof import("@/lib/api")>(), api: { post: vi.fn() } }))
 
 vi.mock("../financial-execution.service", () => ({
   financialExecutionService: { lookup: vi.fn() },
@@ -12,6 +16,7 @@ vi.mock("../financial-execution.service", () => ({
 
 describe("consulta de NE avulsa", () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     vi.mocked(financialExecutionService.lookup).mockResolvedValue({
       snapshot: {
         source: "PORTAL_TRANSPARENCIA",
@@ -64,4 +69,17 @@ describe("consulta de NE avulsa", () => {
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Nota de Empenho não localizada no Portal da Transparência")
   })
+  it("requires an explicit choice to replace an imported NE with an avulsa", async () => {
+    const code = "160016000012026NE000534"
+    vi.mocked(api.post).mockRejectedValueOnce(new ApiError("Duplicidade", 409, { details: { existingOrigin: "IMPORTED", externalCode: code } })).mockResolvedValueOnce({})
+    render(<QueryClientProvider client={new QueryClient()}><LookupCommitmentNoteDialog open onOpenChange={() => undefined} /></QueryClientProvider>)
+    fireEvent.change(screen.getByLabelText("Número da NE"), { target: { value: "2026NE000534" } })
+    fireEvent.click(screen.getByRole("button", { name: "Consultar NE" }))
+    fireEvent.click(await screen.findByRole("button", { name: "Salvar / atualizar avulsa na carteira" }))
+    expect(await screen.findByRole("alert")).toHaveTextContent("Duplicidade")
+    expect(api.post).toHaveBeenCalledTimes(1)
+    fireEvent.click(screen.getByRole("button", { name: "Excluir cópia importada e manter avulsa" }))
+    await waitFor(() => expect(api.post).toHaveBeenLastCalledWith(`/financial-execution/discovery/archive/${code}`, { origin: "STANDALONE", replaceOrigin: "IMPORTED" }))
+  })
+
 })

@@ -1,9 +1,10 @@
+import { UnifiedPortfolio } from "../components/unified-portfolio"
 import { NeArchivePanel } from "../components/ne-archive-panel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { NeDiscoveryPanel } from "../components/ne-discovery-panel"
-import { useMemo, useState } from "react"
+import { useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { AlertTriangle, Banknote, CheckCircle2, CircleDollarSign, FileCheck2, Landmark, Loader2, RefreshCw, Search } from "lucide-react"
+import { Banknote, CircleDollarSign, FileCheck2, Loader2, RefreshCw, Search } from "lucide-react"
 import { Link, useSearchParams } from "react-router"
 import { toast } from "sonner"
 
@@ -100,14 +101,6 @@ export function FinancialExecutionPage() {
     onError: (error) => toast.error(error.message),
   })
 
-  const totals = query.data?.summary.totals
-  const cards = useMemo(() => [
-    { label: "Empenhado atual", value: money(totals?.committed ?? 0), icon: Landmark, helper: `${query.data?.summary.total ?? 0} NE(s) ativa(s)` },
-    { label: "Liquidado", value: money(totals?.liquidated ?? 0), icon: FileCheck2, helper: `${money(totals?.toLiquidate ?? 0)} a liquidar` },
-    { label: "Pago", value: money(totals?.paid ?? 0), icon: CheckCircle2, helper: `${money(totals?.toPay ?? 0)} liquidado a pagar` },
-    { label: "Pendências", value: String((query.data?.summary.bySyncStatus.DIVERGENTE ?? 0) + (query.data?.summary.bySyncStatus.NAO_VALIDADO ?? 0) + (query.data?.summary.bySyncStatus.ERRO ?? 0)), icon: AlertTriangle, helper: "Não validadas, divergências ou falhas" },
-  ], [query.data, totals])
-
   const closeDetails = () => {
     setSelected(null)
     if (noteFromUrl) setSearchParams({}, { replace: true })
@@ -133,8 +126,9 @@ export function FinancialExecutionPage() {
       <TabsContent value="discovery" forceMount className="data-[state=inactive]:hidden"><NeDiscoveryPanel /></TabsContent>
       <TabsContent value="archive"><NeArchivePanel /></TabsContent>
       <TabsContent value="portfolio" className="space-y-4">
-        {canSync && <Button onClick={() => syncAll.mutate()} disabled={syncAll.isPending}>{syncAll.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar carteira</Button>}
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">{cards.map(({ label, value, icon: Icon, helper }) => <Card key={label}><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{label}</CardTitle><Icon className="size-4 text-primary" /></CardHeader><CardContent><p className="text-2xl font-semibold">{value}</p><p className="mt-1 text-xs text-muted-foreground">{helper}</p></CardContent></Card>)}</div>
+        {canSync && <Button onClick={() => syncAll.mutate()} disabled={syncAll.isPending}>{syncAll.isPending ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}Sincronizar NEs dos projetos</Button>}
+    <UnifiedPortfolio />
+    <details><summary className="cursor-pointer font-medium">Detalhar NEs vinculadas aos projetos</summary>
 
 
     <Card>
@@ -149,6 +143,7 @@ export function FinancialExecutionPage() {
         })}</TableBody></Table></div> : null}
       </CardContent>
     </Card>
+    </details>
       </TabsContent>
     </Tabs>
 

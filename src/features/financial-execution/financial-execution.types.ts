@@ -93,6 +93,7 @@ export type CommitmentPreview = {
 }
 
 export type StandaloneCommitmentLookup = {
+  archived?: { origin: "IMPORTED" | "STANDALONE"; updatedAt: string } | null
   snapshot: PortalCommitmentSnapshot
   registered: null | {
     id: string

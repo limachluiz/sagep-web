@@ -1,5 +1,7 @@
+import { api, ApiError } from "@/lib/api"
+import { useAuthStore } from "@/features/auth/auth.store"
 import { useMemo, useState } from "react"
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { AlertCircle, CheckCircle2, ExternalLink, FileSearch, Landmark, Loader2, Search } from "lucide-react"
 import { Link } from "react-router"
 import { toast } from "sonner"
@@ -43,6 +45,14 @@ const phaseLabels = { EMPENHO: "Empenho", LIQUIDACAO: "Liquidação", PAGAMENTO:
 const phasePaths = { EMPENHO: "empenho", LIQUIDACAO: "liquidacao", PAGAMENTO: "pagamento", ANULACAO: "empenho", OUTRO: "empenho" } as const
 
 export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
+  const client = useQueryClient()
+  const canManage = useAuthStore(s => s.hasPermission("financial_execution.manage"))
+  const [duplicate, setDuplicate] = useState<{ code: string; origin: string } | null>(null)
+  const save = useMutation({ mutationFn: (input: { code: string; replaceOrigin?: string }) => api.post(`/financial-execution/discovery/archive/${input.code}`, { origin: "STANDALONE", replaceOrigin: input.replaceOrigin }), onSuccess: () => { setDuplicate(null); client.invalidateQueries({ queryKey: ["ne-archive"] }); client.invalidateQueries({ queryKey: ["financial-execution"] }); toast.success("NE avulsa salva na carteira sem consumir saldo de ATA.") }, onError: error => {
+    const details = error instanceof ApiError ? error.details as { details?: { existingOrigin?: string; externalCode?: string } } : undefined
+    if (details?.details?.existingOrigin && details.details.externalCode) setDuplicate({ code: details.details.externalCode, origin: details.details.existingOrigin })
+    else toast.error(error.message)
+  } })
   const [number, setNumber] = useState("")
   const [managementUnit, setManagementUnit] = useState("")
   const [management, setManagement] = useState("")
@@ -59,6 +69,7 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
 
   const changeOpen = (nextOpen: boolean) => {
     if (!nextOpen) {
+      setDuplicate(null)
       mutation.reset()
       setNumber("")
     }
@@ -69,20 +80,23 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
     <DialogContent className="max-h-[92vh] sm:!max-w-5xl overflow-y-auto">
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2"><FileSearch className="size-5 text-primary" />Consultar Nota de Empenho avulsa</DialogTitle>
-        <DialogDescription>Consulte uma NE diretamente na fonte oficial sem cadastrá-la, vinculá-la a projeto ou movimentar saldo e workflow.</DialogDescription>
+        <DialogDescription>Consulte uma NE na fonte oficial e, se desejar, salve como avulsa na carteira, sem consumir saldo de ATA.</DialogDescription>
       </DialogHeader>
 
       <div className="space-y-5">
         <div className="grid gap-4 md:grid-cols-[minmax(260px,1fr)_180px_160px]">
-          <div className="space-y-2"><Label htmlFor="standalone-ne-number">Número da NE</Label><Input id="standalone-ne-number" value={number} onChange={(event) => { setNumber(event.target.value.toUpperCase()); mutation.reset() }} placeholder="2026NE000534" autoFocus /></div>
-          <div className="space-y-2"><Label htmlFor="standalone-ne-ug">UG emitente</Label><Input id="standalone-ne-ug" value={managementUnit} onChange={(event) => { setManagementUnit(event.target.value.replace(/\D/g, "").slice(0, 6)); mutation.reset() }} inputMode="numeric" placeholder="Padrão da OM" /></div>
-          <div className="space-y-2"><Label htmlFor="standalone-ne-management">Gestão</Label><Input id="standalone-ne-management" value={management} onChange={(event) => { setManagement(event.target.value.replace(/\D/g, "").slice(0, 5)); mutation.reset() }} inputMode="numeric" placeholder="Padrão da OM" /></div>
+          <div className="space-y-2"><Label htmlFor="standalone-ne-number">Número da NE</Label><Input id="standalone-ne-number" value={number} onChange={(event) => { setNumber(event.target.value.toUpperCase()); mutation.reset(); setDuplicate(null) }} placeholder="2026NE000534" autoFocus /></div>
+          <div className="space-y-2"><Label htmlFor="standalone-ne-ug">UG emitente</Label><Input id="standalone-ne-ug" value={managementUnit} onChange={(event) => { setManagementUnit(event.target.value.replace(/\D/g, "").slice(0, 6)); mutation.reset(); setDuplicate(null) }} inputMode="numeric" placeholder="Padrão da OM" /></div>
+          <div className="space-y-2"><Label htmlFor="standalone-ne-management">Gestão</Label><Input id="standalone-ne-management" value={management} onChange={(event) => { setManagement(event.target.value.replace(/\D/g, "").slice(0, 5)); mutation.reset(); setDuplicate(null) }} inputMode="numeric" placeholder="Padrão da OM" /></div>
         </div>
 
-        {!result && <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground"><p className="font-medium text-foreground">Consulta somente para conferência</p><p className="mt-1">A operação não salva a NE. Para vinculá-la, informe o documento na etapa correspondente do projeto.</p></div>}
+        {!result && <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground"><p className="font-medium text-foreground">Consulta somente para conferência</p><p className="mt-1">A consulta não grava dados automaticamente. Após consultar, use Salvar avulsa para incluir na carteira. O vínculo a projeto permanece na etapa correspondente.</p></div>}
 
         {mutation.isError && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" /><div><p className="font-semibold">Não foi possível localizar a Nota de Empenho</p><p className="mt-1">{mutation.error.message}</p></div></div>}
 
+        {snapshot && canManage && <Button disabled={save.isPending} onClick={() => save.mutate({ code: snapshot.externalCode })}>{save.isPending ? "Salvando…" : "Salvar / atualizar avulsa na carteira"}</Button>}
+        {result?.archived && <p className="rounded border p-3 text-sm">Esta NE já consta na base como {result.archived.origin === "IMPORTED" ? "importada" : "avulsa"}. O código será contabilizado uma única vez na carteira.</p>}
+        {duplicate && <div role="alert" className="space-y-3 rounded border border-amber-400 p-4"><p>Duplicidade: já existe uma NE importada com o mesmo código. Escolha a cópia que deseja manter.</p><Button variant="outline" onClick={() => setDuplicate(null)}>Manter importada e descartar nova avulsa</Button><Button disabled={save.isPending} onClick={() => save.mutate({ code: duplicate.code, replaceOrigin: duplicate.origin })}>Excluir cópia importada e manter avulsa</Button></div>}
         {snapshot && <div className="space-y-4">
           <div className="flex flex-col justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center">
             <div className="flex min-w-0 items-center gap-3"><CheckCircle2 className="size-5 shrink-0 text-primary" /><div className="min-w-0"><p className="font-semibold">NE {snapshot.number} localizada</p><p className="break-all text-xs text-muted-foreground">Consulta realizada em {dateTime(snapshot.fetchedAt)} · código {snapshot.externalCode}</p></div></div>
