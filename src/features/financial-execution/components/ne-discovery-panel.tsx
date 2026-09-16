@@ -19,6 +19,8 @@ export function NeDiscoveryPanel() {
   const canManage = useAuthStore(s => s.hasPermission("financial_execution.manage"))
   const canEditAta = useAuthStore(s => s.hasPermission("atas.manage"))
   const [supplier, setSupplier] = useState<{ id: string; name: string; cnpj: string } | null>(null)
+  const [resolving, setResolving] = useState(false)
+  const [supplierErrors, setSupplierErrors] = useState<string[]>([])
   const [resultPage, setResultPage] = useState(1)
   const importer = useMutation({ mutationFn: (code: string) => api.post(`/financial-execution/discovery/archive/${code}`), onSuccess: () => { client.invalidateQueries({ queryKey: ["ne-archive"] }); toast.success("NE importada/atualizada na base de consulta, sem alterar saldos.") }, onError: e => toast.error(e.message) })
   const saveSupplier = useMutation({ mutationFn: (value: { id: string; cnpj: string }) => api.patch(`/atas/${value.id}`, { vendorCnpj: value.cnpj.replace(/\D/g, "") }), onSuccess: () => { setSupplier(null); client.invalidateQueries({ queryKey: ["ne-discovery-options"] }); toast.success("CNPJ da ATA atualizado. Execute a busca novamente.") }, onError: e => toast.error(e.message) })
@@ -43,10 +45,31 @@ export function NeDiscoveryPanel() {
     const dates = suggestedPeriod((options.data?.pregoes ?? []).filter(p => ids.includes(p.id)))
     setStart(dates.start); setEnd(dates.end)
   }
+  const resolveSuppliers = async () => {
+    setResolving(true); setSupplierErrors([])
+    const failures: string[] = []
+    try {
+      for (const ata of pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? ""))) {
+        try { await api.post(`/financial-execution/discovery/suppliers/${ata.id}/resolve`) }
+        catch (error) { failures.push(`ATA ${ata.number}: ${error instanceof Error ? error.message : "Fonte indisponível"}`) }
+      }
+      setSupplierErrors(failures)
+      const refreshed = await options.refetch()
+      if (refreshed.error) throw refreshed.error
+      return (refreshed.data?.pregoes ?? []).filter(p => selected.includes(p.id))
+    } finally { setResolving(false) }
+  }
   const search = async () => {
-    if (busy.current) return
+    if (busy.current || resolving) return
+    let searchPregoes = pregoes
+    if (canEditAta && pregoes.some(p => p.atas.some(a => !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")))) {
+      busy.current = true
+      try { searchPregoes = await resolveSuppliers() }
+      catch (error) { setMessage(error instanceof Error ? error.message : "Falha ao atualizar fornecedores"); return }
+      finally { busy.current = false }
+    }
     const ugs = [...new Set((units ?? options.data?.defaultUg ?? "").split(/[\s,;]+/).filter(Boolean))]
-    const suppliers = [...new Set(pregoes.flatMap(p => p.atas.map(a => a.vendorCnpj?.replace(/\D/g, "") ?? "")).filter(c => /^\d{14}$/.test(c)))]
+    const suppliers = [...new Set(searchPregoes.flatMap(p => p.atas.map(a => a.vendorCnpj?.replace(/\D/g, "") ?? "")).filter(c => /^\d{14}$/.test(c)))]
     if (!selected.length || !ugs.length || ugs.some(u => !/^\d{6}$/.test(u)) || !start || !end || start > end || !suppliers.length) {
       setMessage("Selecione pregões com CNPJ cadastrado, informe UGs com 6 dígitos e um intervalo válido."); return
     }
@@ -83,7 +106,7 @@ export function NeDiscoveryPanel() {
         }
         if (!exhausted) throw new Error("Limite de páginas atingido; cobertura parcial.")
       }
-      const skipped = pregoes.flatMap(p => p.atas).filter(a => !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).length
+      const skipped = searchPregoes.flatMap(p => p.atas).filter(a => !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).length
       setMessage(`Consulta concluída para os fornecedores com CNPJ válido. A cobertura corresponde aos dados disponibilizados pela fonte.${skipped ? ` Atenção: ${skipped} ATA(s) sem CNPJ válido ficaram fora da busca; revise o cadastro em Pregões e Atas.` : ""}`)
     } catch (error) { setMessage(`${error instanceof Error ? error.message : "Falha na consulta"}${currentRequest ? ` (${currentRequest})` : ""}. Os resultados já obtidos permanecem visíveis; não representam uma busca completa.`) }
     finally { busy.current = false; setRunning(false) }
@@ -93,14 +116,14 @@ export function NeDiscoveryPanel() {
     <CardContent className="space-y-4">
       {options.isError && <p role="alert">Falha ao carregar os pregões: {options.error.message}</p>}
       {options.isLoading && <p>Carregando pregões…</p>}
-      <fieldset disabled={running} className="space-y-3">
+      <fieldset disabled={running || resolving} className="space-y-3">
         <legend className="font-medium">Pregões e vigências das ATAs</legend>
         <Button variant="outline" size="sm" onClick={() => select((options.data?.pregoes ?? []).map(p => p.id))}>Selecionar todos</Button>
         {options.data?.pregoes.map(p => <label key={p.id} className="flex items-start gap-3 rounded-lg border p-3">
           <input type="checkbox" checked={selected.includes(p.id)} onChange={e => select(e.target.checked ? [...selected, p.id] : selected.filter(id => id !== p.id))} />
           <span><strong>{p.number}/{p.year} · {p.type ?? "Pregão"} · UASG {p.uasg}</strong>{p.atas.map((a, i) => <span key={i} className="block text-xs text-muted-foreground">ATA {a.number} · {a.vendorName} · {a.validFrom?.slice(0, 10) ?? "Início não informado"} a {a.validUntil?.slice(0, 10) ?? "Fim não informado"}{!a.vendorCnpj?.replace(/\D/g, "").match(/^\d{14}$/) ? " · CNPJ ausente/inválido: fornecedor não será consultado" : ""}</span>)}</span>
         </label>)}
-        {canEditAta && pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-300 p-2 text-sm"><span>ATA {a.number} · {a.vendorName}: CNPJ pendente</span><Button size="sm" variant="outline" onClick={() => setSupplier({ id: a.id!, name: a.vendorName, cnpj: a.vendorCnpj ?? "" })}>Informar CNPJ</Button></div>)}
+        {canEditAta && pregoes.flatMap(p => p.atas).filter(a => a.id && !/^\d{14}$/.test(a.vendorCnpj?.replace(/\D/g, "") ?? "")).map(a => <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-300 p-2 text-sm"><span>ATA {a.number} · {a.vendorName}: CNPJ pendente (busca automática ao consultar NEs)</span><Button size="sm" variant="outline" onClick={() => setSupplier({ id: a.id!, name: a.vendorName, cnpj: a.vendorCnpj ?? "" })}>Informar CNPJ</Button></div>)}
         {period.incomplete && selected.length > 0 && <p className="text-sm text-amber-700">Há vigências ausentes. Confira e complete manualmente o intervalo.</p>}
         <div className="grid gap-3 md:grid-cols-3">
           <label className="text-sm">UGs emitentes<Input value={units ?? options.data?.defaultUg ?? ""} placeholder="160016, 167016" onChange={e => setUnits(e.target.value)} /></label>
@@ -109,6 +132,8 @@ export function NeDiscoveryPanel() {
         </div>
         <Button onClick={search} disabled={!options.data}>Buscar NEs</Button>
       </fieldset>
+      {resolving && <p role="status">Consultando CNPJs na fonte oficial das ATAs selecionadas…</p>}
+      {supplierErrors.length > 0 && <div role="alert" className="rounded border border-amber-300 p-3 text-sm"><p>Não foi possível preencher automaticamente:</p>{supplierErrors.map(error => <p key={error}>{error}</p>)}</div>}
       {running && <Button variant="outline" onClick={() => { stop.current = true }}>Interromper consulta</Button>}
       {message && <p role="status" className="rounded-lg border p-3 text-sm">{message}</p>}
       {coverage.total > 0 && <div className="rounded-lg bg-muted p-3 text-sm"><p>{coverage.filters}</p><p>{rows.length} NEs únicas · {coverage.completed}/{coverage.total} combinações fornecedor/UG/ano concluídas · {coverage.pages} respostas de páginas da API já processadas automaticamente</p><p>Fonte: Portal da Transparência · Última resposta: {coverage.updated ? new Date(coverage.updated).toLocaleString("pt-BR") : "Aguardando"}</p></div>}
