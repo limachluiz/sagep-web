@@ -6,8 +6,8 @@ import { MemoryRouter } from "react-router"
 import { UnifiedPortfolio } from "./unified-portfolio"
 vi.mock("@/lib/api", () => ({ api: { get: vi.fn(), post: vi.fn() } }))
 vi.mock("@/features/auth/auth.store", () => ({ useAuthStore: (select: (s: unknown) => unknown) => select({ hasPermission: () => true }) }))
-const row = (i: number, supplierName = "Fornecedor", status = "A_CONFERIR") => ({ externalCode: `160016000012026NE${String(i).padStart(6,"0")}`, number: `2026NE${String(i).padStart(6,"0")}`, origin: "IMPORTED", supplierName, current: 100, liquidated: null, paid: null, status, updatedAt: "2026-09-16T12:00:00Z", project: null })
-const portfolio = (rows = [row(1)]) => ({ total: rows.length, totals: { committed: rows.length * 100, liquidated: 0, paid: 0, pending: rows.length }, coverage: { committed: rows.length, liquidated: 0, paid: 0 }, rows })
+const row = (i: number, supplierName = "Fornecedor", status = "A_CONFERIR") => ({ externalCode: `160016000012026NE${String(i).padStart(6,"0")}`, number: `2026NE${String(i).padStart(6,"0")}`, origin: "IMPORTED", supplierName, current: 100, liquidated: null as number | null, paid: null as number | null, status, updatedAt: "2026-09-16T12:00:00Z", project: null })
+const portfolio = (rows = [row(1)]) => ({ total: rows.length, totals: { committed: rows.length * 100, liquidated: 0, paid: 0, pending: rows.length }, coverage: { committed: rows.length, liquidated: 0, paid: 0 }, diagnostics: { partialLiquidations: 0, partialPayments: 0 }, rows })
 const mount = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><UnifiedPortfolio /></MemoryRouter></QueryClientProvider>)
 beforeEach(() => vi.resetAllMocks())
 describe("carteira consolidada", () => {
@@ -48,6 +48,15 @@ describe("carteira consolidada", () => {
     mount(); fireEvent.click(await screen.findByRole("button", { name: "Atualizar liquidações e pagamentos" }))
     await waitFor(() => expect(api.post).toHaveBeenCalledWith(`/financial-execution/discovery/archive/${row(1).externalCode}/sync`))
     await waitFor(() => expect(vi.mocked(api.get).mock.calls.filter(([path]) => path.endsWith("/portfolio")).length).toBeGreaterThan(1))
+  })
+  it("shows the portfolio-wide scan and confirmed partial payments", async () => {
+    const partial = { ...row(1, "Fornecedor", "PARCIALMENTE_PAGA"), paid: 75, paymentIncomplete: true, incomplete: true, unresolvedPayments: 1 }
+    vi.mocked(api.get).mockResolvedValue({ ...portfolio([partial]), totals: { committed: 100, liquidated: 0, paid: 75, pending: 1 }, coverage: { committed: 1, liquidated: 0, paid: 1 }, diagnostics: { partialLiquidations: 0, partialPayments: 1 } })
+    mount()
+    expect(await screen.findByText("Varredura da carteira: valores parcialmente confirmados")).toBeInTheDocument()
+    expect(screen.getByText(/1 NE\(s\) com algum pagamento confirmado/)).toBeInTheDocument()
+    expect(within(screen.getByRole("table")).getByText("Parcial confirmado")).toBeInTheDocument()
+    expect(within(screen.getByRole("table")).getByText("Parcialmente paga")).toBeInTheDocument()
   })
   it("uses the project detail route and registered UG for a manual NE", async () => {
     const manual = { ...row(1), externalCode: "MANUAL:project-one", origin: "PROJECT", noteId: "note-one", managementUnit: "160016", project: null }

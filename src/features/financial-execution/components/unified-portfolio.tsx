@@ -11,8 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { NeFinancialDetailDialog, type NeDetailSelection } from "./ne-financial-detail-dialog"
 import { financialStatusLabel, formatNeMoney as money } from "../portfolio-presentation"
 
-type Row = NeDetailSelection & { managementUnit?: string; origin: string; supplierName: string; current: number | null; liquidated: number | null; paid: number | null; status: string; updatedAt: string; project: { id: string; projectCode: number; title: string } | null }
-type Portfolio = { rows: Row[]; total: number; coverage: { committed: number; liquidated: number; paid: number }; totals: { committed: number; liquidated: number; paid: number; pending: number } }
+type Row = NeDetailSelection & { managementUnit?: string; origin: string; supplierName: string; current: number | null; liquidated: number | null; paid: number | null; status: string; incomplete?: boolean; updatedAt: string; liquidationIncomplete?: boolean; paymentIncomplete?: boolean; unresolvedLiquidations?: number; unresolvedPayments?: number; project: { id: string; projectCode: number; title: string } | null }
+type Portfolio = { rows: Row[]; total: number; coverage: { committed: number; liquidated: number; paid: number }; diagnostics: { partialLiquidations: number; partialPayments: number }; totals: { committed: number; liquidated: number; paid: number; pending: number } }
 export function UnifiedPortfolio() {
   const client = useQueryClient()
   const canManage = useAuthStore(s => s.hasPermission("financial_execution.manage"))
@@ -53,6 +53,7 @@ export function UnifiedPortfolio() {
     {query.data && <>
       <div className="flex flex-wrap items-center justify-between gap-3"><p className="text-sm text-muted-foreground">Painel da carteira completa</p>{canManage && <Button variant="outline" disabled={Boolean(progress) || !all.some(r => r.origin !== "PROJECT")} onClick={() => void refresh()}>Atualizar liquidações e pagamentos</Button>}</div>
       <p className="text-xs text-muted-foreground">A atualização consulta as NEs importadas e avulsas na fonte oficial e salva os valores por empenho. Não movimenta saldo das ATAs.</p>
+      {(query.data.diagnostics.partialLiquidations > 0 || query.data.diagnostics.partialPayments > 0) && <div role="status" className="rounded border border-amber-400 p-3 text-sm"><p className="font-medium">Varredura da carteira: valores parcialmente confirmados</p><p>{query.data.diagnostics.partialPayments} NE(s) com algum pagamento confirmado e documento pendente · {query.data.diagnostics.partialLiquidations} NE(s) com alguma liquidação confirmada e documento pendente.</p><p className="text-xs text-muted-foreground">Os valores comprovados já aparecem na carteira; essas NEs continuam em “a conferir” até todos os documentos serem confirmados.</p></div>}
       {errors.length > 0 && <div role="alert" className="rounded border border-amber-400 p-3 text-sm">{errors.map(e => <p key={e}>{e}</p>)}</div>}
       <div className="grid gap-3 md:grid-cols-4">{[
         { label: "Empenhado informado", value: money(query.data.coverage.committed ? query.data.totals.committed : null), helper: `${query.data.coverage.committed} de ${query.data.total} NEs com valor utilizável` },
@@ -73,7 +74,7 @@ export function UnifiedPortfolio() {
         <div className="overflow-auto"><table className="w-full text-sm"><thead><tr>{["NE / origem", "Fornecedor", "Empenhado", "Liquidado", "Pago", "Situação", "Atualização"].map(h => <th className="p-2 text-left" key={h}>{h}</th>)}</tr></thead><tbody>
           {rows.slice((currentPage-1)*pageSize,currentPage*pageSize).map(r => <tr key={r.externalCode} className="border-t">
             <td className="p-2"><Button variant="link" className="h-auto p-0 font-semibold" onClick={() => setSelected(r)}>{r.number}</Button><p className="text-xs">UG {r.managementUnit ?? (/^\d{6}/.test(r.externalCode) ? r.externalCode.slice(0,6) : "não informada")} · {r.origin === "PROJECT" ? "Projeto" : r.origin === "STANDALONE" ? "Avulsa" : "Importada"}</p>{r.project && <Link className="text-primary" to={`/projects/${r.project.id}`}>PRJ-{r.project.projectCode}</Link>}</td>
-            <td className="p-2">{r.supplierName}</td><td className="p-2">{money(r.current)}</td><td className="p-2">{money(r.liquidated)}</td><td className="p-2">{money(r.paid)}</td><td className="p-2">{financialStatusLabel(r.status)}</td><td className="p-2">{r.updatedAt ? new Date(r.updatedAt).toLocaleString("pt-BR") : "Não informada"}</td>
+            <td className="p-2">{r.supplierName}</td><td className="p-2">{money(r.current)}</td><td className="p-2">{money(r.liquidated)}{r.liquidationIncomplete && <span className="block text-xs text-amber-700">Parcial confirmado</span>}</td><td className="p-2">{money(r.paid)}{r.paymentIncomplete && <span className="block text-xs text-amber-700">Parcial confirmado</span>}</td><td className="p-2">{financialStatusLabel(r.status)}{r.incomplete && (r.paymentIncomplete || r.liquidationIncomplete) && <span className="block text-xs text-amber-700">A conferir</span>}</td><td className="p-2">{r.updatedAt ? new Date(r.updatedAt).toLocaleString("pt-BR") : "Não informada"}</td>
           </tr>)}
           {!rows.length && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">Nenhuma NE encontrada para os filtros selecionados.</td></tr>}
         </tbody></table></div>
