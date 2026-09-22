@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react"
 import { useMutation, useQuery } from "@tanstack/react-query"
-import { AlertTriangle, BarChart3, Database, Download, Eye, FileChartColumn, FileSpreadsheet, FolderOpen, Landmark, ListChecks, PieChart, Presentation, RefreshCw, Search, ShieldCheck } from "lucide-react"
+import { AlertTriangle, Banknote, BarChart3, Database, Download, Eye, FileChartColumn, FileSpreadsheet, FolderOpen, Landmark, ListChecks, PieChart, Presentation, RefreshCw, Search, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -45,6 +46,8 @@ const stageLabels: Record<ProjectStage, string> = {
   SERVICO_CONCLUIDO: "Serviço concluído",
   CANCELADO: "Cancelado",
 }
+
+type ReportSection = "projects" | "atas" | "commitment-notes"
 
 const reportOptions: Array<{
   type: ConsolidatedReportType
@@ -108,6 +111,7 @@ export function ReportsPage() {
   >("all")
   const [ataReportType, setAtaReportType] = useState<"all" | "CFTV" | "FIBRA_OPTICA">("all")
   const [ataReportStatus, setAtaReportStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "INACTIVE">("ALL")
+  const [activeTab, setActiveTab] = useState<ReportSection>("projects")
 
   useEffect(() => {
     const timeout = window.setTimeout(() => setDebouncedSearch(search.trim()), 350)
@@ -125,11 +129,12 @@ export function ReportsPage() {
     queryKey: ["reports", "projects", filters],
     queryFn: () => projectsService.list({ page: 1, pageSize: 100, search: filters.search, status: filters.status, stage: filters.stage, includeArchived: filters.includeArchived }),
     placeholderData: (previous) => previous,
+    enabled: activeTab === "projects",
   })
   const dossierQuery = useQuery({
     queryKey: ["reports", "dossier", projectId],
     queryFn: () => reportsService.projectDossier(projectId),
-    enabled: Boolean(projectId),
+    enabled: activeTab === "projects" && Boolean(projectId),
   })
 
   const exportMutation = useMutation({
@@ -192,135 +197,185 @@ export function ReportsPage() {
   const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStatus("all"); setStage("all"); setIncludeArchived(false) }
 
   return <div className="space-y-6">
-    <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end"><div><Badge className="mb-3">Análise e prestação de contas</Badge><h1 className="text-3xl font-semibold tracking-tight">Relatórios e exportações</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">Gere relatórios gerenciais da carteira e das ATAs, planilhas consolidadas e dossiês individuais com rastreabilidade financeira e operacional.</p></div><Button variant="outline" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}><RefreshCw className={cn("size-4", projectsQuery.isFetching && "animate-spin")} />Atualizar dados</Button></div>
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div>
+        <Badge variant="outline" className="mb-3">ANÁLISE E PRESTAÇÃO DE CONTAS</Badge>
+        <h1 className="font-display text-3xl font-semibold tracking-tight">Relatórios e exportações</h1>
+        <p className="mt-2 max-w-3xl text-sm leading-6 text-muted-foreground">
+          Escolha uma área para gerar relatórios gerenciais, planilhas consolidadas e dossiês auditáveis sem misturar os contextos.
+        </p>
+      </div>
+      {activeTab === "projects" && (
+        <Button variant="outline" onClick={() => projectsQuery.refetch()} disabled={projectsQuery.isFetching}>
+          <RefreshCw className={cn("mr-2 h-4 w-4", projectsQuery.isFetching && "animate-spin")} /> Atualizar dados
+        </Button>
+      )}
+    </div>
 
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Projetos encontrados</p><p className="mt-2 text-2xl font-semibold">{projectsQuery.isLoading ? "—" : projectsQuery.data?.meta.totalItems ?? 0}</p></div><FolderOpen className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Posição das ATAs</p><p className="mt-2 text-lg font-semibold">PDF gerencial</p></div><Database className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Formato consolidado</p><p className="mt-2 text-lg font-semibold">Excel (.xlsx)</p></div><FileSpreadsheet className="size-6 text-primary" /></CardContent></Card><Card className="border-none shadow-sm"><CardContent className="flex items-center justify-between p-5"><div><p className="text-sm text-muted-foreground">Dossiê individual</p><p className="mt-2 text-lg font-semibold">PDF auditável</p></div><ShieldCheck className="size-6 text-primary" /></CardContent></Card></div>
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ReportSection)} className="space-y-6">
+      <TabsList className={cn(
+        "grid h-auto w-full gap-2 rounded-xl bg-muted/60 p-2",
+        canViewFinancialReports ? "grid-cols-1 md:grid-cols-3" : "grid-cols-1 md:grid-cols-2",
+      )}>
+        <TabsTrigger value="projects" className="h-auto justify-start gap-3 rounded-lg px-4 py-3 text-left">
+          <FolderOpen className="h-5 w-5 shrink-0" />
+          <span>
+            <span className="block font-semibold">Projetos</span>
+            <span className="block text-xs font-normal text-muted-foreground">Consolidados, planilhas e dossiês</span>
+          </span>
+        </TabsTrigger>
+        <TabsTrigger value="atas" className="h-auto justify-start gap-3 rounded-lg px-4 py-3 text-left">
+          <Database className="h-5 w-5 shrink-0" />
+          <span>
+            <span className="block font-semibold">ATAs e saldos</span>
+            <span className="block text-xs font-normal text-muted-foreground">Posição financeira e contratual</span>
+          </span>
+        </TabsTrigger>
+        {canViewFinancialReports && (
+          <TabsTrigger value="commitment-notes" className="h-auto justify-start gap-3 rounded-lg px-4 py-3 text-left">
+            <Banknote className="h-5 w-5 shrink-0" />
+            <span>
+              <span className="block font-semibold">Notas de Empenho</span>
+              <span className="block text-xs font-normal text-muted-foreground">Carteira, liquidação e pagamento</span>
+            </span>
+          </TabsTrigger>
+        )}
+      </TabsList>
 
-    {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
-      <CardContent className="relative overflow-hidden bg-gradient-to-br from-[#27321f] via-[#3f4d2a] to-[#66733c] p-6 text-white lg:p-8">
+      <TabsContent value="projects" className="mt-0 space-y-6">
+        {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
+        <CardContent className="relative overflow-hidden bg-gradient-to-br from-[#27321f] via-[#3f4d2a] to-[#66733c] p-6 text-white lg:p-8">
         <div className="absolute -right-16 -top-24 size-72 rounded-full border border-white/10 bg-white/5" />
         <div className="relative flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-          <div className="max-w-3xl">
-            <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/10">Centro de inteligência da carteira</Badge>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight lg:text-3xl">Relatórios consolidados para decisão e controle</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">Combine a finalidade do documento com o recorte Geral, CFTV ou Fibra Óptica. Cada PDF reorganiza cards, gráficos, indicadores e detalhamento para o público que irá utilizá-lo.</p>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-black/10 px-4 py-3">
-            <BarChart3 className="size-5 text-[#d8c27c]" />
-            <div><p className="text-xs font-semibold">Dados no momento da emissão</p><p className="text-[11px] text-white/60">Fonte única: SAGEP</p></div>
-          </div>
+        <div className="max-w-3xl">
+        <Badge className="border-white/20 bg-white/10 text-white hover:bg-white/10">Centro de inteligência da carteira</Badge>
+        <h2 className="mt-4 text-2xl font-semibold tracking-tight lg:text-3xl">Relatórios consolidados para decisão e controle</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/75">Combine a finalidade do documento com o recorte Geral, CFTV ou Fibra Óptica. Cada PDF reorganiza cards, gráficos, indicadores e detalhamento para o público que irá utilizá-lo.</p>
         </div>
-      </CardContent>
-
-      <CardContent className="grid gap-7 p-6 lg:grid-cols-[1fr_320px] lg:p-8">
+        <div className="flex items-center gap-3 rounded-xl border border-white/15 bg-black/10 px-4 py-3">
+        <BarChart3 className="size-5 text-[#d8c27c]" />
+        <div><p className="text-xs font-semibold">Dados no momento da emissão</p><p className="text-[11px] text-white/60">Fonte única: SAGEP</p></div>
+        </div>
+        </div>
+        </CardContent>
+        
+        <CardContent className="grid gap-7 p-6 lg:grid-cols-[1fr_320px] lg:p-8">
         <div>
-          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">1 · Escolha a finalidade</p>
-          <div className="mt-4 grid gap-3 md:grid-cols-3">
-            {reportOptions.map((option) => {
-              const Icon = option.icon
-              const selected = reportType === option.type
-              return <button
-                key={option.type}
-                type="button"
-                aria-pressed={selected}
-                onClick={() => setReportType(option.type)}
-                className={cn(
-                  "group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
-                  selected ? "border-primary bg-primary/8 shadow-sm ring-1 ring-primary/20" : "border-border bg-card",
-                )}
-              >
-                <span className={cn("flex size-10 items-center justify-center rounded-lg", selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-primary")}><Icon className="size-5" /></span>
-                <span className="mt-4 flex items-center justify-between gap-2"><strong className="text-base">{option.title}</strong>{selected && <Badge>Selecionado</Badge>}</span>
-                <span className="mt-1 block text-xs font-medium text-primary">{option.audience}</span>
-                <span className="mt-3 block text-sm leading-5 text-muted-foreground">{option.description}</span>
-              </button>
-            })}
-          </div>
-          <div className="mt-4 grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-3">
-            <div><p className="text-xs font-semibold">Cards gerenciais</p><p className="mt-1 text-xs text-muted-foreground">Indicadores adequados à finalidade</p></div>
-            <div><p className="text-xs font-semibold">Gráficos consolidados</p><p className="mt-1 text-xs text-muted-foreground">Etapa, UF, saúde, carga ou valores</p></div>
-            <div><p className="text-xs font-semibold">Carteira detalhada</p><p className="mt-1 text-xs text-muted-foreground">Projetos, responsáveis e ações</p></div>
-          </div>
+        <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">1 · Escolha a finalidade</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-3">
+        {reportOptions.map((option) => {
+        const Icon = option.icon
+        const selected = reportType === option.type
+        return <button
+        key={option.type}
+        type="button"
+        aria-pressed={selected}
+        onClick={() => setReportType(option.type)}
+        className={cn(
+        "group rounded-xl border p-4 text-left transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md",
+        selected ? "border-primary bg-primary/8 shadow-sm ring-1 ring-primary/20" : "border-border bg-card",
+        )}
+        >
+        <span className={cn("flex size-10 items-center justify-center rounded-lg", selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground group-hover:text-primary")}><Icon className="size-5" /></span>
+        <span className="mt-4 flex items-center justify-between gap-2"><strong className="text-base">{option.title}</strong>{selected && <Badge>Selecionado</Badge>}</span>
+        <span className="mt-1 block text-xs font-medium text-primary">{option.audience}</span>
+        <span className="mt-3 block text-sm leading-5 text-muted-foreground">{option.description}</span>
+        </button>
+        })}
         </div>
-
+        <div className="mt-4 grid gap-3 rounded-xl border bg-muted/20 p-4 sm:grid-cols-3">
+        <div><p className="text-xs font-semibold">Cards gerenciais</p><p className="mt-1 text-xs text-muted-foreground">Indicadores adequados à finalidade</p></div>
+        <div><p className="text-xs font-semibold">Gráficos consolidados</p><p className="mt-1 text-xs text-muted-foreground">Etapa, UF, saúde, carga ou valores</p></div>
+        <div><p className="text-xs font-semibold">Carteira detalhada</p><p className="mt-1 text-xs text-muted-foreground">Projetos, responsáveis e ações</p></div>
+        </div>
+        </div>
+        
         <div className="rounded-xl border bg-muted/15 p-5">
-          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">2 · Configure a emissão</p>
-          <label className="mt-5 block text-sm font-medium" htmlFor="report-scope">Recorte da carteira</label>
-          <Select value={portfolioScope} onValueChange={(value) => setPortfolioScope(value as typeof portfolioScope)}>
-            <SelectTrigger id="report-scope" className="mt-2 w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Geral · toda a Seção</SelectItem>
-              <SelectItem value="CFTV">Somente CFTV</SelectItem>
-              <SelectItem value="FIBRA_OPTICA_PONTO_LOGICO">Somente Fibra Óptica</SelectItem>
-            </SelectContent>
-          </Select>
-          <label className="mt-4 block text-sm font-medium" htmlFor="report-stale-days">Critério de atenção</label>
-          <Select value={staleDays} onValueChange={setStaleDays}>
-            <SelectTrigger id="report-stale-days" className="mt-2 w-full"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7">7 dias sem atualização</SelectItem>
-              <SelectItem value="15">15 dias sem atualização</SelectItem>
-              <SelectItem value="30">30 dias sem atualização</SelectItem>
-              <SelectItem value="45">45 dias sem atualização</SelectItem>
-            </SelectContent>
-          </Select>
-          <div className="mt-5 rounded-lg border border-primary/15 bg-primary/5 p-3">
-            <p className="text-xs text-muted-foreground">Documento selecionado</p>
-            <p className="mt-1 font-semibold">Relatório {reportOptions.find((option) => option.type === reportType)?.title}</p>
-            <p className="mt-1 text-xs text-muted-foreground">{portfolioScope === "all" ? "Carteira geral" : portfolioScope === "CFTV" ? "Projetos de CFTV" : "Projetos de Fibra Óptica"}</p>
-          </div>
-          <Button className="mt-4 w-full" size="lg" onClick={() => consolidatedPdfMutation.mutate()} disabled={consolidatedPdfMutation.isPending}>
-            <Download className="size-4" />
-            {consolidatedPdfMutation.isPending ? "Montando relatório..." : "Gerar PDF profissional"}
-          </Button>
-          <p className="mt-3 text-center text-xs text-muted-foreground">PDF A4 paisagem com identidade institucional do 4º CTA.</p>
+        <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">2 · Configure a emissão</p>
+        <label className="mt-5 block text-sm font-medium" htmlFor="report-scope">Recorte da carteira</label>
+        <Select value={portfolioScope} onValueChange={(value) => setPortfolioScope(value as typeof portfolioScope)}>
+        <SelectTrigger id="report-scope" className="mt-2 w-full"><SelectValue /></SelectTrigger>
+        <SelectContent>
+        <SelectItem value="all">Geral · toda a Seção</SelectItem>
+        <SelectItem value="CFTV">Somente CFTV</SelectItem>
+        <SelectItem value="FIBRA_OPTICA_PONTO_LOGICO">Somente Fibra Óptica</SelectItem>
+        </SelectContent>
+        </Select>
+        <label className="mt-4 block text-sm font-medium" htmlFor="report-stale-days">Critério de atenção</label>
+        <Select value={staleDays} onValueChange={setStaleDays}>
+        <SelectTrigger id="report-stale-days" className="mt-2 w-full"><SelectValue /></SelectTrigger>
+        <SelectContent>
+        <SelectItem value="7">7 dias sem atualização</SelectItem>
+        <SelectItem value="15">15 dias sem atualização</SelectItem>
+        <SelectItem value="30">30 dias sem atualização</SelectItem>
+        <SelectItem value="45">45 dias sem atualização</SelectItem>
+        </SelectContent>
+        </Select>
+        <div className="mt-5 rounded-lg border border-primary/15 bg-primary/5 p-3">
+        <p className="text-xs text-muted-foreground">Documento selecionado</p>
+        <p className="mt-1 font-semibold">Relatório {reportOptions.find((option) => option.type === reportType)?.title}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{portfolioScope === "all" ? "Carteira geral" : portfolioScope === "CFTV" ? "Projetos de CFTV" : "Projetos de Fibra Óptica"}</p>
         </div>
-      </CardContent>
-    </Card>}
+        <Button className="mt-4 w-full" size="lg" onClick={() => consolidatedPdfMutation.mutate()} disabled={consolidatedPdfMutation.isPending}>
+        <Download className="size-4" />
+        {consolidatedPdfMutation.isPending ? "Montando relatório..." : "Gerar PDF profissional"}
+        </Button>
+        <p className="mt-3 text-center text-xs text-muted-foreground">PDF A4 paisagem com identidade institucional do 4º CTA.</p>
+        </div>
+        </CardContent>
+        </Card>}
 
-    {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
-      <CardHeader className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
+        <Card className="border-none shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-5 text-primary" />Planilha do portfólio</CardTitle><CardDescription>Os filtros abaixo são aplicados diretamente à geração do arquivo.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_260px_auto]"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Título ou descrição do projeto..." /></div><Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os status</SelectItem>{Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><Select value={stage} onValueChange={(value) => setStage(value as ProjectStage | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as etapas</SelectItem>{Object.entries(stageLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><div className="flex gap-2"><Button variant="outline" onClick={clearFilters}>Limpar</Button><Button onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}><Download className="size-4" />{exportMutation.isPending ? "Gerando..." : "Exportar"}</Button></div></div>{canIncludeArchived && <label className="flex w-fit cursor-pointer items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />Incluir projetos arquivados na planilha</label>}</CardContent></Card>
+        
+        {projectsQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar os projetos</AlertTitle><AlertDescription>{projectsQuery.error.message}</AlertDescription></Alert>}
+        
+        <Card className="border-none shadow-sm"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Prévia dos projetos</CardTitle><CardDescription>A seleção atual também alimenta a geração do dossiê individual.</CardDescription></div><Badge variant="outline">até 100 registros</Badge></CardHeader><CardContent className="overflow-x-auto">{projectsQuery.isLoading ? <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-14" />)}</div> : projects.length ? <Table><TableHeader><TableRow><TableHead>Projeto</TableHead><TableHead>OM</TableHead><TableHead>Status</TableHead><TableHead>Etapa</TableHead><TableHead>Responsável</TableHead><TableHead className="text-right">Dossiê</TableHead></TableRow></TableHeader><TableBody>{projects.slice(0, 10).map((project) => <TableRow key={project.id}><TableCell><p className="font-medium">PRJ-{project.projectCode} · {project.title}</p><p className="mt-1 text-xs text-muted-foreground">Atualizado em {formatDate(project.updatedAt)}</p></TableCell><TableCell>{project.om?.sigla ?? "Não definida"}</TableCell><TableCell><Badge variant={project.status === "CANCELADO" ? "destructive" : project.status === "EM_ANDAMENTO" ? "default" : "secondary"}>{statusLabels[project.status]}</Badge></TableCell><TableCell>{stageLabels[project.stage]}</TableCell><TableCell>{project.owner?.name ?? project.ownerName ?? "Não definido"}</TableCell><TableCell className="text-right"><Button size="sm" variant={projectId === project.id ? "default" : "outline"} onClick={() => setProjectId(project.id)}><FileChartColumn className="size-4" />{projectId === project.id ? "Selecionado" : "Selecionar"}</Button></TableCell></TableRow>)}</TableBody></Table> : <div className="py-14 text-center"><FolderOpen className="mx-auto size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhum projeto encontrado</p><p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros para montar o relatório.</p></div>}</CardContent></Card>
+        
+        <Card className="border-none shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileChartColumn className="size-5 text-primary" />Dossiê individual</CardTitle><CardDescription>Selecione um projeto na prévia ou localize-o na lista completa.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="flex flex-col gap-3 sm:flex-row"><ProjectSelect projects={projects} value={projectId} onValueChange={setProjectId} loading={projectsQuery.isLoading} error={projectsQuery.isError} ariaLabel="Projeto do dossiê" className="w-full sm:max-w-xl" /><Button onClick={() => pdfMutation.mutate()} disabled={!projectId || pdfMutation.isPending}><Download className="size-4" />{pdfMutation.isPending ? "Gerando PDF..." : "Baixar dossiê PDF"}</Button></div>
+        {!projectId && <div className="rounded-xl border border-dashed bg-muted/20 py-12 text-center"><FileChartColumn className="mx-auto size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhum projeto selecionado</p></div>}
+        {dossierQuery.isLoading && <div className="grid gap-3 md:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-24" />)}</div>}
+        {dossierQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível montar o dossiê</AlertTitle><AlertDescription>{dossierQuery.error.message}</AlertDescription></Alert>}
+        {dossierQuery.data && <DossierPreview dossier={dossierQuery.data} />}
+        </CardContent></Card>
+      </TabsContent>
+
+      <TabsContent value="atas" className="mt-0 space-y-6">
+        {canGenerateConsolidatedReport && <Card className="overflow-hidden border-primary/20 shadow-sm">
+        <CardHeader className="border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
-          <div><Badge variant="outline" className="mb-3 border-primary/30 bg-background/70">Controle patrimonial das atas</Badge><CardTitle className="flex items-center gap-2 text-xl"><Database className="size-5 text-primary" />Posição das ATAs e Saldos</CardTitle><CardDescription className="mt-2 max-w-3xl leading-6">Relatório completo do estoque contratual, conciliando saldo de implantação, consumo por NE, reservas ativas e disponibilidade real de cada item.</CardDescription></div>
-          <div className="flex items-center gap-3 rounded-xl border bg-background/70 px-4 py-3 shadow-sm"><PieChart className="size-5 text-primary" /><div><p className="text-xs font-semibold">PDF gerencial e auditável</p><p className="text-[11px] text-muted-foreground">Fonte: saldo operacional do SAGEP</p></div></div>
+        <div><Badge variant="outline" className="mb-3 border-primary/30 bg-background/70">Controle patrimonial das atas</Badge><CardTitle className="flex items-center gap-2 text-xl"><Database className="size-5 text-primary" />Posição das ATAs e Saldos</CardTitle><CardDescription className="mt-2 max-w-3xl leading-6">Relatório completo do estoque contratual, conciliando saldo de implantação, consumo por NE, reservas ativas e disponibilidade real de cada item.</CardDescription></div>
+        <div className="flex items-center gap-3 rounded-xl border bg-background/70 px-4 py-3 shadow-sm"><PieChart className="size-5 text-primary" /><div><p className="text-xs font-semibold">PDF gerencial e auditável</p><p className="text-[11px] text-muted-foreground">Fonte: saldo operacional do SAGEP</p></div></div>
         </div>
-      </CardHeader>
-      <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
+        </CardHeader>
+        <CardContent className="grid gap-6 p-6 lg:grid-cols-[1fr_340px]">
         <div>
-          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Conteúdo do documento</p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
-            ["Composição financeira", "Inicial, histórico, SAGEP, reservado e disponível"],
-            ["Gráficos executivos", "Distribuição por tipo de solução e fornecedor"],
-            ["Governança", "Cobertura dos snapshots e saldos de abertura"],
-            ["Rastreabilidade", "Posição detalhada e itens críticos por ATA"],
-          ].map(([title, description]) => <div key={title} className="rounded-xl border bg-muted/15 p-4"><p className="text-sm font-semibold">{title}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p></div>)}</div>
-          <Alert className="mt-4 border-primary/20 bg-primary/5"><ShieldCheck className="size-4" /><AlertTitle>Saldo coerente em toda a cadeia</AlertTitle><AlertDescription>O relatório usa a mesma composição que alimenta a página da ATA e os dashboards. Um snapshot somente afeta os números depois de aplicado como saldo de abertura.</AlertDescription></Alert>
+        <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Conteúdo do documento</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
+        ["Composição financeira", "Inicial, histórico, SAGEP, reservado e disponível"],
+        ["Gráficos executivos", "Distribuição por tipo de solução e fornecedor"],
+        ["Governança", "Cobertura dos snapshots e saldos de abertura"],
+        ["Rastreabilidade", "Posição detalhada e itens críticos por ATA"],
+        ].map(([title, description]) => <div key={title} className="rounded-xl border bg-muted/15 p-4"><p className="text-sm font-semibold">{title}</p><p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p></div>)}</div>
+        <Alert className="mt-4 border-primary/20 bg-primary/5"><ShieldCheck className="size-4" /><AlertTitle>Saldo coerente em toda a cadeia</AlertTitle><AlertDescription>O relatório usa a mesma composição que alimenta a página da ATA e os dashboards. Um snapshot somente afeta os números depois de aplicado como saldo de abertura.</AlertDescription></Alert>
         </div>
         <div className="rounded-xl border bg-muted/15 p-5">
-          <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Filtros do relatório</p>
-          <label className="mt-5 block text-sm font-medium" htmlFor="ata-report-type">Natureza da ATA</label>
-          <Select value={ataReportType} onValueChange={(value) => setAtaReportType(value as typeof ataReportType)}><SelectTrigger id="ata-report-type" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as ATAs</SelectItem><SelectItem value="CFTV">Somente CFTV</SelectItem><SelectItem value="FIBRA_OPTICA">Somente Fibra Óptica</SelectItem></SelectContent></Select>
-          <label className="mt-4 block text-sm font-medium" htmlFor="ata-report-status">Situação contratual</label>
-          <Select value={ataReportStatus} onValueChange={(value) => setAtaReportStatus(value as typeof ataReportStatus)}><SelectTrigger id="ata-report-status" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">Todas as situações</SelectItem><SelectItem value="ACTIVE">Vigentes</SelectItem><SelectItem value="EXPIRED">Expiradas</SelectItem><SelectItem value="INACTIVE">Inativas</SelectItem></SelectContent></Select>
-          <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Button variant="outline" onClick={() => ataPdfPreviewMutation.mutate()} disabled={ataPdfPreviewMutation.isPending || ataPdfDownloadMutation.isPending}><Eye className="size-4" />{ataPdfPreviewMutation.isPending ? "Abrindo..." : "Visualizar PDF"}</Button><Button onClick={() => ataPdfDownloadMutation.mutate()} disabled={ataPdfDownloadMutation.isPending || ataPdfPreviewMutation.isPending}><Download className="size-4" />{ataPdfDownloadMutation.isPending ? "Gerando..." : "Baixar PDF"}</Button></div>
+        <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Filtros do relatório</p>
+        <label className="mt-5 block text-sm font-medium" htmlFor="ata-report-type">Natureza da ATA</label>
+        <Select value={ataReportType} onValueChange={(value) => setAtaReportType(value as typeof ataReportType)}><SelectTrigger id="ata-report-type" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as ATAs</SelectItem><SelectItem value="CFTV">Somente CFTV</SelectItem><SelectItem value="FIBRA_OPTICA">Somente Fibra Óptica</SelectItem></SelectContent></Select>
+        <label className="mt-4 block text-sm font-medium" htmlFor="ata-report-status">Situação contratual</label>
+        <Select value={ataReportStatus} onValueChange={(value) => setAtaReportStatus(value as typeof ataReportStatus)}><SelectTrigger id="ata-report-status" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">Todas as situações</SelectItem><SelectItem value="ACTIVE">Vigentes</SelectItem><SelectItem value="EXPIRED">Expiradas</SelectItem><SelectItem value="INACTIVE">Inativas</SelectItem></SelectContent></Select>
+        <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Button variant="outline" onClick={() => ataPdfPreviewMutation.mutate()} disabled={ataPdfPreviewMutation.isPending || ataPdfDownloadMutation.isPending}><Eye className="size-4" />{ataPdfPreviewMutation.isPending ? "Abrindo..." : "Visualizar PDF"}</Button><Button onClick={() => ataPdfDownloadMutation.mutate()} disabled={ataPdfDownloadMutation.isPending || ataPdfPreviewMutation.isPending}><Download className="size-4" />{ataPdfDownloadMutation.isPending ? "Gerando..." : "Baixar PDF"}</Button></div>
         </div>
-      </CardContent>
-    </Card>}
+        </CardContent>
+        </Card>}
+      </TabsContent>
 
-    {canViewFinancialReports && <CommitmentNoteReportsPanel />}
-
-    <Card className="border-none shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-5 text-primary" />Planilha do portfólio</CardTitle><CardDescription>Os filtros abaixo são aplicados diretamente à geração do arquivo.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_260px_auto]"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Título ou descrição do projeto..." /></div><Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os status</SelectItem>{Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><Select value={stage} onValueChange={(value) => setStage(value as ProjectStage | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as etapas</SelectItem>{Object.entries(stageLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><div className="flex gap-2"><Button variant="outline" onClick={clearFilters}>Limpar</Button><Button onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}><Download className="size-4" />{exportMutation.isPending ? "Gerando..." : "Exportar"}</Button></div></div>{canIncludeArchived && <label className="flex w-fit cursor-pointer items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />Incluir projetos arquivados na planilha</label>}</CardContent></Card>
-
-    {projectsQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível carregar os projetos</AlertTitle><AlertDescription>{projectsQuery.error.message}</AlertDescription></Alert>}
-
-    <Card className="border-none shadow-sm"><CardHeader className="flex flex-row items-center justify-between"><div><CardTitle>Prévia dos projetos</CardTitle><CardDescription>A seleção atual também alimenta a geração do dossiê individual.</CardDescription></div><Badge variant="outline">até 100 registros</Badge></CardHeader><CardContent className="overflow-x-auto">{projectsQuery.isLoading ? <div className="space-y-3">{Array.from({ length: 5 }).map((_, index) => <Skeleton key={index} className="h-14" />)}</div> : projects.length ? <Table><TableHeader><TableRow><TableHead>Projeto</TableHead><TableHead>OM</TableHead><TableHead>Status</TableHead><TableHead>Etapa</TableHead><TableHead>Responsável</TableHead><TableHead className="text-right">Dossiê</TableHead></TableRow></TableHeader><TableBody>{projects.slice(0, 10).map((project) => <TableRow key={project.id}><TableCell><p className="font-medium">PRJ-{project.projectCode} · {project.title}</p><p className="mt-1 text-xs text-muted-foreground">Atualizado em {formatDate(project.updatedAt)}</p></TableCell><TableCell>{project.om?.sigla ?? "Não definida"}</TableCell><TableCell><Badge variant={project.status === "CANCELADO" ? "destructive" : project.status === "EM_ANDAMENTO" ? "default" : "secondary"}>{statusLabels[project.status]}</Badge></TableCell><TableCell>{stageLabels[project.stage]}</TableCell><TableCell>{project.owner?.name ?? project.ownerName ?? "Não definido"}</TableCell><TableCell className="text-right"><Button size="sm" variant={projectId === project.id ? "default" : "outline"} onClick={() => setProjectId(project.id)}><FileChartColumn className="size-4" />{projectId === project.id ? "Selecionado" : "Selecionar"}</Button></TableCell></TableRow>)}</TableBody></Table> : <div className="py-14 text-center"><FolderOpen className="mx-auto size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhum projeto encontrado</p><p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros para montar o relatório.</p></div>}</CardContent></Card>
-
-    <Card className="border-none shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileChartColumn className="size-5 text-primary" />Dossiê individual</CardTitle><CardDescription>Selecione um projeto na prévia ou localize-o na lista completa.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="flex flex-col gap-3 sm:flex-row"><ProjectSelect projects={projects} value={projectId} onValueChange={setProjectId} loading={projectsQuery.isLoading} error={projectsQuery.isError} ariaLabel="Projeto do dossiê" className="w-full sm:max-w-xl" /><Button onClick={() => pdfMutation.mutate()} disabled={!projectId || pdfMutation.isPending}><Download className="size-4" />{pdfMutation.isPending ? "Gerando PDF..." : "Baixar dossiê PDF"}</Button></div>
-      {!projectId && <div className="rounded-xl border border-dashed bg-muted/20 py-12 text-center"><FileChartColumn className="mx-auto size-10 text-muted-foreground" /><p className="mt-4 font-medium">Nenhum projeto selecionado</p></div>}
-      {dossierQuery.isLoading && <div className="grid gap-3 md:grid-cols-4">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-24" />)}</div>}
-      {dossierQuery.isError && <Alert variant="destructive"><AlertTriangle /><AlertTitle>Não foi possível montar o dossiê</AlertTitle><AlertDescription>{dossierQuery.error.message}</AlertDescription></Alert>}
-      {dossierQuery.data && <DossierPreview dossier={dossierQuery.data} />}
-    </CardContent></Card>
+      {canViewFinancialReports && (
+        <TabsContent value="commitment-notes" className="mt-0">
+          <CommitmentNoteReportsPanel />
+        </TabsContent>
+      )}
+    </Tabs>
   </div>
 }
 
