@@ -35,13 +35,14 @@ describe("carteira consolidada", () => {
     expect(screen.getByRole("button", { name: "2026NE000003" })).toBeInTheDocument()
   })
   it("opens saved financial details directly from the NE without a new government request", async () => {
-    vi.mocked(api.get).mockImplementation(async path => path.endsWith("/portfolio") ? portfolio() : ({ updatedAt: "2026-09-16T12:00:00Z", financial: { current: 100, liquidated: 100, paid: 100, status: "PAGA" }, snapshot: { document: { documento: row(1).externalCode }, related: [{ documento: "160016000012026OB000101", fase: "Pagamento" }], financial: { documents: [{ code: "160016000012026OB000101", phase: 3, amount: 100, subitems: [] }] } } }))
+    vi.mocked(api.get).mockImplementation(async path => path.endsWith("/portfolio") ? portfolio() : ({ updatedAt: "2026-09-16T12:00:00Z", financial: { current: 100, liquidated: 100, paid: 100, paidNet: 90, deductions: 10, status: "PAGA" }, snapshot: { document: { documento: row(1).externalCode }, related: [{ documento: "160016000012026OB000101", fase: "Pagamento" }], financial: { documents: [{ code: "160016000012026OB000101", phase: 3, amount: 90, subitems: [] }] } } }))
     mount(); fireEvent.click(await screen.findByRole("button", { name: "2026NE000001" }))
     const dialog = await screen.findByRole("dialog")
     await waitFor(() => expect(dialog).toHaveTextContent("Situação: Paga"))
     expect(api.get).toHaveBeenCalledWith(`/financial-execution/discovery/archive/${row(1).externalCode}`)
     expect(dialog).toHaveTextContent("Parcela desta NE:")
     expect(dialog).toHaveTextContent("160016000012026OB000101")
+    expect(dialog).toHaveTextContent(/R\$ 90,00 repassados ao fornecedor por OB \+ R\$ 10,00 em deduções.*DR\/DF/)
   })
   it("refreshes saved NEs and then reloads the dashboard", async () => {
     vi.mocked(api.get).mockResolvedValue(portfolio()); vi.mocked(api.post).mockResolvedValue({})

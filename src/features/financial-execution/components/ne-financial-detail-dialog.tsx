@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { financialStatusLabel, formatNeMoney } from "../portfolio-presentation"
 
 type Json = Record<string, unknown>
-type Financial = { current: number | null; liquidated: number | null; paid: number | null; status: string; incomplete?: boolean; inconsistent?: boolean; liquidationIncomplete?: boolean; paymentIncomplete?: boolean; unresolvedLiquidations?: number; unresolvedPayments?: number }
+type Financial = { current: number | null; liquidated: number | null; paid: number | null; paidNet?: number | null; deductions?: number | null; status: string; incomplete?: boolean; inconsistent?: boolean; liquidationIncomplete?: boolean; paymentIncomplete?: boolean; unresolvedLiquidations?: number; unresolvedPayments?: number }
 type Snapshot = { document: unknown; related: unknown; fetchedAt?: string; financial?: { version?: number; liquidatedComplete?: boolean; paidComplete?: boolean; documents: Array<{ code: string; phase: number; amount: number | null; error?: string; subitems: Json[] }> } }
 type Archive = { snapshot: Snapshot; financial: Financial; updatedAt: string }
 type ProjectNote = { currentAmount: number; liquidatedAmount: number; paidAmount: number; financialStatus: string; syncStatus: string; rawSnapshot: unknown; lastSyncAt: string; documents: Array<{ number: string; phase: string; amount: number; rawSnapshot: unknown }> }
@@ -27,6 +27,7 @@ export function NeFinancialDetailDialog({ selection, onClose }: { selection: NeD
     {result && <>
       <p className="font-semibold">Situação: {financialStatusLabel(result.financial.inconsistent ? "DIVERGENTE" : result.financial.status)}</p>
       <div className="grid gap-3 sm:grid-cols-3">{[["Empenhado", result.financial.current], ["Liquidado", result.financial.liquidated], ["Pago", result.financial.paid]].map(([label, value]) => <div key={String(label)} className="rounded border p-3"><p className="text-sm text-muted-foreground">{label}</p><p className="text-xl font-semibold">{formatNeMoney(value as number | null)}</p></div>)}</div>
+      {(result.financial.deductions ?? 0) > 0 && <p className="rounded border p-3 text-sm">Composição do pagamento: {formatNeMoney(result.financial.paidNet ?? null)} repassados ao fornecedor por OB + {formatNeMoney(result.financial.deductions ?? null)} em deduções/retenções por DR/DF.</p>}
       <p className="text-xs text-muted-foreground">Última atualização: {new Date(result.updatedAt).toLocaleString("pt-BR")}. Ausência de valor não confirma ausência de liquidação ou pagamento.</p>
       {(result.financial.paymentIncomplete || result.financial.liquidationIncomplete) && <p role="status" className="rounded border border-amber-400 p-3 text-sm">O SAGEP encontrou e somou os valores já comprovados, mas ainda há {result.financial.unresolvedPayments ?? 0} documento(s) de pagamento e {result.financial.unresolvedLiquidations ?? 0} documento(s) de liquidação sem parcela confirmada para esta NE. O total exibido é parcial e permanece a conferir.</p>}
       {result.financial.inconsistent && <p role="alert" className="rounded border border-amber-400 p-3 text-sm">Os valores apresentam divergência e não entram nos totais do painel. Confira os documentos da NE.</p>}
