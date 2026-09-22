@@ -16,6 +16,7 @@ import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
 import type { ProjectStatus } from "@/features/projects/projects.types"
+import { CommitmentNoteReportsPanel } from "@/features/reports/components/commitment-note-reports-panel"
 import { reportsService } from "@/features/reports/reports.service"
 import type { AtaBalanceReportFilters, ConsolidatedReportType, ProjectExportFilters } from "@/features/reports/reports.types"
 import { openPdfPreview } from "@/lib/pdf-preview"
@@ -187,6 +188,7 @@ export function ReportsPage() {
   const projects = projectsQuery.data?.items ?? []
   const canIncludeArchived = hasPermission("projects.view_all")
   const canGenerateConsolidatedReport = hasPermission("reports.export")
+  const canViewFinancialReports = hasPermission("financial_execution.view")
   const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStatus("all"); setStage("all"); setIncludeArchived(false) }
 
   return <div className="space-y-6">
@@ -304,6 +306,8 @@ export function ReportsPage() {
         </div>
       </CardContent>
     </Card>}
+
+    {canViewFinancialReports && <CommitmentNoteReportsPanel />}
 
     <Card className="border-none shadow-sm"><CardHeader><CardTitle className="flex items-center gap-2"><FileSpreadsheet className="size-5 text-primary" />Planilha do portfólio</CardTitle><CardDescription>Os filtros abaixo são aplicados diretamente à geração do arquivo.</CardDescription></CardHeader><CardContent className="space-y-4"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(280px,1fr)_220px_260px_auto]"><div className="relative"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="pl-9" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Título ou descrição do projeto..." /></div><Select value={status} onValueChange={(value) => setStatus(value as ProjectStatus | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todos os status</SelectItem>{Object.entries(statusLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><Select value={stage} onValueChange={(value) => setStage(value as ProjectStage | "all")}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as etapas</SelectItem>{Object.entries(stageLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select><div className="flex gap-2"><Button variant="outline" onClick={clearFilters}>Limpar</Button><Button onClick={() => exportMutation.mutate()} disabled={exportMutation.isPending}><Download className="size-4" />{exportMutation.isPending ? "Gerando..." : "Exportar"}</Button></div></div>{canIncludeArchived && <label className="flex w-fit cursor-pointer items-center gap-2 text-sm"><input type="checkbox" className="size-4 accent-primary" checked={includeArchived} onChange={(event) => setIncludeArchived(event.target.checked)} />Incluir projetos arquivados na planilha</label>}</CardContent></Card>
 

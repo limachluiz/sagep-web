@@ -88,4 +88,33 @@ describe("reportsService", () => {
 
     expect(api.getBlob).toHaveBeenCalledWith("/reports/atas/balance-position.pdf")
   })
+
+  it("gera relatório de NEs com recorte por fornecedor e período", () => {
+    reportsService.commitmentNotesPdf({
+      supplier: "FORNECEDOR ALFA LTDA",
+      origin: "IMPORTED",
+      managementUnit: "160016",
+      issuedFrom: "2026-01-01",
+      issuedTo: "2026-12-31",
+    })
+
+    const url = vi.mocked(api.getBlob).mock.calls[0][0]
+    const query = new URL(url, "https://sagep.test").searchParams
+    expect(url).toContain("/reports/financial-execution/commitment-notes.pdf")
+    expect(query.get("supplier")).toBe("FORNECEDOR ALFA LTDA")
+    expect(query.get("origin")).toBe("IMPORTED")
+    expect(query.get("managementUnit")).toBe("160016")
+    expect(query.get("issuedFrom")).toBe("2026-01-01")
+    expect(query.get("issuedTo")).toBe("2026-12-31")
+  })
+
+  it("envia a seleção de NEs para PDF e Excel", () => {
+    const codes = ["160016000012026NE000021", "160016000012026NE000023"]
+    reportsService.commitmentNotesPdf({ codes })
+    reportsService.commitmentNotesXlsx({ codes })
+
+    expect(vi.mocked(api.getBlob).mock.calls[0][0]).toContain(`codes=${codes.join("%2C")}`)
+    expect(vi.mocked(api.getBlob).mock.calls[1][0]).toContain("/reports/financial-execution/commitment-notes.xlsx")
+  })
+
 })

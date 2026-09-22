@@ -5,6 +5,8 @@ import type {
   ConsolidatedReportType,
   ProjectDossier,
   ProjectExportFilters,
+  CommitmentNoteReport,
+  CommitmentNoteReportFilters,
 } from "./reports.types"
 
 function ataBalanceQuery(filters: AtaBalanceReportFilters) {
@@ -33,7 +35,32 @@ function executiveQuery(
   return query.size ? `?${query.toString()}` : ""
 }
 
+function commitmentNoteQuery(filters: CommitmentNoteReportFilters = {}) {
+  const query = new URLSearchParams()
+  if (filters.search) query.set("search", filters.search)
+  if (filters.supplier) query.set("supplier", filters.supplier)
+  if (filters.status) query.set("status", filters.status)
+  if (filters.origin) query.set("origin", filters.origin)
+  if (filters.managementUnit) query.set("managementUnit", filters.managementUnit)
+  if (filters.issuedFrom) query.set("issuedFrom", filters.issuedFrom)
+  if (filters.issuedTo) query.set("issuedTo", filters.issuedTo)
+  if (filters.codes?.length) query.set("codes", filters.codes.join(","))
+  return query.size ? `?${query.toString()}` : ""
+}
+
 export const reportsService = {
+  commitmentNotes(filters: CommitmentNoteReportFilters = {}) {
+    return api.get<CommitmentNoteReport>(`/reports/financial-execution/commitment-notes${commitmentNoteQuery(filters)}`)
+  },
+
+  commitmentNotesPdf(filters: CommitmentNoteReportFilters = {}) {
+    return api.getBlob(`/reports/financial-execution/commitment-notes.pdf${commitmentNoteQuery(filters)}`)
+  },
+
+  commitmentNotesXlsx(filters: CommitmentNoteReportFilters = {}) {
+    return api.getBlob(`/reports/financial-execution/commitment-notes.xlsx${commitmentNoteQuery(filters)}`)
+  },
+
   ataBalancePositionPdf(filters: AtaBalanceReportFilters = {}) {
     return api.getBlob(`/reports/atas/balance-position.pdf${ataBalanceQuery(filters)}`)
   },
