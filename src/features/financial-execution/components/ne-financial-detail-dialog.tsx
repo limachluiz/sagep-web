@@ -4,10 +4,10 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { financialStatusLabel, formatNeMoney } from "../portfolio-presentation"
 
 type Json = Record<string, unknown>
-type Financial = { current: number | null; liquidated: number | null; paid: number | null; paidNet?: number | null; deductions?: number | null; status: string; incomplete?: boolean; inconsistent?: boolean; liquidationIncomplete?: boolean; paymentIncomplete?: boolean; unresolvedLiquidations?: number; unresolvedPayments?: number }
+type Financial = { current: number | null; liquidated: number | null; paid: number | null; issuedAt?: string | null; creditNotes?: string[]; paidNet?: number | null; deductions?: number | null; status: string; incomplete?: boolean; inconsistent?: boolean; liquidationIncomplete?: boolean; paymentIncomplete?: boolean; unresolvedLiquidations?: number; unresolvedPayments?: number }
 type Snapshot = { document: unknown; related: unknown; fetchedAt?: string; financial?: { version?: number; liquidatedComplete?: boolean; paidComplete?: boolean; documents: Array<{ code: string; phase: number; amount: number | null; error?: string; subitems: Json[] }> } }
 type Archive = { snapshot: Snapshot; financial: Financial; updatedAt: string }
-type ProjectNote = { currentAmount: number; liquidatedAmount: number; paidAmount: number; financialStatus: string; syncStatus: string; rawSnapshot: unknown; lastSyncAt: string; documents: Array<{ number: string; phase: string; amount: number; rawSnapshot: unknown }> }
+type ProjectNote = { currentAmount: number; liquidatedAmount: number; paidAmount: number; issuedAt: string | null; creditNotes?: string[]; financialStatus: string; syncStatus: string; rawSnapshot: unknown; lastSyncAt: string; documents: Array<{ number: string; phase: string; amount: number; rawSnapshot: unknown }> }
 export type NeDetailSelection = { externalCode: string; number: string; noteId?: string | null }
 export function NeFinancialDetailDialog({ selection, onClose }: { selection: NeDetailSelection | null; onClose: () => void }) {
   const query = useQuery({
@@ -15,7 +15,7 @@ export function NeFinancialDetailDialog({ selection, onClose }: { selection: NeD
     queryFn: async () => {
       if (selection?.noteId) {
         const note = await api.get<ProjectNote>(`/financial-execution/commitment-notes/${encodeURIComponent(selection.noteId)}`)
-        return { financial: { current: note.currentAmount, liquidated: note.liquidatedAmount, paid: note.paidAmount, status: note.syncStatus === "VALIDADO" ? note.financialStatus : "A_CONFERIR", inconsistent: note.syncStatus === "DIVERGENTE" || note.paidAmount > note.currentAmount + 0.01 || note.paidAmount > note.liquidatedAmount + 0.01 || note.liquidatedAmount > note.currentAmount + 0.01 || [note.currentAmount, note.liquidatedAmount, note.paidAmount].some(value => value < 0) }, updatedAt: note.lastSyncAt, snapshot: { document: note.rawSnapshot, related: note.documents } } as Archive
+        return { financial: { current: note.currentAmount, liquidated: note.liquidatedAmount, paid: note.paidAmount, issuedAt: note.issuedAt, creditNotes: note.creditNotes ?? [], status: note.syncStatus === "VALIDADO" ? note.financialStatus : "A_CONFERIR", inconsistent: note.syncStatus === "DIVERGENTE" || note.paidAmount > note.currentAmount + 0.01 || note.paidAmount > note.liquidatedAmount + 0.01 || note.liquidatedAmount > note.currentAmount + 0.01 || [note.currentAmount, note.liquidatedAmount, note.paidAmount].some(value => value < 0) }, updatedAt: note.lastSyncAt, snapshot: { document: note.rawSnapshot, related: note.documents } } as Archive
       }
       return api.get<Archive>(`/financial-execution/discovery/archive/${encodeURIComponent(selection!.externalCode)}`)
     },
@@ -26,6 +26,7 @@ export function NeFinancialDetailDialog({ selection, onClose }: { selection: NeD
     {query.isError && <p role="alert">Não foi possível abrir a NE: {query.error.message}</p>}
     {result && <>
       <p className="font-semibold">Situação: {financialStatusLabel(result.financial.inconsistent ? "DIVERGENTE" : result.financial.status)}</p>
+      <div className="grid gap-3 sm:grid-cols-2"><div className="rounded border p-3"><p className="text-sm text-muted-foreground">Data de emissão</p><p className="font-semibold">{formatNeDate(result.financial.issuedAt)}</p></div><div className="rounded border p-3"><p className="text-sm text-muted-foreground">NC referenciada</p><p className="font-semibold">{result.financial.creditNotes?.length ? result.financial.creditNotes.join(", ") : "Não localizada nos dados oficiais"}</p></div></div>
       <div className="grid gap-3 sm:grid-cols-3">{[["Empenhado", result.financial.current], ["Liquidado", result.financial.liquidated], ["Pago", result.financial.paid]].map(([label, value]) => <div key={String(label)} className="rounded border p-3"><p className="text-sm text-muted-foreground">{label}</p><p className="text-xl font-semibold">{formatNeMoney(value as number | null)}</p></div>)}</div>
       {(result.financial.deductions ?? 0) > 0 && <p className="rounded border p-3 text-sm">Composição do pagamento: {formatNeMoney(result.financial.paidNet ?? null)} repassados ao fornecedor por OB + {formatNeMoney(result.financial.deductions ?? null)} em deduções/retenções por DR/DF.</p>}
       <p className="text-xs text-muted-foreground">Última atualização: {new Date(result.updatedAt).toLocaleString("pt-BR")}. Ausência de valor não confirma ausência de liquidação ou pagamento.</p>
@@ -35,6 +36,12 @@ export function NeFinancialDetailDialog({ selection, onClose }: { selection: NeD
       {Object.entries({ "Nota de Empenho": result.snapshot.document, "Documentos relacionados": result.snapshot.related }).map(([title, value]) => <section key={title}><h3 className="font-semibold">{title}</h3><RawRecords value={value} /></section>)}
     </>}
   </DialogContent></Dialog>
+}
+function formatNeDate(value?: string | null) {
+  if (!value) return "Não informada"
+  const match = value.match(/^(\d{2})\/(\d{2})\/(\d{4})/)
+  const parsed = new Date(match ? `${match[3]}-${match[2]}-${match[1]}T12:00:00` : value)
+  return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString("pt-BR")
 }
 function RawRecords({ value }: { value: unknown }) {
   const rows = Array.isArray(value) ? value : value ? [value] : []

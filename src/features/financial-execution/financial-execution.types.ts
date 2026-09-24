@@ -30,6 +30,7 @@ export type CommitmentNote = {
   supplierName: string | null
   supplierCnpj: string | null
   issuedAt: string | null
+  creditNotes?: string[]
   originalAmount: number
   currentAmount: number
   liquidatedAmount: number
