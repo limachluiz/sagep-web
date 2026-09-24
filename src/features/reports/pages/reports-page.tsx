@@ -14,6 +14,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { atasService, pregoesService } from "@/features/atas/atas.service"
+import type { Ata } from "@/features/atas/atas.types"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
@@ -49,6 +50,24 @@ const stageLabels: Record<ProjectStage, string> = {
 }
 
 type ReportSection = "projects" | "atas" | "commitment-notes"
+
+function formatAtaDate(value: string | null) {
+  if (!value) return "não informada"
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  return match ? `${match[3]}/${match[2]}/${match[1]}` : value
+}
+
+function ataReportOptionLabel(ata: Ata) {
+  const coverage = ata.coverageGroups.length
+    ? ata.coverageGroups.map((group) => {
+      const localities = group.localities.length
+        ? group.localities.map((locality) => `${locality.cityName}-${locality.stateUf}`).join(", ")
+        : "localidades não informadas"
+      return `${group.name}: ${localities}`
+    }).join(" · ")
+    : "região e localidades não informadas"
+  return `ATA ${ata.number} · ${ata.vendorName} · Vigência ${formatAtaDate(ata.validFrom)} a ${formatAtaDate(ata.validUntil)} · ${coverage}`
+}
 
 const reportOptions: Array<{
   type: ConsolidatedReportType
@@ -408,7 +427,7 @@ export function ReportsPage() {
           <SelectTrigger id="ata-report-ata" className="mt-2 w-full"><SelectValue placeholder={reportAtasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as ATAs do pregão</SelectItem>
-            {reportAtas.map((ata) => <SelectItem key={ata.id} value={ata.id}>ATA {ata.number} · {ata.vendorName}</SelectItem>)}
+            {reportAtas.map((ata) => <SelectItem key={ata.id} value={ata.id}>{ataReportOptionLabel(ata)}</SelectItem>)}
           </SelectContent>
         </Select>
         {ataReportPregaoId !== "all" && !reportAtasQuery.isLoading && reportAtas.length > 1 && <p className="mt-2 text-xs text-muted-foreground">{reportAtas.length} ATAs disponíveis neste pregão. Selecione uma ou mantenha o relatório consolidado.</p>}
