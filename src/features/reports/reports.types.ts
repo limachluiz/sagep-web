@@ -18,6 +18,8 @@ export type ConsolidatedReportType = "executive" | "operational" | "financial"
 export type AtaBalanceReportFilters = {
   ataType?: "CFTV" | "FIBRA_OPTICA"
   status?: "ALL" | "ACTIVE" | "EXPIRED" | "INACTIVE"
+  pregaoId?: string
+  ataId?: string
 }
 
 export type ProjectDossier = {

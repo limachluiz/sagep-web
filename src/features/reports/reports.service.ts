@@ -13,6 +13,8 @@ function ataBalanceQuery(filters: AtaBalanceReportFilters) {
   const query = new URLSearchParams()
   if (filters.ataType) query.set("ataType", filters.ataType)
   if (filters.status && filters.status !== "ALL") query.set("status", filters.status)
+  if (filters.pregaoId) query.set("pregaoId", filters.pregaoId)
+  if (filters.ataId) query.set("ataId", filters.ataId)
   return query.size ? `?${query.toString()}` : ""
 }
 

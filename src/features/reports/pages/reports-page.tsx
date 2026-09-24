@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { useAuthStore } from "@/features/auth/auth.store"
+import { atasService, pregoesService } from "@/features/atas/atas.service"
 import type { ProjectStage } from "@/features/dashboard/dashboard.types"
 import { ProjectSelect } from "@/features/projects/components/project-select"
 import { projectsService } from "@/features/projects/projects.service"
@@ -111,6 +112,8 @@ export function ReportsPage() {
   >("all")
   const [ataReportType, setAtaReportType] = useState<"all" | "CFTV" | "FIBRA_OPTICA">("all")
   const [ataReportStatus, setAtaReportStatus] = useState<"ALL" | "ACTIVE" | "EXPIRED" | "INACTIVE">("ALL")
+  const [ataReportPregaoId, setAtaReportPregaoId] = useState("all")
+  const [ataReportAtaId, setAtaReportAtaId] = useState("all")
   const [activeTab, setActiveTab] = useState<ReportSection>("projects")
 
   useEffect(() => {
@@ -135,6 +138,25 @@ export function ReportsPage() {
     queryKey: ["reports", "dossier", projectId],
     queryFn: () => reportsService.projectDossier(projectId),
     enabled: activeTab === "projects" && Boolean(projectId),
+  })
+  const reportPregoesQuery = useQuery({
+    queryKey: ["reports", "atas", "pregoes", ataReportType],
+    queryFn: () => pregoesService.list({
+      page: 1,
+      pageSize: 100,
+      type: ataReportType === "all" ? undefined : ataReportType,
+    }),
+    enabled: activeTab === "atas",
+  })
+  const reportAtasQuery = useQuery({
+    queryKey: ["reports", "atas", "pregao", ataReportPregaoId, ataReportType],
+    queryFn: () => atasService.list({
+      page: 1,
+      pageSize: 100,
+      pregaoId: ataReportPregaoId,
+      type: ataReportType === "all" ? undefined : ataReportType,
+    }),
+    enabled: activeTab === "atas" && ataReportPregaoId !== "all",
   })
 
   const exportMutation = useMutation({
@@ -173,7 +195,9 @@ export function ReportsPage() {
   const ataReportFilters = useMemo<AtaBalanceReportFilters>(() => ({
     ataType: ataReportType === "all" ? undefined : ataReportType,
     status: ataReportStatus,
-  }), [ataReportStatus, ataReportType])
+    pregaoId: ataReportPregaoId === "all" ? undefined : ataReportPregaoId,
+    ataId: ataReportAtaId === "all" ? undefined : ataReportAtaId,
+  }), [ataReportAtaId, ataReportPregaoId, ataReportStatus, ataReportType])
   const ataPdfPreviewMutation = useMutation({
     mutationFn: () => openPdfPreview(
       () => reportsService.ataBalancePositionPdf(ataReportFilters),
@@ -191,6 +215,8 @@ export function ReportsPage() {
   })
 
   const projects = projectsQuery.data?.items ?? []
+  const reportPregoes = reportPregoesQuery.data?.items ?? []
+  const reportAtas = reportAtasQuery.data?.items ?? []
   const canIncludeArchived = hasPermission("projects.view_all")
   const canGenerateConsolidatedReport = hasPermission("reports.export")
   const canViewFinancialReports = hasPermission("financial_execution.view")
@@ -361,7 +387,31 @@ export function ReportsPage() {
         <div className="rounded-xl border bg-muted/15 p-5">
         <p className="text-xs font-semibold tracking-[.14em] text-muted-foreground uppercase">Filtros do relatório</p>
         <label className="mt-5 block text-sm font-medium" htmlFor="ata-report-type">Natureza da ATA</label>
-        <Select value={ataReportType} onValueChange={(value) => setAtaReportType(value as typeof ataReportType)}><SelectTrigger id="ata-report-type" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as ATAs</SelectItem><SelectItem value="CFTV">Somente CFTV</SelectItem><SelectItem value="FIBRA_OPTICA">Somente Fibra Óptica</SelectItem></SelectContent></Select>
+        <Select value={ataReportType} onValueChange={(value) => {
+          setAtaReportType(value as typeof ataReportType)
+          setAtaReportPregaoId("all")
+          setAtaReportAtaId("all")
+        }}><SelectTrigger id="ata-report-type" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="all">Todas as naturezas</SelectItem><SelectItem value="CFTV">Somente CFTV</SelectItem><SelectItem value="FIBRA_OPTICA">Somente Fibra Óptica</SelectItem></SelectContent></Select>
+        <label className="mt-4 block text-sm font-medium" htmlFor="ata-report-pregao">Pregão</label>
+        <Select value={ataReportPregaoId} onValueChange={(value) => {
+          setAtaReportPregaoId(value)
+          setAtaReportAtaId("all")
+        }}>
+          <SelectTrigger id="ata-report-pregao" className="mt-2 w-full"><SelectValue placeholder="Selecione o pregão" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos os pregões</SelectItem>
+            {reportPregoes.map((pregao) => <SelectItem key={pregao.id} value={pregao.id}>{pregao.number}/{pregao.year} · UASG {pregao.uasg}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <label className="mt-4 block text-sm font-medium" htmlFor="ata-report-ata">ATA específica</label>
+        <Select value={ataReportAtaId} onValueChange={setAtaReportAtaId} disabled={ataReportPregaoId === "all" || reportAtasQuery.isLoading}>
+          <SelectTrigger id="ata-report-ata" className="mt-2 w-full"><SelectValue placeholder={reportAtasQuery.isLoading ? "Carregando ATAs..." : "Selecione a ATA"} /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas as ATAs do pregão</SelectItem>
+            {reportAtas.map((ata) => <SelectItem key={ata.id} value={ata.id}>ATA {ata.number} · {ata.vendorName}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        {ataReportPregaoId !== "all" && !reportAtasQuery.isLoading && reportAtas.length > 1 && <p className="mt-2 text-xs text-muted-foreground">{reportAtas.length} ATAs disponíveis neste pregão. Selecione uma ou mantenha o relatório consolidado.</p>}
         <label className="mt-4 block text-sm font-medium" htmlFor="ata-report-status">Situação contratual</label>
         <Select value={ataReportStatus} onValueChange={(value) => setAtaReportStatus(value as typeof ataReportStatus)}><SelectTrigger id="ata-report-status" className="mt-2 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="ALL">Todas as situações</SelectItem><SelectItem value="ACTIVE">Vigentes</SelectItem><SelectItem value="EXPIRED">Expiradas</SelectItem><SelectItem value="INACTIVE">Inativas</SelectItem></SelectContent></Select>
         <div className="mt-5 grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2"><Button variant="outline" onClick={() => ataPdfPreviewMutation.mutate()} disabled={ataPdfPreviewMutation.isPending || ataPdfDownloadMutation.isPending}><Eye className="size-4" />{ataPdfPreviewMutation.isPending ? "Abrindo..." : "Visualizar PDF"}</Button><Button onClick={() => ataPdfDownloadMutation.mutate()} disabled={ataPdfDownloadMutation.isPending || ataPdfPreviewMutation.isPending}><Download className="size-4" />{ataPdfDownloadMutation.isPending ? "Gerando..." : "Baixar PDF"}</Button></div>
