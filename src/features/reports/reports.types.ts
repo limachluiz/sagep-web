@@ -61,7 +61,8 @@ export type CommitmentNoteReportRow = {
   updatedAt: string
   issuedAt: string | null
   supplierName: string
-  attendedUnit: string | null
+  attendedOm: { id: string; sigla: string; name: string; cityName: string; stateUf: string; isActive: boolean } | null
+  observation: string | null
   supplierCnpj: string | null
   current: number | null
   liquidated: number | null
