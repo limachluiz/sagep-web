@@ -60,6 +60,8 @@ export type CommitmentNoteReportRow = {
   origin: "PROJECT" | "IMPORTED" | "STANDALONE"
   updatedAt: string
   issuedAt: string | null
+  liquidatedAt: string | null
+  paidAt: string | null
   supplierName: string
   attendedOm: { id: string; sigla: string; name: string; cityName: string; stateUf: string; isActive: boolean } | null
   observation: string | null
