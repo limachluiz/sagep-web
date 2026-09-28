@@ -48,7 +48,8 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
   const client = useQueryClient()
   const canManage = useAuthStore(s => s.hasPermission("financial_execution.manage"))
   const [duplicate, setDuplicate] = useState<{ code: string; origin: string } | null>(null)
-  const save = useMutation({ mutationFn: (input: { code: string; replaceOrigin?: string }) => api.post(`/financial-execution/discovery/archive/${input.code}`, { origin: "STANDALONE", replaceOrigin: input.replaceOrigin }), onSuccess: () => { setDuplicate(null); client.invalidateQueries({ queryKey: ["ne-archive"] }); client.invalidateQueries({ queryKey: ["financial-execution"] }); toast.success("NE avulsa salva na carteira sem consumir saldo de ATA.") }, onError: error => {
+  const [attendedUnit, setAttendedUnit] = useState("")
+  const save = useMutation({ mutationFn: (input: { code: string; replaceOrigin?: string; attendedUnit?: string }) => api.post(`/financial-execution/discovery/archive/${input.code}`, { origin: "STANDALONE", replaceOrigin: input.replaceOrigin, attendedUnit: input.attendedUnit }), onSuccess: () => { setDuplicate(null); client.invalidateQueries({ queryKey: ["ne-archive"] }); client.invalidateQueries({ queryKey: ["financial-execution"] }); toast.success("NE avulsa salva na carteira sem consumir saldo de ATA.") }, onError: error => {
     const details = error instanceof ApiError ? error.details as { details?: { existingOrigin?: string; externalCode?: string } } : undefined
     if (details?.details?.existingOrigin && details.details.externalCode) setDuplicate({ code: details.details.externalCode, origin: details.details.existingOrigin })
     else toast.error(error.message)
@@ -72,6 +73,7 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
       setDuplicate(null)
       mutation.reset()
       setNumber("")
+      setAttendedUnit("")
     }
     onOpenChange(nextOpen)
   }
@@ -89,14 +91,15 @@ export function LookupCommitmentNoteDialog({ open, onOpenChange }: Props) {
           <div className="space-y-2"><Label htmlFor="standalone-ne-ug">UG emitente</Label><Input id="standalone-ne-ug" value={managementUnit} onChange={(event) => { setManagementUnit(event.target.value.replace(/\D/g, "").slice(0, 6)); mutation.reset(); setDuplicate(null) }} inputMode="numeric" placeholder="Padrão da OM" /></div>
           <div className="space-y-2"><Label htmlFor="standalone-ne-management">Gestão</Label><Input id="standalone-ne-management" value={management} onChange={(event) => { setManagement(event.target.value.replace(/\D/g, "").slice(0, 5)); mutation.reset(); setDuplicate(null) }} inputMode="numeric" placeholder="Padrão da OM" /></div>
         </div>
+        <div className="space-y-2"><Label htmlFor="standalone-ne-attended-unit">OM atendida / Observação</Label><Input id="standalone-ne-attended-unit" maxLength={300} value={attendedUnit} onChange={(event) => setAttendedUnit(event.target.value)} placeholder="Ex.: HGuPV · infraestrutura de rede" /><p className="text-xs text-muted-foreground">Informação interna editável; não altera os dados oficiais nem os saldos.</p></div>
 
         {!result && <div className="rounded-xl border border-dashed p-5 text-sm text-muted-foreground"><p className="font-medium text-foreground">Consulta somente para conferência</p><p className="mt-1">A consulta não grava dados automaticamente. Após consultar, use Salvar avulsa para incluir na carteira. O vínculo a projeto permanece na etapa correspondente.</p></div>}
 
         {mutation.isError && <div role="alert" className="flex gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive"><AlertCircle className="mt-0.5 size-4 shrink-0" /><div><p className="font-semibold">Não foi possível localizar a Nota de Empenho</p><p className="mt-1">{mutation.error.message}</p></div></div>}
 
-        {snapshot && canManage && <Button disabled={save.isPending} onClick={() => save.mutate({ code: snapshot.externalCode })}>{save.isPending ? "Salvando…" : "Salvar / atualizar avulsa na carteira"}</Button>}
+        {snapshot && canManage && <Button disabled={save.isPending} onClick={() => save.mutate({ code: snapshot.externalCode, attendedUnit: attendedUnit.trim() || undefined })}>{save.isPending ? "Salvando…" : "Salvar / atualizar avulsa na carteira"}</Button>}
         {result?.archived && <p className="rounded border p-3 text-sm">Esta NE já consta na base como {result.archived.origin === "IMPORTED" ? "importada" : "avulsa"}. O código será contabilizado uma única vez na carteira.</p>}
-        {duplicate && <div role="alert" className="space-y-3 rounded border border-amber-400 p-4"><p>Duplicidade: já existe uma NE importada com o mesmo código. Escolha a cópia que deseja manter.</p><Button variant="outline" onClick={() => setDuplicate(null)}>Manter importada e descartar nova avulsa</Button><Button disabled={save.isPending} onClick={() => save.mutate({ code: duplicate.code, replaceOrigin: duplicate.origin })}>Excluir cópia importada e manter avulsa</Button></div>}
+        {duplicate && <div role="alert" className="space-y-3 rounded border border-amber-400 p-4"><p>Duplicidade: já existe uma NE importada com o mesmo código. Escolha a cópia que deseja manter.</p><Button variant="outline" onClick={() => setDuplicate(null)}>Manter importada e descartar nova avulsa</Button><Button disabled={save.isPending} onClick={() => save.mutate({ code: duplicate.code, replaceOrigin: duplicate.origin, attendedUnit: attendedUnit.trim() || undefined })}>Excluir cópia importada e manter avulsa</Button></div>}
         {snapshot && <div className="space-y-4">
           <div className="flex flex-col justify-between gap-3 rounded-xl border border-primary/20 bg-primary/5 p-4 sm:flex-row sm:items-center">
             <div className="flex min-w-0 items-center gap-3"><CheckCircle2 className="size-5 shrink-0 text-primary" /><div className="min-w-0"><p className="font-semibold">NE {snapshot.number} localizada</p><p className="break-all text-xs text-muted-foreground">Consulta realizada em {dateTime(snapshot.fetchedAt)} · código {snapshot.externalCode}</p></div></div>
