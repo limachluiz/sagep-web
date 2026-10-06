@@ -1,0 +1,126 @@
+import { useState } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { BellRing, Bot, Clock3, ExternalLink, HelpCircle, Mail, Play, Plus, Save, Send, ShieldCheck, Trash2 } from "lucide-react"
+import { toast } from "sonner"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
+import { SettingsNavigation } from "@/features/system-health/components/settings-navigation"
+import { useAuthStore } from "@/features/auth/auth.store"
+import { notificationSettingsService } from "../notification-settings.service"
+import type { EmailList, EmailListInput, NotificationAutomationInput, NotificationAutomationOverview, NotificationRole, NotificationSettings } from "../notification-settings.types"
+
+const roles: NotificationRole[] = ["ADMIN", "GESTOR", "PROJETISTA", "CONSULTA"]
+const blankList = (): EmailListInput => ({ name: "", description: null, active: true, roles: [], recipients: [{ email: "", name: null, active: true }] })
+
+export function NotificationSettingsPage() {
+  const query = useQuery({ queryKey: ["notification-settings"], queryFn: notificationSettingsService.get })
+  const automation = useQuery({ queryKey: ["notification-automation"], queryFn: notificationSettingsService.getAutomation, refetchInterval: (current) => current.state.data?.runs.some((run) => run.status === "RUNNING") ? 3_000 : false })
+  if (query.isLoading || automation.isLoading) return <div className="space-y-6"><SettingsNavigation /><Skeleton className="h-96" /></div>
+  if (query.isError || automation.isError || !query.data || !automation.data) return <Alert variant="destructive"><AlertTitle>Não foi possível carregar as notificações</AlertTitle><AlertDescription>{query.error?.message ?? automation.error?.message}</AlertDescription></Alert>
+  return <NotificationSettingsForm settings={query.data} automation={automation.data} />
+}
+
+function NotificationSettingsForm({ settings, automation }: { settings: NotificationSettings; automation: NotificationAutomationOverview }) {
+  const canManage = useAuthStore((state) => state.hasPermission("settings.manage"))
+  const client = useQueryClient()
+  const [smtp, setSmtp] = useState({ enabled: settings.smtp.enabled, host: settings.smtp.host ?? "", port: settings.smtp.port, secure: settings.smtp.secure, username: settings.smtp.username ?? "", password: "", fromName: settings.smtp.fromName ?? "SAGEP", fromEmail: settings.smtp.fromEmail ?? "" })
+  const [smtpTestEmail, setSmtpTestEmail] = useState("")
+  const [telegram, setTelegram] = useState({ enabled: settings.telegram.enabled, botToken: "", chatId: settings.telegram.chatId ?? "" })
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [listForm, setListForm] = useState<EmailListInput>(blankList)
+
+  const refresh = async () => { await client.invalidateQueries({ queryKey: ["notification-settings"] }) }
+  const saveSmtp = useMutation({ mutationFn: () => notificationSettingsService.saveSmtp({ enabled: smtp.enabled, host: smtp.host, port: smtp.port, secure: smtp.secure, username: smtp.username || null, ...(smtp.password ? { password: smtp.password } : {}), fromName: smtp.fromName, fromEmail: smtp.fromEmail }), onSuccess: async () => { setSmtp((current) => ({ ...current, password: "" })); await refresh(); toast.success("Configuração SMTP salva.") }, onError: (error) => toast.error(error.message) })
+  const testSmtp = useMutation({ mutationFn: () => notificationSettingsService.testSmtp(smtpTestEmail), onSuccess: (result) => toast.success(result.message), onError: (error) => toast.error(error.message) })
+  const saveTelegram = useMutation({ mutationFn: () => notificationSettingsService.saveTelegram({ enabled: telegram.enabled, chatId: telegram.chatId, ...(telegram.botToken ? { botToken: telegram.botToken } : {}) }), onSuccess: async () => { setTelegram((current) => ({ ...current, botToken: "" })); await refresh(); toast.success("Configuração do Telegram salva.") }, onError: (error) => toast.error(error.message) })
+  const testTelegram = useMutation({ mutationFn: notificationSettingsService.testTelegram, onSuccess: (result) => toast.success(result.message), onError: (error) => toast.error(error.message) })
+  const saveList = useMutation({ mutationFn: () => editingId ? notificationSettingsService.updateList(editingId, listForm) : notificationSettingsService.createList(listForm), onSuccess: async () => { setEditingId(null); setListForm(blankList()); await refresh(); toast.success("Lista de e-mail salva.") }, onError: (error) => toast.error(error.message) })
+  const deleteList = useMutation({ mutationFn: notificationSettingsService.deleteList, onSuccess: async () => { await refresh(); toast.success("Lista excluída.") }, onError: (error) => toast.error(error.message) })
+  const edit = (list: EmailList) => { setEditingId(list.id); setListForm({ name: list.name, description: list.description, active: list.active, roles: list.roles, recipients: list.recipients.map(({ email, name, active }) => ({ email, name, active })) }) }
+
+  return <div className="space-y-6"><SettingsNavigation />
+    <div><Badge className="mb-3">Comunicação automatizada</Badge><h1 className="text-3xl font-semibold tracking-tight">Canais e destinatários</h1><p className="mt-2 max-w-3xl text-sm text-muted-foreground">Configure o servidor SMTP, o bot do Telegram e as listas que receberão os alertas do SAGEP.</p></div>
+    <Alert><BellRing /><AlertTitle>Segredos protegidos</AlertTitle><AlertDescription>Senhas e tokens são criptografados e nunca retornam ao navegador. O WhatsApp não faz parte desta versão.</AlertDescription></Alert>
+    <AutomationCard overview={automation} emailLists={settings.emailLists} canManage={canManage} />
+    <div className="grid gap-6 xl:grid-cols-2">
+      <Card><CardHeader><CardTitle className="flex items-center gap-2"><Mail className="size-5" />Servidor SMTP</CardTitle><CardDescription>Compatível com servidor interno ou relay institucional.</CardDescription></CardHeader><CardContent className="space-y-4"><label className="flex items-center gap-3 rounded-lg border p-3 text-sm"><input type="checkbox" disabled={!canManage} checked={smtp.enabled} onChange={(event) => setSmtp({ ...smtp, enabled: event.target.checked })} />Ativar notificações por e-mail</label><div className="grid gap-4 sm:grid-cols-2"><Field label="Servidor" value={smtp.host} onChange={(host) => setSmtp({ ...smtp, host })} /><Field label="Porta" type="number" value={String(smtp.port)} onChange={(port) => setSmtp({ ...smtp, port: Number(port) })} /><Field label="Usuário" value={smtp.username} onChange={(username) => setSmtp({ ...smtp, username })} /><Field label={settings.smtp.password.configured ? "Substituir senha" : "Senha"} type="password" value={smtp.password} onChange={(password) => setSmtp({ ...smtp, password })} /><Field label="Nome do remetente" value={smtp.fromName} onChange={(fromName) => setSmtp({ ...smtp, fromName })} /><Field label="E-mail do remetente" type="email" value={smtp.fromEmail} onChange={(fromEmail) => setSmtp({ ...smtp, fromEmail })} /></div><label className="flex items-center gap-3 text-sm"><input type="checkbox" disabled={!canManage} checked={smtp.secure} onChange={(event) => setSmtp({ ...smtp, secure: event.target.checked })} />TLS implícito, normalmente porta 465</label>{canManage && <div className="flex flex-wrap gap-2"><Button onClick={() => saveSmtp.mutate()} disabled={saveSmtp.isPending}><Save />Salvar SMTP</Button><Input className="max-w-72" type="email" placeholder="Destino do teste" value={smtpTestEmail} onChange={(event) => setSmtpTestEmail(event.target.value)} /><Button variant="outline" onClick={() => testSmtp.mutate()} disabled={!smtpTestEmail || testSmtp.isPending}><Send />Enviar teste</Button></div>}</CardContent></Card>
+      <Card><CardHeader><CardTitle className="flex items-center gap-2"><Bot className="size-5" />Telegram</CardTitle><CardDescription>Bot oficial para mensagens em conversa, grupo ou canal.</CardDescription></CardHeader><CardContent className="space-y-4"><label className="flex items-center gap-3 rounded-lg border p-3 text-sm"><input type="checkbox" disabled={!canManage} checked={telegram.enabled} onChange={(event) => setTelegram({ ...telegram, enabled: event.target.checked })} />Ativar notificações pelo Telegram</label><Field label={settings.telegram.botToken.configured ? "Substituir token do bot" : "Token do bot"} type="password" value={telegram.botToken} onChange={(botToken) => setTelegram({ ...telegram, botToken })} /><Field label="Chat ID" value={telegram.chatId} onChange={(chatId) => setTelegram({ ...telegram, chatId })} />{canManage && <div className="flex flex-wrap gap-2"><Button onClick={() => saveTelegram.mutate()} disabled={saveTelegram.isPending}><Save />Salvar Telegram</Button><Button variant="outline" onClick={() => testTelegram.mutate()} disabled={testTelegram.isPending}><Send />Enviar teste</Button><TelegramTutorial /></div>}</CardContent></Card>
+    </div>
+    <Card><CardHeader><div className="flex items-center justify-between"><div><CardTitle>Listas de e-mail</CardTitle><CardDescription>Destinatários externos e perfis associados aos alertas.</CardDescription></div>{canManage && <Button variant="outline" onClick={() => { setEditingId(null); setListForm(blankList()) }}><Plus />Nova lista</Button>}</div></CardHeader><CardContent className="space-y-5"><div className="grid gap-3 lg:grid-cols-2">{settings.emailLists.map((list) => <button key={list.id} type="button" onClick={() => canManage && edit(list)} className="rounded-xl border p-4 text-left hover:bg-muted/30"><div className="flex justify-between gap-3"><strong>{list.name}</strong><Badge variant={list.active ? "default" : "outline"}>{list.active ? "Ativa" : "Inativa"}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{list.description || "Sem descrição"}</p><p className="mt-3 text-sm">{list.recipients.filter((item) => item.active).length} destinatário(s) · {list.roles.join(", ") || "sem perfis vinculados"}</p></button>)}</div>{canManage && <div className="space-y-4 rounded-xl border bg-muted/10 p-4"><h3 className="font-semibold">{editingId ? "Editar lista" : "Nova lista"}</h3><div className="grid gap-4 sm:grid-cols-2"><Field label="Nome" value={listForm.name} onChange={(name) => setListForm({ ...listForm, name })} /><Field label="Descrição" value={listForm.description ?? ""} onChange={(description) => setListForm({ ...listForm, description: description || null })} /></div><label className="flex items-center gap-3 text-sm"><input type="checkbox" checked={listForm.active} onChange={(event) => setListForm({ ...listForm, active: event.target.checked })} />Lista ativa</label><div><Label>Perfis associados</Label><div className="mt-2 flex flex-wrap gap-3">{roles.map((role) => <label key={role} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={listForm.roles.includes(role)} onChange={(event) => setListForm({ ...listForm, roles: event.target.checked ? [...listForm.roles, role] : listForm.roles.filter((item) => item !== role) })} />{role}</label>)}</div></div><div><Label>Destinatários</Label><Textarea className="mt-2 min-h-32" value={listForm.recipients.map((item) => item.name ? `${item.name} <${item.email}>` : item.email).join("\n")} onChange={(event) => setListForm({ ...listForm, recipients: event.target.value.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => { const match = line.match(/^(.*?)\s*<([^>]+)>$/); return { name: match?.[1]?.trim() || null, email: (match?.[2] ?? line).trim().toLowerCase(), active: true } }) })} placeholder={"gestor@exemplo.mil.br\nFiscal do contrato <fiscal@exemplo.mil.br>"} /></div><div className="flex flex-wrap gap-2"><Button onClick={() => saveList.mutate()} disabled={!listForm.name || !listForm.recipients.length || saveList.isPending}><Save />Salvar lista</Button>{editingId && <Button variant="destructive" onClick={() => deleteList.mutate(editingId)} disabled={deleteList.isPending}><Trash2 />Excluir</Button>}</div></div>}</CardContent></Card>
+  </div>
+}
+
+function TelegramTutorial() {
+  return <Dialog>
+    <DialogTrigger asChild><Button type="button" variant="ghost"><HelpCircle />Como configurar</Button></DialogTrigger>
+    <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader><DialogTitle>Configurar notificações pelo Telegram</DialogTitle><DialogDescription>Crie um bot, escolha onde os alertas serão recebidos e informe o token e o Chat ID ao SAGEP.</DialogDescription></DialogHeader>
+      <div className="space-y-5 text-sm">
+        <TutorialStep number="1" title="Crie o bot no BotFather">
+          Abra o perfil oficial <a className="font-semibold text-primary underline underline-offset-4" href="https://t.me/BotFather" target="_blank" rel="noreferrer">@BotFather <ExternalLink className="inline size-3" /></a>, envie <code className="rounded bg-muted px-1.5 py-0.5">/newbot</code> e siga as instruções. O nome de usuário escolhido deve terminar em <code className="rounded bg-muted px-1.5 py-0.5">bot</code>.
+        </TutorialStep>
+        <TutorialStep number="2" title="Copie o token com segurança">
+          Ao concluir, o BotFather fornecerá um token no formato <code className="rounded bg-muted px-1.5 py-0.5">123456:ABC...</code>. Cole-o no campo <strong>Token do bot</strong>. O SAGEP criptografa esse segredo e não volta a exibi-lo.
+        </TutorialStep>
+        <TutorialStep number="3" title="Prepare o destino dos alertas">
+          <ul className="mt-2 list-disc space-y-1 pl-5 text-muted-foreground"><li><strong className="text-foreground">Conversa privada:</strong> abra o bot e envie <code>/start</code>.</li><li><strong className="text-foreground">Grupo:</strong> adicione o bot e envie uma mensagem ou comando no grupo.</li><li><strong className="text-foreground">Canal:</strong> adicione o bot como administrador, com permissão para publicar mensagens.</li></ul>
+        </TutorialStep>
+        <TutorialStep number="4" title="Descubra o Chat ID">
+          Depois de gerar uma mensagem no destino, abra no navegador o endereço abaixo, substituindo <strong>SEU_TOKEN</strong> pelo token recebido:
+          <code className="mt-2 block overflow-x-auto rounded-lg border bg-muted p-3 text-xs">https://api.telegram.org/botSEU_TOKEN/getUpdates</code>
+          <p className="mt-2 text-muted-foreground">Procure por <code>message.chat.id</code> ou <code>channel_post.chat.id</code>. Em grupos e canais, o número normalmente começa com sinal negativo, como <code>-1001234567890</code>.</p>
+        </TutorialStep>
+        <TutorialStep number="5" title="Salve e valide">
+          Cole o número encontrado no campo <strong>Chat ID</strong>, ative o canal e clique em <strong>Salvar Telegram</strong>. Em seguida, use <strong>Enviar teste</strong>. A mensagem deverá chegar imediatamente ao destino escolhido.
+        </TutorialStep>
+        <Alert><ShieldCheck /><AlertTitle>Proteja o token do bot</AlertTitle><AlertDescription>Não envie o token por e-mail ou mensageria e não deixe a página getUpdates aberta em computador compartilhado. Se houver exposição, gere um novo token pelo BotFather e substitua-o no SAGEP.</AlertDescription></Alert>
+      </div>
+    </DialogContent>
+  </Dialog>
+}
+
+function TutorialStep({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
+  return <section className="grid grid-cols-[2rem_1fr] gap-3"><span className="flex size-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{number}</span><div><h3 className="font-semibold">{title}</h3><div className="mt-1 leading-6 text-muted-foreground">{children}</div></div></section>
+}
+
+const weekdayOptions = [{ value: 1, label: "Seg" }, { value: 2, label: "Ter" }, { value: 3, label: "Qua" }, { value: 4, label: "Qui" }, { value: 5, label: "Sex" }, { value: 6, label: "Sáb" }, { value: 0, label: "Dom" }]
+
+function AutomationCard({ overview, emailLists, canManage }: { overview: NotificationAutomationOverview; emailLists: EmailList[]; canManage: boolean }) {
+  const client = useQueryClient()
+  const config = overview.configuration
+  const [form, setForm] = useState<NotificationAutomationInput>({
+    enabled: config.enabled, timeZone: config.timeZone, hour: config.hour, minute: config.minute, weekdays: config.weekdays,
+    syncTrackedCommitments: config.syncTrackedCommitments, discoverCommitments: config.discoverCommitments, syncAtaBalances: config.syncAtaBalances,
+    managementUnits: config.managementUnits, emailEnabled: config.emailEnabled, telegramEnabled: config.telegramEnabled,
+    emailListIds: config.emailListIds, notifyRoles: config.notifyRoles, maxDiscoveryPages: config.maxDiscoveryPages,
+  })
+  const refresh = async () => client.invalidateQueries({ queryKey: ["notification-automation"] })
+  const save = useMutation({ mutationFn: () => notificationSettingsService.saveAutomation(form), onSuccess: async () => { await refresh(); toast.success("Automação salva.") }, onError: (error) => toast.error(error.message) })
+  const run = useMutation({ mutationFn: notificationSettingsService.runAutomation, onSuccess: async () => { await refresh(); toast.success("Verificação iniciada em segundo plano. Acompanhe pelo histórico.") }, onError: (error) => toast.error(error.message) })
+  const time = `${String(form.hour).padStart(2, "0")}:${String(form.minute).padStart(2, "0")}`
+  const toggle = <T,>(items: T[], value: T, checked: boolean) => checked ? [...new Set([...items, value])] : items.filter((item) => item !== value)
+  return <Card>
+    <CardHeader><CardTitle className="flex items-center gap-2"><Clock3 className="size-5" />Rotina automática</CardTitle><CardDescription>Varre NEs e saldos oficiais, registra eventos sem repetição e envia um resumo pelos canais habilitados.</CardDescription></CardHeader>
+    <CardContent className="space-y-5">
+      <label className="flex items-center gap-3 rounded-lg border p-3 text-sm"><input type="checkbox" disabled={!canManage} checked={form.enabled} onChange={(event) => setForm({ ...form, enabled: event.target.checked })} />Ativar execução agendada</label>
+      <div className="grid gap-4 md:grid-cols-3"><div className="space-y-2"><Label>Horário</Label><Input type="time" disabled={!canManage} value={time} onChange={(event) => { const [hour, minute] = event.target.value.split(":").map(Number); setForm({ ...form, hour: hour ?? 7, minute: minute ?? 0 }) }} /></div><Field label="Fuso horário" value={form.timeZone} onChange={(timeZone) => setForm({ ...form, timeZone })} /><Field label="UASGs (separadas por vírgula)" value={form.managementUnits.join(", ")} onChange={(value) => setForm({ ...form, managementUnits: [...new Set(value.split(/[,;\s]+/).map((item) => item.trim()).filter(Boolean))] })} /></div>
+      <div><Label>Dias da semana</Label><div className="mt-2 flex flex-wrap gap-3">{weekdayOptions.map((day) => <label key={day.value} className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={!canManage} checked={form.weekdays.includes(day.value)} onChange={(event) => setForm({ ...form, weekdays: toggle(form.weekdays, day.value, event.target.checked) })} />{day.label}</label>)}</div></div>
+      <div className="grid gap-3 md:grid-cols-3">{[
+        ["syncTrackedCommitments", "Atualizar liquidação e pagamento"], ["discoverCommitments", "Buscar novas NEs no radar"], ["syncAtaBalances", "Atualizar snapshots das ATAs"],
+      ].map(([key, label]) => <label key={key} className="flex items-center gap-3 rounded-lg border p-3 text-sm"><input type="checkbox" disabled={!canManage} checked={Boolean(form[key as keyof NotificationAutomationInput])} onChange={(event) => setForm({ ...form, [key]: event.target.checked })} />{label}</label>)}</div>
+      <Alert><AlertTitle>Proteção do saldo operacional</AlertTitle><AlertDescription>A rotina das ATAs atualiza somente o snapshot oficial de consulta. Ela não aplica saldo de abertura nem movimenta o saldo operacional.</AlertDescription></Alert>
+      <div className="grid gap-5 lg:grid-cols-2"><div><Label>Canais do resumo</Label><div className="mt-2 flex gap-4"><label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={!canManage} checked={form.emailEnabled} onChange={(event) => setForm({ ...form, emailEnabled: event.target.checked })} />E-mail</label><label className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={!canManage} checked={form.telegramEnabled} onChange={(event) => setForm({ ...form, telegramEnabled: event.target.checked })} />Telegram</label></div><Label className="mt-4 block">Perfis internos</Label><div className="mt-2 flex flex-wrap gap-3">{roles.map((role) => <label key={role} className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={!canManage} checked={form.notifyRoles.includes(role)} onChange={(event) => setForm({ ...form, notifyRoles: toggle(form.notifyRoles, role, event.target.checked) })} />{role}</label>)}</div></div><div><Label>Listas de e-mail</Label><div className="mt-2 grid gap-2">{emailLists.filter((list) => list.active).map((list) => <label key={list.id} className="flex items-center gap-2 text-sm"><input type="checkbox" disabled={!canManage} checked={form.emailListIds.includes(list.id)} onChange={(event) => setForm({ ...form, emailListIds: toggle(form.emailListIds, list.id, event.target.checked) })} />{list.name} ({list.recipients.filter((item) => item.active).length})</label>)}{!emailLists.some((list) => list.active) && <p className="text-sm text-muted-foreground">Nenhuma lista ativa. Os perfis internos selecionados ainda podem receber e-mail.</p>}</div></div></div>
+      {canManage && <div className="flex flex-wrap gap-2"><Button onClick={() => save.mutate()} disabled={save.isPending}><Save />Salvar automação</Button><Button variant="outline" onClick={() => run.mutate()} disabled={run.isPending}><Play />{run.isPending ? "Verificando..." : "Executar agora"}</Button></div>}
+      <div className="grid gap-5 lg:grid-cols-2"><div><h3 className="font-semibold">Últimas execuções</h3><div className="mt-2 space-y-2">{overview.runs.slice(0, 5).map((item) => <div key={item.id} className="rounded-lg border p-3 text-sm"><div className="flex items-center justify-between gap-2"><strong>{item.trigger === "MANUAL" ? "Manual" : "Agendada"}</strong><Badge variant={item.status === "SUCCESS" ? "default" : item.status === "RUNNING" ? "outline" : "destructive"}>{item.status}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Date(item.startedAt).toLocaleString("pt-BR")}</p>{item.error && <p className="mt-2 line-clamp-2 text-xs text-destructive">{item.error}</p>}</div>)}{!overview.runs.length && <p className="text-sm text-muted-foreground">Ainda não houve execução.</p>}</div></div><div><h3 className="font-semibold">Eventos recentes</h3><div className="mt-2 space-y-2">{overview.events.slice(0, 5).map((item) => <div key={item.id} className="rounded-lg border p-3 text-sm"><strong>{item.title}</strong><p className="mt-1 text-xs text-muted-foreground">{item.description}</p><p className="mt-2 text-[11px] text-muted-foreground">{new Date(item.occurredAt).toLocaleString("pt-BR")} · E-mail {item.emailSentAt ? "enviado" : "não enviado"} · Telegram {item.telegramSentAt ? "enviado" : "não enviado"}</p></div>)}{!overview.events.length && <p className="text-sm text-muted-foreground">Nenhum evento novo registrado.</p>}</div></div></div>
+    </CardContent>
+  </Card>
+}
+
+function Field({ label, value, onChange, type = "text" }: { label: string; value: string; onChange: (value: string) => void; type?: string }) { return <div className="space-y-2"><Label>{label}</Label><Input type={type} value={value} onChange={(event) => onChange(event.target.value)} /></div> }

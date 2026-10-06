@@ -37,6 +37,7 @@ const AuditPage = lazy(() => import("@/features/audit/pages/audit-page").then((m
 const SystemHealthPage = lazy(() => import("@/features/system-health/pages/system-health-page").then((module) => ({ default: module.SystemHealthPage })))
 const FinancialExecutionPage = lazy(() => import("@/features/financial-execution/pages/financial-execution-page").then((module) => ({ default: module.FinancialExecutionPage })))
 const IntegrationsSettingsPage = lazy(() => import("@/features/system-settings/pages/integrations-settings-page").then((module) => ({ default: module.IntegrationsSettingsPage })))
+const NotificationSettingsPage = lazy(() => import("@/features/system-settings/pages/notification-settings-page").then((module) => ({ default: module.NotificationSettingsPage })))
 const BackupsPage = lazy(() => import("@/features/backups/pages/backups-page").then((module) => ({ default: module.BackupsPage })))
 const NetworkSettingsPage = lazy(() => import("@/features/deployment/pages/network-settings-page").then((module) => ({ default: module.NetworkSettingsPage })))
 const SetupPage = lazy(() => import("@/features/setup/pages/setup-page").then((module) => ({ default: module.SetupPage })))
@@ -263,6 +264,7 @@ export default function App() {
             }
           />
           <Route path="/settings/integrations" element={<PermissionRoute anyOf={["settings.view"]}><IntegrationsSettingsPage /></PermissionRoute>} />
+          <Route path="/settings/notifications" element={<PermissionRoute anyOf={["settings.view"]}><NotificationSettingsPage /></PermissionRoute>} />
           <Route path="/settings/backups" element={<PermissionRoute anyOf={["backups.manage"]}><BackupsPage /></PermissionRoute>} />
           <Route path="/settings/network" element={<PermissionRoute anyOf={["settings.view"]}><NetworkSettingsPage /></PermissionRoute>} />
           <Route path="/settings/text-corrections" element={<PermissionRoute anyOf={["settings.view"]}><TextCorrectionsSettingsPage /></PermissionRoute>} />

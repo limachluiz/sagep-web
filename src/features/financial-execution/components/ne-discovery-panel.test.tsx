@@ -39,7 +39,7 @@ describe("busca por ATA", () => {
     expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(3)
     fireEvent.click(screen.getByLabelText("Selecionar 2026NE000011"))
     fireEvent.click(screen.getByRole("button", { name: "Importar selecionadas (1)" }))
-    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/financial-execution/discovery/archive/160016000012026NE000011", { origin: "IMPORTED", replaceOrigin: undefined }))
+    await waitFor(() => expect(api.post).toHaveBeenCalledWith("/financial-execution/discovery/archive/160016000012026NE000011", { origin: "IMPORTED", replaceOrigin: undefined, attendedOmId: null, observation: null }))
     expect(vi.mocked(api.post).mock.calls.filter(([path]) => path.includes("/archive/"))).toHaveLength(1)
     fireEvent.change(screen.getByLabelText("Itens por página"), { target: { value: "20" } })
     expect(within(screen.getByRole("table")).getAllByRole("row")).toHaveLength(13)
