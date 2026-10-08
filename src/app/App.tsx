@@ -42,6 +42,7 @@ const BackupsPage = lazy(() => import("@/features/backups/pages/backups-page").t
 const NetworkSettingsPage = lazy(() => import("@/features/deployment/pages/network-settings-page").then((module) => ({ default: module.NetworkSettingsPage })))
 const SetupPage = lazy(() => import("@/features/setup/pages/setup-page").then((module) => ({ default: module.SetupPage })))
 const TextCorrectionsSettingsPage = lazy(() => import("@/features/text-corrections/pages/text-corrections-settings-page").then((module) => ({ default: module.TextCorrectionsSettingsPage })))
+const NotificationsPage = lazy(() => import("@/features/notifications/pages/notifications-page").then((module) => ({ default: module.NotificationsPage })))
 
 function PageFallback() {
   return <div className="space-y-5 p-4" role="status" aria-live="polite"><span className="sr-only">Carregando página</span><Skeleton className="h-8 w-64" /><Skeleton className="h-24 w-full" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div></div>
@@ -57,6 +58,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AuthenticatedLayout />}>
           <Route path="/inicio" element={<HomePage />} />
+          <Route path="/alerts" element={<NotificationsPage />} />
           <Route path="/user" element={<UserProfilePage />} />
           <Route
             path="/dashboard"

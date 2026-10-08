@@ -78,6 +78,12 @@ const navigation: NavigationGroup[] = [
     icon: LayoutDashboard,
     anyOf: ["dashboard.financial_view", "dashboard.view_operational", "dashboard.view_executive"],
   },
+  {
+    label: "Central de Alertas",
+    href: "/alerts",
+    icon: ShieldAlert,
+    anyOf: [],
+  },
   ]},
   { label: "Projetos", items: [
   {

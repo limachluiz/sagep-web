@@ -341,7 +341,7 @@ function DashboardContent({ data }: { data: DashboardOperationalResponse }) {
                   <AlertBadge alert={alert} />
                 </div>
                 <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Próxima ação: {alert.nextAction.label}</span>
+                  <span>{alert.nextAction ? `Próxima ação: ${alert.nextAction.label}` : "Abra o alerta para conferir os detalhes"}</span>
                   {alert.daysSinceUpdate !== undefined && <span>{alert.daysSinceUpdate} dias</span>}
                 </div>
               </Link>

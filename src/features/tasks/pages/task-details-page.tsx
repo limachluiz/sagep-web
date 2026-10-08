@@ -243,8 +243,11 @@ export function TaskDetailsPage() {
                 maxLength={4000}
                 aria-label="Novo andamento"
               />
+              <div className="mt-2 flex flex-wrap gap-2">
+                {[task.assignee, task.project.owner].filter((person, index, all) => person && all.findIndex((item) => item?.id === person.id) === index).map((person) => person && <Button key={person.id} type="button" variant="outline" size="sm" onClick={() => setProgressNote((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@USR-${person.userCode} `)}>Mencionar {person.name}</Button>)}
+              </div>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-muted-foreground">Se estiver pendente, a tarefa será iniciada automaticamente.</p>
+                <p className="text-xs text-muted-foreground">Se estiver pendente, a tarefa será iniciada automaticamente. Use @USR-código para mencionar alguém.</p>
                 <Button
                   onClick={() => activityMutation.mutate(progressNote.trim())}
                   disabled={progressNote.trim().length < 2 || activityMutation.isPending}

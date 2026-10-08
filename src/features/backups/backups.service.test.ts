@@ -42,6 +42,14 @@ describe("backupsService", () => {
     expect(api.postBlob).toHaveBeenCalledWith("/backups/export", { modules: ["PROJECTS", "ATAS"] })
   })
 
+  it("solicita os arquivos físicos das evidências em pacote separado", async () => {
+    vi.mocked(api.postBlob).mockResolvedValue(new Blob())
+
+    await backupsService.evidenceExport()
+
+    expect(api.postBlob).toHaveBeenCalledWith("/backups/evidence/export", {})
+  })
+
   it("envia a senha apenas no corpo da exportação da autoridade", async () => {
     vi.mocked(api.postBlob).mockResolvedValue(new Blob())
     await backupsService.exportAuthority("senha extensa e exclusiva da autoridade")

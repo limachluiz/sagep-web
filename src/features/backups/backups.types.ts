@@ -1,6 +1,7 @@
 export type BackupKind = "MANUAL" | "AUTOMATIC" | "IMPORTED" | "SAFETY"
 
 export type DatabaseBackup = {
+  manifestVersion?: number
   id: string
   kind: BackupKind
   filename: string
@@ -12,6 +13,9 @@ export type DatabaseBackup = {
   databaseName: string
   format: "POSTGRES_CUSTOM"
   verified: boolean
+  coverage?: "FULL_DATABASE"
+  schemaVersion?: string | null
+  tableCount?: number
 }
 
 export type BackupsOverview = {
@@ -29,6 +33,12 @@ export type BackupsOverview = {
     scheduleHours: number
     runOnStartup: boolean
     maxUploadMb: number
+  }
+  coverage: {
+    database: { included: true; mode: "FULL_DATABASE"; currentTableCount: number; detail: string }
+    evidenceFiles: { included: false; detail: string }
+    certificateAuthority: { included: false; detail: string }
+    runtimeSecrets: { included: false; detail: string }
   }
   operationRunning: boolean
 }

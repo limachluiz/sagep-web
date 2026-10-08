@@ -13,6 +13,7 @@ export type NotificationAutomationConfiguration = {
   syncTrackedCommitments: boolean; discoverCommitments: boolean; syncAtaBalances: boolean
   managementUnits: string[]; emailEnabled: boolean; telegramEnabled: boolean
   emailListIds: string[]; notifyRoles: NotificationRole[]; maxDiscoveryPages: number
+  taskDueDays: number; projectStaleDays: number; ataExpiryDays: number
   lastScheduledKey: string | null; updatedAt: string
 }
 export type NotificationAutomationRun = { id: string; trigger: string; status: "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED" | "SKIPPED"; startedAt: string; finishedAt: string | null; summary: unknown; error: string | null }

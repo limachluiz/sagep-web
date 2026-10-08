@@ -9,6 +9,7 @@ export const backupsService = {
   remove: (id: string) => api.delete<{ message: string; id: string }>(`/backups/${id}`),
   restore: (id: string) => api.post<RestoreBackupResponse>(`/backups/${id}/restore`, { confirmation: "RESTAURAR BANCO" }),
   selectiveExport: (modules: SelectiveExportModule[]) => api.postBlob("/backups/export", { modules }),
+  evidenceExport: () => api.postBlob("/backups/evidence/export", {}),
   exportAuthority: (passphrase: string) => api.postBlob("/deployment/certificate/authority/export", { passphrase, passphraseConfirmation: passphrase }),
   restoreAuthority: (archiveBase64: string, passphrase: string) => api.post<RestoreAuthorityResponse>("/deployment/certificate/authority/restore", {
     archiveBase64,
