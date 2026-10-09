@@ -60,6 +60,12 @@ export type CommitmentNote = {
     grossAmount: number
     attestedAmount: number | null
     attestedAt: string | null
+    source?: "MANUAL" | "XML"
+    conferenceStatus?: "PENDING" | "CONFERRED" | "DIVERGENT"
+    issuedAt?: string
+    issuerName?: string | null
+    xmlChecksumSha256?: string | null
+    itemCount?: number | null
   }>
   _count?: { documents: number; invoices: number }
 }

@@ -50,4 +50,20 @@ export const financialExecutionService = {
   }) {
     return api.post<{ invoice: unknown; warnings: string[] }>("/financial-execution/invoices", payload)
   },
+
+  previewInvoiceXml(payload: { projectId: string; commitmentNoteId: string; xmlBase64: string; notes?: string }) {
+    return api.post<NfeXmlPreview>("/financial-execution/invoices/xml/preview", payload)
+  },
+
+  importInvoiceXml(payload: { projectId: string; commitmentNoteId: string; xmlBase64: string; attestedAt?: string; documentLink?: string; notes?: string }) {
+    return api.post<NfeXmlPreview & { invoice: unknown }>("/financial-execution/invoices/xml/import", payload)
+  },
+}
+
+export type NfeXmlPreview = {
+  summary: { number: string; series: string | null; accessKey: string; supplierCnpj: string; issuerName: string | null; recipientCnpj: string | null; issuedAt: string; grossAmount: number; itemCount: number; authorizationStatus: string | null; authorizationProtocol: string | null; hasXmlSignature: boolean; xmlChecksumSha256: string }
+  conferenceStatus: "CONFERRED" | "DIVERGENT"
+  divergences: string[]
+  warnings: string[]
+  duplicate: { id: string; invoiceCode: number; projectId: string; accessKey: string | null } | null
 }

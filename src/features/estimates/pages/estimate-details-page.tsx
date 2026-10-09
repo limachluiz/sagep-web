@@ -42,6 +42,7 @@ import type { EstimateStatus } from "@/features/estimates/estimates.types"
 import { EstimateEditDialog } from "@/features/estimates/components/estimate-edit-dialog"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { openPdfPreview } from "@/lib/pdf-preview"
+import { DocumentVersionHistory } from "@/features/document-versions/document-version-history"
 
 const statusLabels: Record<EstimateStatus, string> = {
   RASCUNHO: "Rascunho",
@@ -380,6 +381,8 @@ export function EstimateDetailsPage() {
           }}
         />
       )}
+
+      <DocumentVersionHistory entityType="ESTIMATE" entityId={estimate.id} documentType="ESTIMATE_PDF" />
 
       <Dialog open={Boolean(statusConfirmation)} onOpenChange={(open) => !open && setStatusConfirmation(null)}>
         <DialogContent>

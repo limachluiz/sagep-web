@@ -18,6 +18,7 @@ import { EditDiexDialog } from "@/features/diex/components/edit-diex-dialog"
 import { useAuthStore } from "@/features/auth/auth.store"
 import { invalidateProjectFlow } from "@/features/projects/project-flow-cache"
 import { openPdfPreview } from "@/lib/pdf-preview"
+import { DocumentVersionHistory } from "@/features/document-versions/document-version-history"
 
 function formatCurrency(value: string) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number(value)) }
 function formatQuantity(value: string) { return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 }).format(Number(value)) }
@@ -149,6 +150,7 @@ export function DiexDetailsPage() {
     </div>
 
     <Card className="border-none shadow-sm"><CardHeader className="flex flex-row items-center justify-between"><CardTitle>Itens requisitados</CardTitle><Badge variant="outline">{diex.items.length} item(ns)</Badge></CardHeader><CardContent><DocumentItemsTable containerLabel="Itens requisitados do DIEx" items={diex.items.map((item) => ({ id: item.id, code: item.itemCode, description: item.description, unit: item.supplyUnit, quantity: formatQuantity(item.quantityRequested), unitPrice: formatCurrency(item.unitPrice), totalPrice: formatCurrency(item.totalPrice) }))} /><div className="mt-5 flex justify-end border-t pt-5"><div className="text-right"><p className="text-sm text-muted-foreground">Total do DIEx</p><p className="text-2xl font-semibold">{formatCurrency(diex.totalAmount)}</p></div></div></CardContent></Card>
+    <DocumentVersionHistory entityType="DIEX_REQUEST" entityId={diex.id} documentType="DIEX_PDF" />
     {completeOpen && <CompleteDiexDialog diex={diex} open={completeOpen} onOpenChange={setCompleteOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId], updated); invalidateProjectFlow(queryClient) }} />}
     {editOpen && <EditDiexDialog diex={diex} open={editOpen} onOpenChange={setEditOpen} onSaved={(updated) => { queryClient.setQueryData(["diex", "details", diexId, includeArchived], updated); invalidateProjectFlow(queryClient) }} />}
     <ArchiveActionDialog open={archiveDialogOpen} onOpenChange={setArchiveDialogOpen} mode={diex.archivedAt ? "restore" : "archive"} entityLabel="DIEx" entityCode={diex.diexNumber ?? `DIEX-${diex.diexCode}`} description={diex.archivedAt ? "O documento voltará ao fluxo ativo do projeto." : "A reserva de saldo será liberada e o projeto retornará à etapa documental anterior. A ação é bloqueada quando existe OS ativa vinculada."} pending={archiveMutation.isPending || restoreMutation.isPending} onConfirm={() => diex.archivedAt ? restoreMutation.mutate() : archiveMutation.mutate()} />
