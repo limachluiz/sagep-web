@@ -41,8 +41,12 @@ export const tasksService = {
     return api.patch<Task>(`/tasks/${taskId}/status`, { status })
   },
 
-  addActivity(taskId: string, content: string) {
-    return api.post<Task>(`/tasks/${taskId}/activities`, { content })
+  addActivity(taskId: string, content: string, mentionedUserIds: string[] = []) {
+    return api.post<Task>(`/tasks/${taskId}/activities`, { content, mentionedUserIds })
+  },
+
+  mentionCandidates(projectId: string, search = "") {
+    return api.get<Array<{ id: string; userCode: number; name: string; warName: string | null; email: string; role: string }>>(`/notifications/mention-candidates?projectId=${encodeURIComponent(projectId)}&search=${encodeURIComponent(search)}`)
   },
 
   complete(taskId: string, content?: string) {

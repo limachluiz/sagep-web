@@ -80,6 +80,8 @@ export function TaskDetailsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [completeOpen, setCompleteOpen] = useState(false)
   const [progressNote, setProgressNote] = useState("")
+  const [mentionSearch, setMentionSearch] = useState("")
+  const [mentionedUserIds, setMentionedUserIds] = useState<string[]>([])
   const [completionNote, setCompletionNote] = useState("")
 
   const query = useQuery({
@@ -87,6 +89,7 @@ export function TaskDetailsPage() {
     queryFn: () => tasksService.details(taskId, includeArchived),
     enabled: Boolean(taskId),
   })
+  const mentionCandidates = useQuery({ queryKey: ["mention-candidates", query.data?.project.id, mentionSearch], queryFn: () => tasksService.mentionCandidates(query.data!.project.id, mentionSearch), enabled: Boolean(query.data?.project.id) })
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ["tasks"] })
@@ -113,10 +116,12 @@ export function TaskDetailsPage() {
     onError: (error) => toast.error(error.message),
   })
   const activityMutation = useMutation({
-    mutationFn: (content: string) => tasksService.addActivity(taskId, content),
+    mutationFn: (content: string) => tasksService.addActivity(taskId, content, mentionedUserIds),
     onSuccess: (task) => {
       queryClient.setQueryData(["tasks", "details", taskId, includeArchived], task)
       setProgressNote("")
+      setMentionedUserIds([])
+      setMentionSearch("")
       toast.success("Andamento registrado com data e hora.")
       invalidate()
     },
@@ -244,10 +249,11 @@ export function TaskDetailsPage() {
                 aria-label="Novo andamento"
               />
               <div className="mt-2 flex flex-wrap gap-2">
-                {[task.assignee, task.project.owner].filter((person, index, all) => person && all.findIndex((item) => item?.id === person.id) === index).map((person) => person && <Button key={person.id} type="button" variant="outline" size="sm" onClick={() => setProgressNote((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@USR-${person.userCode} `)}>Mencionar {person.name}</Button>)}
+                <input className="h-9 min-w-52 rounded-md border bg-background px-3 text-sm" value={mentionSearch} onChange={(event) => setMentionSearch(event.target.value)} placeholder="Buscar pessoa para mencionar" />
+                {mentionCandidates.data?.map((person) => <Button key={person.id} type="button" variant={mentionedUserIds.includes(person.id) ? "default" : "outline"} size="sm" onClick={() => { setMentionedUserIds((current) => current.includes(person.id) ? current.filter((id) => id !== person.id) : [...current, person.id]); if (!mentionedUserIds.includes(person.id)) setProgressNote((current) => `${current}${current && !current.endsWith(" ") ? " " : ""}@USR-${person.userCode} `) }}>{person.warName || person.name} · USR-{person.userCode}</Button>)}
               </div>
               <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-muted-foreground">Se estiver pendente, a tarefa será iniciada automaticamente. Use @USR-código para mencionar alguém.</p>
+                <p className="text-xs text-muted-foreground">Se estiver pendente, a tarefa será iniciada automaticamente. Só aparecem integrantes do projeto e perfis gestores autorizados.</p>
                 <Button
                   onClick={() => activityMutation.mutate(progressNote.trim())}
                   disabled={progressNote.trim().length < 2 || activityMutation.isPending}
