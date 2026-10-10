@@ -84,6 +84,8 @@ export function CreateServiceOrderDialog({ details, open, onOpenChange, onCreate
   }
 
   useEffect(() => {
+    // Populate the editable form when its selected DIEx changes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (open && selectedDiex) applyDefaults(selectedDiex)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, diexId])

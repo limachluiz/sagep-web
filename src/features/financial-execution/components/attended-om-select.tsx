@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components -- hook and formatter belong to this field component */
 import { useMemo, useState } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { Check, ChevronsUpDown, Search } from "lucide-react"
@@ -31,7 +32,7 @@ export function AttendedOmSelect({ value, onChange, disabled, ariaLabel, classNa
   const [stateUf, setStateUf] = useState("")
   const [city, setCity] = useState("")
   const [search, setSearch] = useState("")
-  const options = Array.isArray(query.data) ? query.data : []
+  const options = useMemo(() => Array.isArray(query.data) ? query.data : [], [query.data])
   const selected = options.find((organization) => organization.id === value)
   const states = useMemo(() => [...new Set(options.map((organization) => organization.stateUf))].sort((a, b) => a.localeCompare(b, "pt-BR")), [options])
   const cities = useMemo(() => [...new Set(options.filter((organization) => !stateUf || organization.stateUf === stateUf).map((organization) => organization.cityName))].sort((a, b) => a.localeCompare(b, "pt-BR")), [options, stateUf])

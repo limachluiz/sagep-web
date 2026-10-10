@@ -1,5 +1,5 @@
 import { api } from "@/lib/api"
-import type { BackupsOverview, DatabaseBackup, RestoreAuthorityResponse, RestoreBackupResponse, SelectiveExportModule } from "./backups.types"
+import type { BackupsOverview, DatabaseBackup, EvidenceAnalysis, RestoreAuthorityResponse, RestoreBackupResponse, SelectiveExportModule } from "./backups.types"
 
 export const backupsService = {
   list: () => api.get<BackupsOverview>("/backups"),
@@ -10,6 +10,8 @@ export const backupsService = {
   restore: (id: string) => api.post<RestoreBackupResponse>(`/backups/${id}/restore`, { confirmation: "RESTAURAR BANCO" }),
   selectiveExport: (modules: SelectiveExportModule[]) => api.postBlob("/backups/export", { modules }),
   evidenceExport: () => api.postBlob("/backups/evidence/export", {}),
+  evidenceAnalyze: (file: File) => api.upload<EvidenceAnalysis>("/backups/evidence/analyze", file, file.name),
+  evidenceRestore: (id: string) => api.post<{ message: string; fileCount: number }>(`/backups/evidence/${id}/restore`, { confirmation: "RESTAURAR EVIDÊNCIAS" }),
   exportAuthority: (passphrase: string) => api.postBlob("/deployment/certificate/authority/export", { passphrase, passphraseConfirmation: passphrase }),
   restoreAuthority: (archiveBase64: string, passphrase: string) => api.post<RestoreAuthorityResponse>("/deployment/certificate/authority/restore", {
     archiveBase64,

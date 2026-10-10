@@ -61,3 +61,16 @@ export type RestoreAuthorityResponse = {
   trustRedistributionRequired: boolean
   recoveryFilename: string | null
 }
+
+export type EvidenceAnalysis = {
+  id: string
+  checksumSha256: string
+  createdAt: string
+  expiresAt: string
+  fileCount: number
+  totalBytes: number
+  missing: string[]
+  orphaned: string[]
+  conflicts: string[]
+  restorable: boolean
+}

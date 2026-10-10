@@ -7,7 +7,7 @@ import { UnifiedPortfolio } from "./unified-portfolio"
 vi.mock("@/lib/api", () => ({ api: { get: vi.fn(), post: vi.fn() } }))
 vi.mock("@/features/auth/auth.store", () => ({ useAuthStore: (select: (s: unknown) => unknown) => select({ hasPermission: () => true }) }))
 const row = (i: number, supplierName = "Fornecedor", status = "A_CONFERIR") => ({ externalCode: `160016000012026NE${String(i).padStart(6,"0")}`, number: `2026NE${String(i).padStart(6,"0")}`, origin: "IMPORTED", supplierName, current: 100, liquidated: null as number | null, paid: null as number | null, status, updatedAt: "2026-09-16T12:00:00Z", project: null })
-const portfolio = (rows = [row(1)]) => ({ total: rows.length, totals: { committed: rows.length * 100, liquidated: 0, paid: 0, pending: rows.length }, coverage: { committed: rows.length, liquidated: 0, paid: 0 }, diagnostics: { partialLiquidations: 0, partialPayments: 0 }, rows })
+const portfolio = (rows = [row(1)]) => ({ total: rows.length, totals: { committed: rows.length * 100, liquidated: 0, paid: 0, pending: rows.length }, coverage: { committed: rows.length, liquidated: 0, paid: 0 }, diagnostics: { partialLiquidations: 0, partialPayments: 0 }, reconciliation: { confirmed: 0, appliedToBalance: 0, allocatedAmount: 0 }, rows })
 const mount = () => render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}><MemoryRouter><UnifiedPortfolio /></MemoryRouter></QueryClientProvider>)
 beforeEach(() => vi.resetAllMocks())
 describe("carteira consolidada", () => {
@@ -16,7 +16,9 @@ describe("carteira consolidada", () => {
     mount()
     expect(await screen.findByText(/Carteira consolidada · 1 NEs únicas/)).toBeInTheDocument()
     expect(screen.getByText(/UG 160016 · Importada/)).toBeInTheDocument()
-    expect(screen.getAllByText("Não informado")).toHaveLength(4)
+    expect(screen.getByText("Não liquidado")).toBeInTheDocument()
+    expect(screen.getByText("Não pago")).toBeInTheDocument()
+    expect(screen.getAllByText("Não informado")).toHaveLength(2)
     expect(screen.getByText("1 de 1 NEs com valor utilizável")).toBeInTheDocument()
     expect(within(screen.getByRole("table")).getByText("A conferir")).toBeInTheDocument()
   })
@@ -66,6 +68,16 @@ describe("carteira consolidada", () => {
     await waitFor(() => expect(api.get).toHaveBeenCalledWith("/financial-execution/commitment-notes/note-one"))
     expect(await screen.findByText("Situação: Parcialmente paga")).toBeInTheDocument()
     expect(screen.getByText(/UG 160016 · Projeto/)).toBeInTheDocument()
+  })
+
+  it("shows the confirmed project, ATA and balance impact of an assisted reconciliation", async () => {
+    const reconciled = { ...row(1), reconciliation: { id: "rec-1", confidenceScore: 96, applyToBalance: true, confirmedAt: "2026-10-10T12:00:00Z", project: { id: "project-1", projectCode: 17, title: "Enlace Norte" }, ata: { id: "ata-1", number: "ARP 00093/2025", vendorName: "Fornecedor", type: "FIBRA_OPTICA" }, allocations: [{ ataItemId: "item-1", referenceCode: "00001", description: "Ponto lógico", quantity: 1, unitPrice: 100, totalAmount: 100 }], totalAmount: 100 } }
+    vi.mocked(api.get).mockResolvedValue({ ...portfolio([reconciled]), reconciliation: { confirmed: 1, appliedToBalance: 1, allocatedAmount: 100 } })
+    mount()
+    expect(await screen.findByText("PRJ-17")).toBeInTheDocument()
+    expect(screen.getByText(/ATA ARP 00093\/2025 · 1 item/)).toBeInTheDocument()
+    expect(screen.getByText(/Consumo aplicado ao saldo · confiança 96%/)).toBeInTheDocument()
+    expect(screen.getByText(/1 com saldo aplicado/)).toBeInTheDocument()
   })
 
 })

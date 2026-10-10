@@ -79,7 +79,7 @@ describe("consulta de NE avulsa", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent("Duplicidade")
     expect(api.post).toHaveBeenCalledTimes(1)
     fireEvent.click(screen.getByRole("button", { name: "Excluir cópia importada e manter avulsa" }))
-    await waitFor(() => expect(api.post).toHaveBeenLastCalledWith(`/financial-execution/discovery/archive/${code}`, { origin: "STANDALONE", replaceOrigin: "IMPORTED" }))
+    await waitFor(() => expect(api.post).toHaveBeenLastCalledWith(`/financial-execution/discovery/archive/${code}`, { origin: "STANDALONE", replaceOrigin: "IMPORTED", attendedOmId: null, observation: null }))
   })
 
 })

@@ -18,7 +18,7 @@ import { SettingsNavigation } from "@/features/system-health/components/settings
 import { cn } from "@/lib/utils"
 import { backupsService } from "../backups.service"
 import { AuthorityBackupCard } from "../components/authority-backup-card"
-import type { DatabaseBackup as Backup, BackupKind, SelectiveExportModule } from "../backups.types"
+import type { DatabaseBackup as Backup, BackupKind, EvidenceAnalysis, SelectiveExportModule } from "../backups.types"
 
 const kindMeta: Record<BackupKind, { label: string; className: string }> = {
   MANUAL: { label: "Manual", className: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300" },
@@ -61,9 +61,12 @@ export function BackupsPage() {
   const queryClient = useQueryClient()
   const logout = useAuthStore((state) => state.logout)
   const fileInput = useRef<HTMLInputElement>(null)
+  const evidenceInput = useRef<HTMLInputElement>(null)
   const [restoreTarget, setRestoreTarget] = useState<Backup | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Backup | null>(null)
   const [confirmation, setConfirmation] = useState("")
+  const [evidenceAnalysis, setEvidenceAnalysis] = useState<EvidenceAnalysis | null>(null)
+  const [evidenceConfirmation, setEvidenceConfirmation] = useState("")
   const [selectedModules, setSelectedModules] = useState<SelectiveExportModule[]>(["PROJECTS", "ATAS"])
   const query = useQuery({ queryKey: ["backups"], queryFn: backupsService.list })
 
@@ -109,6 +112,16 @@ export function BackupsPage() {
     },
     onError: (error) => toast.error(error.message),
   })
+  const evidenceAnalyzeMutation = useMutation({
+    mutationFn: backupsService.evidenceAnalyze,
+    onSuccess: (analysis) => { setEvidenceAnalysis(analysis); setEvidenceConfirmation(""); toast.success("Pacote analisado com segurança.") },
+    onError: (error) => toast.error(error.message),
+  })
+  const evidenceRestoreMutation = useMutation({
+    mutationFn: backupsService.evidenceRestore,
+    onSuccess: (response) => { toast.success(response.message); setEvidenceAnalysis(null); setEvidenceConfirmation("") },
+    onError: (error) => toast.error(error.message),
+  })
 
   const download = async (backup: Backup) => {
     try { saveBlob(await backupsService.download(backup.id), backup.filename) }
@@ -131,7 +144,7 @@ export function BackupsPage() {
   if (query.isLoading) return <div className="space-y-6"><SettingsNavigation /><Skeleton className="h-24" /><div className="grid gap-4 md:grid-cols-3"><Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" /></div><Skeleton className="h-80" /></div>
   if (query.isError || !query.data) return <Alert variant="destructive"><ShieldAlert /><AlertTitle>Não foi possível carregar os backups</AlertTitle><AlertDescription>{query.error?.message ?? "Falha desconhecida"}</AlertDescription></Alert>
   const data = query.data
-  const busy = createMutation.isPending || importMutation.isPending || restoreMutation.isPending || evidenceExportMutation.isPending || data.operationRunning
+  const busy = createMutation.isPending || importMutation.isPending || restoreMutation.isPending || evidenceExportMutation.isPending || evidenceAnalyzeMutation.isPending || evidenceRestoreMutation.isPending || data.operationRunning
 
   return <div className="space-y-6">
     <SettingsNavigation />
@@ -148,11 +161,14 @@ export function BackupsPage() {
 
     <Card><CardHeader><CardTitle className="flex items-center gap-2"><FileDown className="size-5" />Exportação seletiva</CardTitle><CardDescription>Gere um arquivo SQL somente com os módulos necessários. Esta opção é indicada para conferência, custódia ou migração assistida.</CardDescription></CardHeader><CardContent className="space-y-5"><div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{exportOptions.map((option) => { const checked = selectedModules.includes(option.id); return <label key={option.id} className={cn("flex cursor-pointer gap-3 rounded-lg border p-4 transition-colors", checked && "border-primary/40 bg-primary/5")}><input type="checkbox" checked={checked} onChange={() => setSelectedModules((current) => checked ? current.filter((item) => item !== option.id) : [...current, option.id])} /><span><span className="block text-sm font-medium">{option.label}</span><span className="mt-1 block text-xs text-muted-foreground">{option.description}</span></span></label> })}</div><Button variant="outline" disabled={!selectedModules.length || exportMutation.isPending || busy} onClick={() => exportMutation.mutate()}>{exportMutation.isPending ? <RefreshCw className="animate-spin" /> : <Download />}Exportar módulos selecionados</Button></CardContent></Card>
 
+    <Card><CardHeader><CardTitle className="flex items-center gap-2"><ArchiveRestore className="size-5" />Restaurar evidências físicas</CardTitle><CardDescription>Envie o .tar.gz para analisar arquivos ausentes, órfãos, conflitantes e entradas inseguras antes de alterar o volume.</CardDescription></CardHeader><CardContent><input ref={evidenceInput} type="file" accept=".tar.gz,application/gzip" className="hidden" onChange={(event) => { const file = event.target.files?.[0]; if (file) evidenceAnalyzeMutation.mutate(file); event.currentTarget.value = "" }} /><Button variant="outline" disabled={busy} onClick={() => evidenceInput.current?.click()}>{evidenceAnalyzeMutation.isPending ? <RefreshCw className="animate-spin" /> : <Upload />}Selecionar e analisar .tar.gz</Button></CardContent></Card>
+
     <AuthorityBackupCard />
 
     <Card><CardHeader><CardTitle>Histórico de backups</CardTitle><CardDescription>Arquivos disponíveis para download ou restauração integral do banco. O download exige confirmação recente da sua senha e uma nova verificação de integridade.</CardDescription></CardHeader><CardContent>{data.items.length === 0 ? <div className="rounded-lg border border-dashed p-10 text-center"><FileArchive className="mx-auto size-9 text-muted-foreground" /><p className="mt-3 font-medium">Nenhum backup disponível</p><p className="mt-1 text-sm text-muted-foreground">Crie a primeira cópia para proteger os dados do SAGEP.</p></div> : <div className="overflow-x-auto"><Table><TableHeader><TableRow><TableHead>Backup</TableHead><TableHead>Tipo</TableHead><TableHead>Criado em</TableHead><TableHead>Cobertura</TableHead><TableHead>Tamanho</TableHead><TableHead>Integridade</TableHead><TableHead className="text-right">Ações</TableHead></TableRow></TableHeader><TableBody>{data.items.map((backup) => <TableRow key={backup.id}><TableCell><p className="font-medium">{backup.filename}</p><p className="text-xs text-muted-foreground">{backup.originalFilename ? `Origem: ${backup.originalFilename}` : backup.createdBy ?? "Rotina do sistema"}</p></TableCell><TableCell><Badge variant="outline" className={kindMeta[backup.kind].className}>{kindMeta[backup.kind].label}</Badge></TableCell><TableCell>{new Date(backup.createdAt).toLocaleString("pt-BR")}</TableCell><TableCell><p className="text-xs font-medium">Banco completo</p><p className="text-xs text-muted-foreground">{backup.tableCount ? `${backup.tableCount} tabelas` : "Formato anterior"}{backup.schemaVersion ? ` · ${backup.schemaVersion}` : ""}</p></TableCell><TableCell>{formatBytes(backup.sizeBytes)}</TableCell><TableCell><span className="inline-flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-300"><CheckCircle2 className="size-4" />SHA-256 verificado</span></TableCell><TableCell><div className="flex justify-end gap-1"><Button size="icon-sm" variant="ghost" title="Baixar" onClick={() => void download(backup)}><Download /></Button><Button size="icon-sm" variant="ghost" title="Restaurar" onClick={() => { setRestoreTarget(backup); setConfirmation("") }} disabled={busy}><ArchiveRestore /></Button><Button size="icon-sm" variant="ghost" title="Excluir" className="text-destructive" disabled={busy || removeMutation.isPending} onClick={() => setDeleteTarget(backup)}><Trash2 /></Button></div></TableCell></TableRow>)}</TableBody></Table></div>}</CardContent></Card>
 
     <Dialog open={Boolean(restoreTarget)} onOpenChange={(open) => { if (!open && !restoreMutation.isPending) setRestoreTarget(null) }}><DialogContent><DialogHeader><DialogTitle className="flex items-center gap-2 text-destructive"><ShieldAlert className="size-5" />Restaurar banco de dados</DialogTitle><DialogDescription>Esta operação substituirá integralmente os dados atuais pelos dados de <strong>{restoreTarget?.filename}</strong>. Uma cópia de segurança será criada antes da restauração.</DialogDescription></DialogHeader><Alert variant="destructive"><ShieldAlert /><AlertTitle>Operação crítica</AlertTitle><AlertDescription>Usuários conectados poderão perder a sessão. Após a conclusão, você será direcionado novamente ao login.</AlertDescription></Alert><div className="space-y-2"><Label htmlFor="restore-confirmation">Digite RESTAURAR BANCO para confirmar</Label><Input id="restore-confirmation" value={confirmation} onChange={(event) => setConfirmation(event.target.value)} autoComplete="off" /></div><DialogFooter><Button variant="outline" onClick={() => setRestoreTarget(null)} disabled={restoreMutation.isPending}>Cancelar</Button><Button variant="destructive" disabled={confirmation !== "RESTAURAR BANCO" || restoreMutation.isPending} onClick={() => restoreTarget && restoreMutation.mutate(restoreTarget)}>{restoreMutation.isPending ? <RefreshCw className="animate-spin" /> : <ArchiveRestore />}Restaurar definitivamente</Button></DialogFooter></DialogContent></Dialog>
     <ConfirmationDialog open={Boolean(deleteTarget)} onOpenChange={(open) => !open && setDeleteTarget(null)} title="Excluir backup definitivamente?" description={deleteTarget ? `O arquivo ${deleteTarget.filename} será removido do armazenamento persistente e não poderá ser utilizado em uma restauração.` : "O backup será excluído."} confirmLabel="Excluir backup" variant="destructive" pending={removeMutation.isPending} onConfirm={() => deleteTarget && removeMutation.mutate(deleteTarget.id)} />
+    <Dialog open={Boolean(evidenceAnalysis)} onOpenChange={(open) => { if (!open && !evidenceRestoreMutation.isPending) setEvidenceAnalysis(null) }}><DialogContent className="max-w-xl"><DialogHeader><DialogTitle>Análise das evidências</DialogTitle><DialogDescription>A restauração é atômica e reverte automaticamente o volume em caso de falha.</DialogDescription></DialogHeader>{evidenceAnalysis && <div className="space-y-4"><div className="grid grid-cols-2 gap-3 text-sm"><div className="rounded-lg border p-3"><strong>{evidenceAnalysis.fileCount}</strong><p className="text-muted-foreground">arquivos · {formatBytes(evidenceAnalysis.totalBytes)}</p></div><div className="rounded-lg border p-3"><strong>{evidenceAnalysis.conflicts.length}</strong><p className="text-muted-foreground">conflitos existentes</p></div><div className="rounded-lg border p-3"><strong>{evidenceAnalysis.missing.length}</strong><p className="text-muted-foreground">arquivos ausentes</p></div><div className="rounded-lg border p-3"><strong>{evidenceAnalysis.orphaned.length}</strong><p className="text-muted-foreground">arquivos órfãos</p></div></div>{!evidenceAnalysis.restorable && <Alert variant="destructive"><ShieldAlert /><AlertTitle>Restauração bloqueada</AlertTitle><AlertDescription>O pacote não cobre todas as evidências registradas no banco.</AlertDescription></Alert>}<div className="space-y-2"><Label htmlFor="evidence-confirmation">Digite RESTAURAR EVIDÊNCIAS para confirmar</Label><Input id="evidence-confirmation" value={evidenceConfirmation} onChange={(event) => setEvidenceConfirmation(event.target.value)} /></div></div>}<DialogFooter><Button variant="outline" onClick={() => setEvidenceAnalysis(null)} disabled={evidenceRestoreMutation.isPending}>Cancelar</Button><Button variant="destructive" disabled={!evidenceAnalysis?.restorable || evidenceConfirmation !== "RESTAURAR EVIDÊNCIAS" || evidenceRestoreMutation.isPending} onClick={() => evidenceAnalysis && evidenceRestoreMutation.mutate(evidenceAnalysis.id)}>{evidenceRestoreMutation.isPending ? <RefreshCw className="animate-spin" /> : <ArchiveRestore />}Restaurar evidências</Button></DialogFooter></DialogContent></Dialog>
   </div>
 }

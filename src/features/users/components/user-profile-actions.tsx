@@ -1,5 +1,5 @@
-import { useRef, useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useRef, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   BellRing,
   Camera,
@@ -8,15 +8,21 @@ import {
   MonitorCog,
   Trash2,
   UserRoundPen,
-} from "lucide-react"
-import { useNavigate } from "react-router"
-import { useTheme } from "next-themes"
-import { toast } from "sonner"
+} from "lucide-react";
+import { useNavigate } from "react-router";
+import { useTheme } from "next-themes";
+import { toast } from "sonner";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Dialog,
   DialogClose,
@@ -25,22 +31,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { authService } from "@/features/auth/auth.service"
-import { useAuthStore } from "@/features/auth/auth.store"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { authService } from "@/features/auth/auth.service";
+import { useAuthStore } from "@/features/auth/auth.store";
 import type {
   AuthUser,
   UpdateOwnProfilePayload,
   UserThemePreference,
-} from "@/features/auth/auth.types"
-import { isMilitaryRank, militaryRanks } from "@/features/users/military-ranks"
+} from "@/features/auth/auth.types";
+import { isMilitaryRank, militaryRanks } from "@/features/users/military-ranks";
 
-const MAX_AVATAR_BYTES = 256 * 1024
-const AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"])
-const NO_RANK = "NONE"
+const MAX_AVATAR_BYTES = 256 * 1024;
+const AVATAR_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+const NO_RANK = "NONE";
 
 function getInitials(user: AuthUser) {
   return (user.name?.trim() || user.email)
@@ -49,44 +61,44 @@ function getInitials(user: AuthUser) {
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
-    .toUpperCase()
+    .toUpperCase();
 }
 
 function cpfDigits(value: string) {
-  return value.replace(/\D/g, "").slice(0, 11)
+  return value.replace(/\D/g, "").slice(0, 11);
 }
 
 function formatCpfInput(value: string) {
-  const digits = cpfDigits(value)
+  const digits = cpfDigits(value);
   return digits
     .replace(/^(\d{3})(\d)/, "$1.$2")
     .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
-    .replace(/\.(\d{3})(\d)/, ".$1-$2")
+    .replace(/\.(\d{3})(\d)/, ".$1-$2");
 }
 
 function phoneDigits(value: string) {
-  return value.replace(/\D/g, "").slice(0, 11)
+  return value.replace(/\D/g, "").slice(0, 11);
 }
 
 function formatPhoneInput(value: string) {
-  const digits = phoneDigits(value)
+  const digits = phoneDigits(value);
   if (digits.length <= 10) {
     return digits
       .replace(/^(\d{2})(\d)/, "($1) $2")
-      .replace(/(\d{4})(\d)/, "$1-$2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
   }
   return digits
     .replace(/^(\d{2})(\d)/, "($1) $2")
-    .replace(/(\d{5})(\d)/, "$1-$2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
 }
 
 function readAvatar(file: File) {
   return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(String(reader.result))
-    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."))
-    reader.readAsDataURL(file)
-  })
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Não foi possível ler a imagem."));
+    reader.readAsDataURL(file);
+  });
 }
 
 export function EditOwnProfileDialog({
@@ -94,66 +106,75 @@ export function EditOwnProfileDialog({
   open,
   onOpenChange,
 }: {
-  user: AuthUser
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  user: AuthUser;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const queryClient = useQueryClient()
-  const setUser = useAuthStore((state) => state.setUser)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [name, setName] = useState(user.name ?? "")
-  const [warName, setWarName] = useState(user.warName ?? "")
-  const [rank, setRank] = useState(user.rank && isMilitaryRank(user.rank) ? user.rank : "")
-  const [cpf, setCpf] = useState(formatCpfInput(user.cpf ?? ""))
-  const [phone, setPhone] = useState(formatPhoneInput(user.phone ?? ""))
-  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(user.avatarDataUrl ?? null)
-  const [formError, setFormError] = useState("")
+  const queryClient = useQueryClient();
+  const setUser = useAuthStore((state) => state.setUser);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [name, setName] = useState(user.name ?? "");
+  const [warName, setWarName] = useState(user.warName ?? "");
+  const [rank, setRank] = useState(
+    user.rank && isMilitaryRank(user.rank) ? user.rank : "",
+  );
+  const [cpf, setCpf] = useState(formatCpfInput(user.cpf ?? ""));
+  const [phone, setPhone] = useState(formatPhoneInput(user.phone ?? ""));
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(
+    user.avatarDataUrl ?? null,
+  );
+  const [formError, setFormError] = useState("");
 
   const updateMutation = useMutation({
-    mutationFn: (payload: UpdateOwnProfilePayload) => authService.updateProfile(payload),
+    mutationFn: (payload: UpdateOwnProfilePayload) =>
+      authService.updateProfile(payload),
     onSuccess: (updatedUser) => {
-      setUser(updatedUser)
-      queryClient.setQueryData(["auth", "me"], updatedUser)
-      toast.success("Dados pessoais atualizados.")
-      onOpenChange(false)
+      setUser(updatedUser);
+      queryClient.setQueryData(["auth", "me"], updatedUser);
+      toast.success("Dados pessoais atualizados.");
+      onOpenChange(false);
     },
     onError: (error) => setFormError(error.message),
-  })
+  });
 
   const selectAvatar = async (file?: File) => {
-    setFormError("")
-    if (!file) return
+    setFormError("");
+    if (!file) return;
     if (!AVATAR_TYPES.has(file.type)) {
-      setFormError("Use uma imagem PNG, JPEG ou WebP.")
-      return
+      setFormError("Use uma imagem PNG, JPEG ou WebP.");
+      return;
     }
     if (file.size > MAX_AVATAR_BYTES) {
-      setFormError("A imagem deve ter no máximo 256 KB.")
-      return
+      setFormError("A imagem deve ter no máximo 256 KB.");
+      return;
     }
     try {
-      setAvatarDataUrl(await readAvatar(file))
+      setAvatarDataUrl(await readAvatar(file));
     } catch (error) {
-      setFormError(error instanceof Error ? error.message : "Não foi possível ler a imagem.")
+      setFormError(
+        error instanceof Error
+          ? error.message
+          : "Não foi possível ler a imagem.",
+      );
     }
-  }
+  };
 
   const submit = () => {
-    setFormError("")
-    const normalizedName = name.trim()
-    const normalizedCpf = cpfDigits(cpf)
-    const normalizedPhone = phoneDigits(phone)
+    setFormError("");
+    const normalizedName = name.trim();
+    const normalizedCpf = cpfDigits(cpf);
+    const normalizedPhone = phoneDigits(phone);
     if (normalizedName.length < 3) {
-      setFormError("O nome deve ter pelo menos 3 caracteres.")
-      return
+      setFormError("O nome deve ter pelo menos 3 caracteres.");
+      return;
     }
     if (normalizedCpf && normalizedCpf.length !== 11) {
-      setFormError("O CPF deve conter 11 dígitos.")
-      return
+      setFormError("O CPF deve conter 11 dígitos.");
+      return;
     }
     if (normalizedPhone && ![10, 11].includes(normalizedPhone.length)) {
-      setFormError("O telefone deve conter 10 ou 11 dígitos.")
-      return
+      setFormError("O telefone deve conter 10 ou 11 dígitos.");
+      return;
     }
     updateMutation.mutate({
       name: normalizedName,
@@ -162,8 +183,8 @@ export function EditOwnProfileDialog({
       cpf: normalizedCpf || null,
       phone: normalizedPhone || null,
       avatarDataUrl,
-    })
-  }
+    });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -174,7 +195,8 @@ export function EditOwnProfileDialog({
             Editar dados pessoais
           </DialogTitle>
           <DialogDescription>
-            Atualize sua identificação. E-mail, perfil e permissões são administrados separadamente.
+            Atualize sua identificação. E-mail, perfil e permissões são
+            administrados separadamente.
           </DialogDescription>
         </DialogHeader>
 
@@ -194,12 +216,22 @@ export function EditOwnProfileDialog({
                 className="sr-only"
                 onChange={(event) => void selectAvatar(event.target.files?.[0])}
               />
-              <Button type="button" variant="outline" onClick={() => fileInputRef.current?.click()}>
-                <Camera className="size-4" />Escolher imagem
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="size-4" />
+                Escolher imagem
               </Button>
               {avatarDataUrl && (
-                <Button type="button" variant="ghost" onClick={() => setAvatarDataUrl(null)}>
-                  <Trash2 className="size-4" />Remover
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setAvatarDataUrl(null)}
+                >
+                  <Trash2 className="size-4" />
+                  Remover
                 </Button>
               )}
               <p className="w-full text-center text-xs text-muted-foreground sm:text-left">
@@ -221,17 +253,28 @@ export function EditOwnProfileDialog({
           <div className="space-y-2">
             <Label htmlFor="own-profile-email">E-mail institucional</Label>
             <Input id="own-profile-email" value={user.email} disabled />
-            <p className="text-xs text-muted-foreground">Alterações de e-mail são feitas por um administrador.</p>
+            <p className="text-xs text-muted-foreground">
+              Alterações de e-mail são feitas por um administrador.
+            </p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor="own-profile-rank">P/G</Label>
-              <Select value={rank || NO_RANK} onValueChange={(value) => setRank(value === NO_RANK ? "" : value)}>
-                <SelectTrigger id="own-profile-rank"><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <Select
+                value={rank || NO_RANK}
+                onValueChange={(value) =>
+                  setRank(value === NO_RANK ? "" : value)
+                }
+              >
+                <SelectTrigger id="own-profile-rank">
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value={NO_RANK}>Não informado</SelectItem>
                   {militaryRanks.map((militaryRank) => (
-                    <SelectItem key={militaryRank} value={militaryRank}>{militaryRank}</SelectItem>
+                    <SelectItem key={militaryRank} value={militaryRank}>
+                      {militaryRank}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -266,7 +309,9 @@ export function EditOwnProfileDialog({
                 inputMode="tel"
                 autoComplete="tel"
                 placeholder="(92) 99999-9999"
-                onChange={(event) => setPhone(formatPhoneInput(event.target.value))}
+                onChange={(event) =>
+                  setPhone(formatPhoneInput(event.target.value))
+                }
               />
             </div>
           </div>
@@ -279,69 +324,75 @@ export function EditOwnProfileDialog({
         </div>
 
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
+          <DialogClose asChild>
+            <Button variant="outline">Cancelar</Button>
+          </DialogClose>
           <Button onClick={submit} disabled={updateMutation.isPending}>
-            {updateMutation.isPending && <Loader2 className="size-4 animate-spin" />}
+            {updateMutation.isPending && (
+              <Loader2 className="size-4 animate-spin" />
+            )}
             Salvar alterações
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 export function ChangeOwnPasswordDialog({
   open,
   onOpenChange,
 }: {
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const navigate = useNavigate()
-  const queryClient = useQueryClient()
-  const logout = useAuthStore((state) => state.logout)
-  const [currentPassword, setCurrentPassword] = useState("")
-  const [newPassword, setNewPassword] = useState("")
-  const [confirmation, setConfirmation] = useState("")
-  const [formError, setFormError] = useState("")
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const logout = useAuthStore((state) => state.logout);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmation, setConfirmation] = useState("");
+  const [formError, setFormError] = useState("");
 
   const mutation = useMutation({
     mutationFn: authService.changePassword,
     onSuccess: (response) => {
-      toast.success(response.message)
-      logout()
-      queryClient.clear()
-      navigate("/login", { replace: true })
+      toast.success(response.message);
+      logout();
+      queryClient.clear();
+      navigate("/login", { replace: true });
     },
     onError: (error) => setFormError(error.message),
-  })
+  });
 
   const submit = () => {
-    setFormError("")
+    setFormError("");
     if (newPassword.length < 8) {
-      setFormError("A nova senha deve ter pelo menos 8 caracteres.")
-      return
+      setFormError("A nova senha deve ter pelo menos 8 caracteres.");
+      return;
     }
     if (newPassword !== confirmation) {
-      setFormError("A confirmação não corresponde à nova senha.")
-      return
+      setFormError("A confirmação não corresponde à nova senha.");
+      return;
     }
     if (currentPassword === newPassword) {
-      setFormError("A nova senha deve ser diferente da senha atual.")
-      return
+      setFormError("A nova senha deve ser diferente da senha atual.");
+      return;
     }
-    mutation.mutate({ currentPassword, newPassword })
-  }
+    mutation.mutate({ currentPassword, newPassword });
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <KeyRound className="size-5 text-primary" />Alterar senha
+            <KeyRound className="size-5 text-primary" />
+            Alterar senha
           </DialogTitle>
           <DialogDescription>
-            Por segurança, a troca encerra todas as sessões e exige um novo login.
+            Por segurança, a troca encerra todas as sessões e exige um novo
+            login.
           </DialogDescription>
         </DialogHeader>
         <div className="min-h-0 space-y-4 overflow-y-auto pr-1">
@@ -364,7 +415,9 @@ export function ChangeOwnPasswordDialog({
               value={newPassword}
               onChange={(event) => setNewPassword(event.target.value)}
             />
-            <p className="text-xs text-muted-foreground">Use pelo menos 8 caracteres.</p>
+            <p className="text-xs text-muted-foreground">
+              Use pelo menos 8 caracteres.
+            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm-new-password">Confirmar nova senha</Label>
@@ -384,15 +437,25 @@ export function ChangeOwnPasswordDialog({
           )}
         </div>
         <DialogFooter>
-          <DialogClose asChild><Button variant="outline">Cancelar</Button></DialogClose>
-          <Button onClick={submit} disabled={mutation.isPending || !currentPassword || !newPassword || !confirmation}>
+          <DialogClose asChild>
+            <Button variant="outline">Cancelar</Button>
+          </DialogClose>
+          <Button
+            onClick={submit}
+            disabled={
+              mutation.isPending ||
+              !currentPassword ||
+              !newPassword ||
+              !confirmation
+            }
+          >
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Alterar e sair
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
 
 function PreferenceToggle({
@@ -402,14 +465,17 @@ function PreferenceToggle({
   title,
   description,
 }: {
-  id: string
-  checked: boolean
-  onChange: (checked: boolean) => void
-  title: string
-  description: string
+  id: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+  title: string;
+  description: string;
 }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition hover:border-primary/35 hover:bg-muted/25">
+    <label
+      htmlFor={id}
+      className="flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition hover:border-primary/35 hover:bg-muted/25"
+    >
       <input
         id={id}
         type="checkbox"
@@ -419,47 +485,54 @@ function PreferenceToggle({
       />
       <span>
         <span className="block text-sm font-medium">{title}</span>
-        <span className="mt-1 block text-xs leading-5 text-muted-foreground">{description}</span>
+        <span className="mt-1 block text-xs leading-5 text-muted-foreground">
+          {description}
+        </span>
       </span>
     </label>
-  )
+  );
 }
 
 export function UserPreferencesCard({ user }: { user: AuthUser }) {
-  const { setTheme } = useTheme()
-  const queryClient = useQueryClient()
-  const setUser = useAuthStore((state) => state.setUser)
+  const { setTheme } = useTheme();
+  const queryClient = useQueryClient();
+  const setUser = useAuthStore((state) => state.setUser);
   const [themePreference, setThemePreference] = useState<UserThemePreference>(
     user.themePreference ?? "DARK",
-  )
+  );
   const [notifications, setNotifications] = useState(
     user.notifications ?? {
       taskAssignments: true,
       deadlines: true,
       workflowUpdates: true,
+      mentions: true,
+      financial: true,
+      integrations: true,
     },
-  )
+  );
 
   const mutation = useMutation({
     mutationFn: () =>
       authService.updateProfile({ themePreference, notifications }),
     onSuccess: (updatedUser) => {
-      setUser(updatedUser)
-      queryClient.setQueryData(["auth", "me"], updatedUser)
-      setTheme(themePreference.toLowerCase())
-      toast.success("Preferências atualizadas.")
+      setUser(updatedUser);
+      queryClient.setQueryData(["auth", "me"], updatedUser);
+      setTheme(themePreference.toLowerCase());
+      toast.success("Preferências atualizadas.");
     },
     onError: (error) => toast.error(error.message),
-  })
+  });
 
   return (
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <MonitorCog className="size-5 text-primary" />Preferências pessoais
+          <MonitorCog className="size-5 text-primary" />
+          Preferências pessoais
         </CardTitle>
         <CardDescription>
-          Defina a aparência do SAGEP e quais avisos devem aparecer para sua conta.
+          Defina a aparência do SAGEP e quais avisos devem aparecer para sua
+          conta.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -467,7 +540,9 @@ export function UserPreferencesCard({ user }: { user: AuthUser }) {
           <Label htmlFor="theme-preference">Tema da interface</Label>
           <Select
             value={themePreference}
-            onValueChange={(value) => setThemePreference(value as UserThemePreference)}
+            onValueChange={(value) =>
+              setThemePreference(value as UserThemePreference)
+            }
           >
             <SelectTrigger id="theme-preference" className="w-full sm:max-w-xs">
               <SelectValue />
@@ -475,7 +550,9 @@ export function UserPreferencesCard({ user }: { user: AuthUser }) {
             <SelectContent>
               <SelectItem value="LIGHT">Claro</SelectItem>
               <SelectItem value="DARK">Escuro</SelectItem>
-              <SelectItem value="SYSTEM">Usar preferência do dispositivo</SelectItem>
+              <SelectItem value="SYSTEM">
+                Usar preferência do dispositivo
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -489,34 +566,88 @@ export function UserPreferencesCard({ user }: { user: AuthUser }) {
             <PreferenceToggle
               id="notify-task-assignments"
               checked={notifications.taskAssignments}
-              onChange={(checked) => setNotifications((current) => ({ ...current, taskAssignments: checked }))}
+              onChange={(checked) =>
+                setNotifications((current) => ({
+                  ...current,
+                  taskAssignments: checked,
+                }))
+              }
               title="Atribuições de tarefas"
               description="Avisar quando uma tarefa for atribuída à sua conta."
             />
             <PreferenceToggle
               id="notify-deadlines"
               checked={notifications.deadlines}
-              onChange={(checked) => setNotifications((current) => ({ ...current, deadlines: checked }))}
+              onChange={(checked) =>
+                setNotifications((current) => ({
+                  ...current,
+                  deadlines: checked,
+                }))
+              }
               title="Prazos e atrasos"
               description="Destacar tarefas e documentos próximos do vencimento."
             />
             <PreferenceToggle
               id="notify-workflow"
               checked={notifications.workflowUpdates}
-              onChange={(checked) => setNotifications((current) => ({ ...current, workflowUpdates: checked }))}
+              onChange={(checked) =>
+                setNotifications((current) => ({
+                  ...current,
+                  workflowUpdates: checked,
+                }))
+              }
               title="Mudanças no workflow"
               description="Avisar sobre avanços relevantes nos projetos acompanhados."
+            />
+            <PreferenceToggle
+              id="notify-mentions"
+              checked={notifications.mentions}
+              onChange={(checked) =>
+                setNotifications((current) => ({
+                  ...current,
+                  mentions: checked,
+                }))
+              }
+              title="Menções"
+              description="Avisar quando alguém mencionar sua conta em projetos, tarefas ou atividades."
+            />
+            <PreferenceToggle
+              id="notify-financial"
+              checked={notifications.financial}
+              onChange={(checked) =>
+                setNotifications((current) => ({
+                  ...current,
+                  financial: checked,
+                }))
+              }
+              title="Execução financeira"
+              description="Avisar sobre novas NEs, liquidações, pagamentos e alterações de saldos."
+            />
+            <PreferenceToggle
+              id="notify-integrations"
+              checked={notifications.integrations}
+              onChange={(checked) =>
+                setNotifications((current) => ({
+                  ...current,
+                  integrations: checked,
+                }))
+              }
+              title="Integrações"
+              description="Avisar quando uma fonte governamental mudar, degradar ou parar."
             />
           </div>
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={() => mutation.mutate()} disabled={mutation.isPending}>
+          <Button
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+          >
             {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Salvar preferências
           </Button>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

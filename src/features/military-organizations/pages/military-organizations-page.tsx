@@ -108,7 +108,7 @@ export function MilitaryOrganizationsPage() {
     onError: (error) => toast.error(error.message),
   })
 
-  const allOrganizations = summaryQuery.data?.items ?? []
+  const allOrganizations = useMemo(() => summaryQuery.data?.items ?? [], [summaryQuery.data?.items])
   const availableCities = useMemo(() => Array.from(new Set(
     allOrganizations
       .filter((item) => stateUf === "all" || item.stateUf === stateUf)
@@ -123,7 +123,7 @@ export function MilitaryOrganizationsPage() {
   const pageAllChecked = pageItems.length > 0 && pageItems.every((item) => checkedIds.has(item.id))
   const selectedCount = allMatching ? (meta?.totalItems ?? 0) : checkedIds.size
   const togglePage = () => setCheckedIds((current) => { const next = new Set(current); if (pageAllChecked) pageItems.forEach((item) => next.delete(item.id)); else pageItems.forEach((item) => next.add(item.id)); return next })
-  const toggleOne = (id: string) => { setAllMatching(false); setCheckedIds((current) => { const next = new Set(current); next.has(id) ? next.delete(id) : next.add(id); return next }) }
+  const toggleOne = (id: string) => { setAllMatching(false); setCheckedIds((current) => { const next = new Set(current); if (next.has(id)) next.delete(id); else next.add(id); return next }) }
 
   const clearFilters = () => { setSearch(""); setDebouncedSearch(""); setStateUf("all"); setCityName("all"); setActivity("all"); setPage(1) }
   const openCreate = () => { setSelected(null); setFormOpen(true) }

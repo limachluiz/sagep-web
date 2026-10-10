@@ -25,6 +25,9 @@ const profile: AuthUser = {
     taskAssignments: true,
     deadlines: true,
     workflowUpdates: false,
+    mentions: true,
+    financial: true,
+    integrations: true,
   },
   permissions: ["projects.view_all", "users.manage"],
   access: {
@@ -119,6 +122,9 @@ describe("UserProfilePage", () => {
     expect(screen.getByLabelText("Tema da interface")).toBeInTheDocument()
     expect(screen.getByLabelText(/Atribuições de tarefas/)).toBeChecked()
     expect(screen.getByLabelText(/Mudanças no workflow/)).not.toBeChecked()
+    expect(screen.getByLabelText(/Menções/)).toBeChecked()
+    expect(screen.getByLabelText(/Execução financeira/)).toBeChecked()
+    expect(screen.getByLabelText(/Integrações/)).toBeChecked()
 
     await user.click(screen.getByRole("button", { name: "Editar perfil" }))
     expect(screen.getByLabelText("E-mail institucional")).toBeDisabled()
