@@ -51,6 +51,9 @@ export const financialExecutionService = {
     return api.post<{ invoice: unknown; warnings: string[] }>("/financial-execution/invoices", payload)
   },
 
+  officialNfeConfiguration() { return api.get<{ configured: boolean; environment: string; message: string }>("/financial-execution/invoices/official/configuration") },
+  previewOfficialNfe(payload: { projectId: string; commitmentNoteId: string; accessKey: string }) { return api.post<OfficialNfePreview>("/financial-execution/invoices/official/preview", payload) },
+  importOfficialNfe(payload: { consultationId: string; confirmed: true; documentLink?: string; notes?: string }) { return api.post<OfficialNfePreview>("/financial-execution/invoices/official/import", payload) },
   previewInvoiceXml(payload: { projectId: string; commitmentNoteId: string; xmlBase64: string; notes?: string }) {
     return api.post<NfeXmlPreview>("/financial-execution/invoices/xml/preview", payload)
   },
@@ -66,4 +69,12 @@ export type NfeXmlPreview = {
   divergences: string[]
   warnings: string[]
   duplicate: { id: string; invoiceCode: number; projectId: string; accessKey: string | null } | null
+}
+
+export type OfficialNfePreview = {
+  consultationId: string; queriedAt: string; source: "SEFAZ"; environment: "PRODUCTION" | "HOMOLOGATION";
+  documentKind: "FULL_XML" | "SUMMARY" | "NONE"; fiscalStatus: string;
+  summary: NfeXmlPreview["summary"] | null;
+  conferenceStatus: "CONFERRED" | "DIVERGENT" | "PENDING"; divergences: string[]; warnings: string[];
+  duplicate: { id: string; invoiceCode: number } | null; importAllowed: boolean; cached: boolean;
 }

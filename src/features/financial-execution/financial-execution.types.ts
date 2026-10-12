@@ -60,7 +60,7 @@ export type CommitmentNote = {
     grossAmount: number
     attestedAmount: number | null
     attestedAt: string | null
-    source?: "MANUAL" | "XML"
+    source?: "MANUAL" | "XML" | "SEFAZ"
     conferenceStatus?: "PENDING" | "CONFERRED" | "DIVERGENT"
     issuedAt?: string
     issuerName?: string | null
