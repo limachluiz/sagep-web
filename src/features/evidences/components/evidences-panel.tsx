@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, Download, FileArchive, FileImage, FileText, Files, Filter, Images, Loader2, Plus, Search, Trash2, UploadCloud, Video } from "lucide-react"
+import { CheckCircle2, Download, FileArchive, FileImage, FileText, Files, Filter, Images, Loader2, Pencil, Plus, Search, Trash2, UploadCloud, Video } from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
@@ -83,6 +83,12 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
   const [search, setSearch] = useState("")
   const [phaseFilter, setPhaseFilter] = useState<EvidencePhase | "ALL">("ALL")
   const [categoryFilter, setCategoryFilter] = useState<EvidenceCategory | "ALL">("ALL")
+  const [editing, setEditing] = useState<ProjectEvidence | null>(null)
+  const [editTitle, setEditTitle] = useState("")
+  const [editDescription, setEditDescription] = useState("")
+  const [editCategory, setEditCategory] = useState<EvidenceCategory>("OTHER")
+  const [editPhase, setEditPhase] = useState<EvidencePhase>("GENERAL")
+  const [editInclude, setEditInclude] = useState(false)
 
   const query = useQuery({ queryKey: ["evidences", projectId], queryFn: () => evidencesService.list(projectId) })
   const scoped = useMemo(() => (taskId ? query.data?.filter((item) => item.taskId === taskId) : query.data) ?? [], [query.data, taskId])
@@ -122,7 +128,29 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
     },
     onError: (error) => toast.error(error.message),
   })
-  const update = useMutation({ mutationFn: ({ id, includeInReport }: { id: string; includeInReport: boolean }) => evidencesService.update(id, { includeInReport }), onSuccess: refresh, onError: (error) => toast.error(error.message) })
+  const update = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Pick<ProjectEvidence, "title" | "description" | "category" | "phase" | "includeInReport">> }) => evidencesService.update(id, data),
+    onSuccess: refresh,
+    onError: (error) => toast.error(error.message),
+  })
+  const saveEdit = useMutation({
+    mutationFn: () => {
+      if (!editing) throw new Error("Selecione uma evidência para editar.")
+      return evidencesService.update(editing.id, {
+        title: editTitle.trim(),
+        description: editDescription.trim(),
+        category: editCategory,
+        phase: editPhase,
+        includeInReport: editInclude,
+      })
+    },
+    onSuccess: async () => {
+      toast.success("Evidência atualizada.")
+      setEditing(null)
+      await refresh()
+    },
+    onError: (error) => toast.error(error.message),
+  })
   const remove = useMutation({ mutationFn: (id: string) => evidencesService.remove(id), onSuccess: async () => { toast.success("Evidência removida."); await refresh() }, onError: (error) => toast.error(error.message) })
   const open = async (item: ProjectEvidence) => {
     try {
@@ -131,6 +159,14 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
       window.open(url, "_blank", "noopener,noreferrer")
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
     } catch (error) { toast.error(error instanceof Error ? error.message : "Falha ao abrir arquivo") }
+  }
+  const edit = (item: ProjectEvidence) => {
+    setEditTitle(item.title)
+    setEditDescription(item.description ?? "")
+    setEditCategory(item.category)
+    setEditPhase(item.phase)
+    setEditInclude(item.includeInReport)
+    setEditing(item)
   }
 
   const phaseCount = (value: EvidencePhase) => scoped.filter((item) => item.phase === value).length
@@ -166,7 +202,7 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
         {query.isLoading ? <div className="flex justify-center py-12"><Loader2 className="size-6 animate-spin" /></div> : visible.length ? <div className="grid gap-3 xl:grid-cols-2">
           {visible.map((item) => <div key={item.id} className="flex flex-col justify-between gap-4 rounded-xl border bg-background p-4 sm:flex-row sm:items-start">
             <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row"><EvidencePreview item={item} /><div className="min-w-0"><p className="font-medium">{item.title}</p><p className="truncate text-xs text-muted-foreground">{item.originalName} · {size(item.sizeBytes)}</p>{item.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>}<div className="mt-3 flex flex-wrap gap-2"><Badge variant="outline">{categories[item.category]}</Badge><Badge variant="outline" className={phaseColors[item.phase]}>{phases[item.phase]}</Badge>{item.includeInReport && <Badge>Relatório técnico</Badge>}{item.task && <Badge variant="secondary">TSK-{item.task.taskCode}</Badge>}</div></div></div>
-            <div className="flex shrink-0 flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => open(item)}><Download className="size-4" />Abrir</Button>{canManage && <Button size="sm" variant={item.includeInReport ? "default" : "outline"} disabled={update.isPending} onClick={() => update.mutate({ id: item.id, includeInReport: !item.includeInReport })}>{item.includeInReport ? "No relatório" : "Incluir"}</Button>}{canManage && <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(item.id)} aria-label="Remover evidência"><Trash2 /></Button>}</div>
+            <div className="flex shrink-0 flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => open(item)}><Download className="size-4" />Abrir</Button>{canManage && <Button size="sm" variant="outline" onClick={() => edit(item)}><Pencil className="size-4" />Editar</Button>}{canManage && <Button size="sm" variant={item.includeInReport ? "default" : "outline"} disabled={update.isPending} onClick={() => update.mutate({ id: item.id, data: { includeInReport: !item.includeInReport } })}>{item.includeInReport ? "No relatório" : "Incluir"}</Button>}{canManage && <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(item.id)} aria-label="Remover evidência"><Trash2 /></Button>}</div>
           </div>)}
         </div> : <div className="rounded-xl border border-dashed py-14 text-center"><Images className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 font-medium">{scoped.length ? "Nenhuma evidência encontrada" : "Nenhuma evidência registrada"}</p><p className="mt-1 text-sm text-muted-foreground">{scoped.length ? "Altere os filtros para visualizar outros arquivos." : "Comece registrando fotos, documentos e resultados da execução."}</p></div>}
       </CardContent>
@@ -188,6 +224,23 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
           <label className="flex cursor-pointer items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm"><input type="checkbox" className="mt-0.5 size-4 accent-primary" checked={include} onChange={(event) => setInclude(event.target.checked)} /><span><strong>Incluir no relatório técnico</strong><br /><span className="text-muted-foreground">Os arquivos ficarão previamente selecionados para compor a documentação de conclusão e entrega.</span></span></label>
         </div>
         <DialogFooter><Button variant="outline" disabled={upload.isPending} onClick={() => setDialogOpen(false)}>Cancelar</Button><Button disabled={!files.length || (files.length === 1 && title.trim().length < 2) || upload.isPending} onClick={() => upload.mutate()}>{upload.isPending ? <Loader2 className="size-4 animate-spin" /> : <Plus className="size-4" />}{upload.isPending ? "Enviando..." : files.length > 1 ? `Adicionar ${files.length} evidências` : "Adicionar evidência"}</Button></DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={Boolean(editing)} onOpenChange={(openValue) => { if (!openValue && !saveEdit.isPending) setEditing(null) }}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-xl">
+        <DialogHeader><DialogTitle className="flex items-center gap-2"><Pencil className="size-5 text-primary" />Editar evidência</DialogTitle><DialogDescription>Atualize a identificação e a classificação do arquivo sem precisar enviá-lo novamente.</DialogDescription></DialogHeader>
+        {editing && <div className="space-y-5">
+          <div className="rounded-lg border bg-muted/20 p-3"><p className="truncate text-sm font-medium">{editing.originalName}</p><p className="mt-1 text-xs text-muted-foreground">O arquivo original não será alterado.</p></div>
+          <div className="space-y-2"><Label htmlFor="edit-evidence-title">Título da evidência</Label><Input id="edit-evidence-title" value={editTitle} onChange={(event) => setEditTitle(event.target.value)} placeholder="Ex.: Certificação do enlace óptico" /></div>
+          <div className="space-y-2"><Label htmlFor="edit-evidence-description">Legenda ou descrição</Label><Textarea id="edit-evidence-description" value={editDescription} onChange={(event) => setEditDescription(event.target.value)} placeholder="Informe o local, equipamento, atividade executada ou contexto do arquivo." /></div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2"><Label>Fase da evidência</Label><Select value={editPhase} onValueChange={(value) => setEditPhase(value as EvidencePhase)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(phases).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>
+            <div className="space-y-2"><Label>Categoria</Label><Select value={editCategory} onValueChange={(value) => setEditCategory(value as EvidenceCategory)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{Object.entries(categories).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select></div>
+          </div>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border bg-muted/20 p-4 text-sm"><input type="checkbox" className="mt-0.5 size-4 accent-primary" checked={editInclude} onChange={(event) => setEditInclude(event.target.checked)} /><span><strong>Incluir no relatório técnico</strong><br /><span className="text-muted-foreground">Imagens aparecem no corpo e documentos PDF são incorporados como anexos ao final.</span></span></label>
+        </div>}
+        <DialogFooter><Button variant="outline" disabled={saveEdit.isPending} onClick={() => setEditing(null)}>Cancelar</Button><Button disabled={editTitle.trim().length < 2 || saveEdit.isPending} onClick={() => saveEdit.mutate()}>{saveEdit.isPending ? <Loader2 className="size-4 animate-spin" /> : <CheckCircle2 className="size-4" />}{saveEdit.isPending ? "Salvando..." : "Salvar alterações"}</Button></DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
