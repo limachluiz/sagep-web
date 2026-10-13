@@ -43,6 +43,7 @@ import { ProjectAuditPanel } from "@/features/projects/components/project-audit-
 import { ProjectDocumentsPanel } from "@/features/projects/components/project-documents-panel"
 import { ProjectDeliveryPanel } from "@/features/projects/components/project-delivery-panel"
 import { ProjectExecutionPanel } from "@/features/projects/components/project-execution-panel"
+import { projectMilestonePresentation, visibleProjectMilestones } from "@/features/projects/project-milestones"
 import { CancelCommitmentNoteDialog } from "@/features/projects/components/cancel-commitment-note-dialog"
 import { ProjectFinancialCard } from "@/features/projects/components/project-financial-card"
 import { ProjectTeamCard } from "@/features/projects/components/project-team-card"
@@ -160,9 +161,7 @@ function ProjectOverview({
   onShowTeam: () => void
   onShowTasks: () => void
 }) {
-  const milestoneEntries = Object.entries(details.workflow.milestones).filter(
-    ([key]) => key !== "asBuiltRejectionReason" || details.workflow.milestones[key],
-  )
+  const milestoneEntries = visibleProjectMilestones(details.workflow.milestones)
 
   return (
     <div className="space-y-6">
@@ -183,15 +182,15 @@ function ProjectOverview({
           <CardHeader><CardTitle>Marcos do workflow</CardTitle></CardHeader>
           <CardContent className="grid gap-3 md:grid-cols-2">
             {milestoneEntries.map(([key, value]) => {
-              const isDate = key.endsWith("At")
+              const presentation = projectMilestonePresentation(key, value, details.workflow.milestones)
               return (
                 <div key={key} className="flex gap-3 rounded-xl border p-3">
-                  <div className={value ? "mt-0.5 text-primary" : "mt-0.5 text-muted-foreground"}>
-                    {value ? <CheckCircle2 className="size-4" /> : <Clock3 className="size-4" />}
+                  <div className={presentation.completed ? "mt-0.5 text-primary" : "mt-0.5 text-muted-foreground"}>
+                    {presentation.completed ? <CheckCircle2 className="size-4" /> : <Clock3 className="size-4" />}
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">{milestoneLabels[key] ?? key}</p>
-                    <p className="mt-1 text-sm font-medium">{value ? (isDate ? formatDate(value) : value) : "Pendente"}</p>
+                    <p className="mt-1 text-sm font-medium">{presentation.value ? (presentation.isDate ? formatDate(presentation.value) : presentation.value) : "Pendente"}</p>
                   </div>
                 </div>
               )
