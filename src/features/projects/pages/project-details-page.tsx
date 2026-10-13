@@ -615,7 +615,7 @@ export function ProjectDetailsPage() {
             onCancelCommitmentNote={() => setCancelCommitmentNoteOpen(true)}
           />
         </TabsContent>
-        <TabsContent value="evidences"><ProjectDeliveryPanel details={details} canManage={canManage} /></TabsContent>
+        <TabsContent value="evidences"><ProjectDeliveryPanel details={details} canManage={canManage} workspace /></TabsContent>
         <TabsContent value="team"><ProjectTeamCard details={details} canManage={canManage} /></TabsContent>
         <TabsContent value="timeline"><Timeline details={details} /></TabsContent>
         {canViewAudit && details.auditTrail && (
