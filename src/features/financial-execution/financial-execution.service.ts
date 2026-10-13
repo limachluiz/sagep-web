@@ -14,11 +14,11 @@ export const financialExecutionService = {
     return api.get<CommitmentNotesResponse>(`/financial-execution/commitment-notes?${query.toString()}`)
   },
 
-  preview(payload: { projectId: string; number: string; managementUnit?: string; management?: string }) {
+  preview(payload: { projectId: string; number: string; managementUnit?: string; management?: string; source?: "PORTAL" | "ARCHIVE" }) {
     return api.post<CommitmentPreview>("/financial-execution/commitment-notes/preview", payload)
   },
 
-  register(payload: { projectId: string; number: string; receivedAt: string; managementUnit?: string; management?: string; registrationMode?: "PORTAL" | "MANUAL"; manualReason?: string; confirmManualRegistration?: boolean; acceptDivergence?: boolean; balanceImpactMode?: "CONSUME" | "ALREADY_INCLUDED"; balanceImpactReason?: string }) {
+  register(payload: { projectId: string; number: string; receivedAt: string; managementUnit?: string; management?: string; registrationMode?: "PORTAL" | "ARCHIVE" | "MANUAL"; manualReason?: string; confirmManualRegistration?: boolean; acceptDivergence?: boolean; balanceImpactMode?: "CONSUME" | "ALREADY_INCLUDED"; balanceImpactReason?: string }) {
     return api.post<{ commitmentNote: CommitmentNote }>("/financial-execution/commitment-notes", payload)
   },
 

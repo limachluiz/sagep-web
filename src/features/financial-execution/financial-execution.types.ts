@@ -71,7 +71,7 @@ export type CommitmentNote = {
 }
 
 export type PortalCommitmentSnapshot = {
-  source: string
+  source: "PORTAL_TRANSPARENCIA" | "MANUAL" | "CARTEIRA"
   externalCode: string
   number: string
   managementUnit: string
