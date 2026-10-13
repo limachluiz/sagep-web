@@ -344,7 +344,7 @@ export function NotificationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {canTrackAll && (
               <Select
                 value={mentionScope}
