@@ -10,6 +10,7 @@ type Candidate = {
   userCode: number;
   name: string;
   warName: string | null;
+  rank: string | null;
   email: string;
   role: string;
 };
@@ -78,7 +79,9 @@ export function MentionPicker({
                 if (!active) onInsert(`@USR-${person.userCode}`);
               }}
             >
-              {person.warName || person.name} · USR-{person.userCode}
+              {[person.rank, person.warName || person.name]
+                .filter(Boolean)
+                .join(" ")} · USR-{person.userCode}
             </Button>
           );
         })}

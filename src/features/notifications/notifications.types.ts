@@ -45,6 +45,7 @@ export type MentionTrackingResponse = {
       userCode: number;
       name: string;
       warName: string | null;
+      rank: string | null;
       role: string;
     } | null;
     actor: {
@@ -52,6 +53,7 @@ export type MentionTrackingResponse = {
       userCode: number;
       name: string;
       warName: string | null;
+      rank: string | null;
       role: string;
     } | null;
     notification: {

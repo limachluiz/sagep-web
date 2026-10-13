@@ -23,11 +23,11 @@ describe("MentionPicker", () => {
   beforeEach(() => vi.resetAllMocks())
 
   it("searches dynamically and inserts the structured user token", async () => {
-    vi.mocked(api.get).mockResolvedValue([{ id: "user-2", userCode: 2, name: "Maria Lima", warName: "Lima", email: "maria@example.test", role: "PROJETISTA" }])
+    vi.mocked(api.get).mockResolvedValue([{ id: "user-2", userCode: 2, name: "Maria Lima", warName: "Lima", rank: "2º Ten", email: "maria@example.test", role: "PROJETISTA" }])
     const user = userEvent.setup()
     render(<Harness />)
     await user.type(screen.getByPlaceholderText(/Pesquisar por nome/), "Lima")
-    const candidate = await screen.findByRole("button", { name: "Lima · USR-2" })
+    const candidate = await screen.findByRole("button", { name: "2º Ten Lima · USR-2" })
     expect(api.get).toHaveBeenCalledWith(expect.stringContaining("search=Lima"))
     await user.click(candidate)
     expect(screen.getByText("@USR-2")).toBeInTheDocument()

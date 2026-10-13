@@ -393,10 +393,20 @@ export function NotificationsPage() {
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <strong>
-                    {item.recipient?.warName ||
-                      item.recipient?.name ||
-                      "Destinatário não localizado"}
+                    {item.recipient
+                      ? [
+                          item.recipient.rank,
+                          item.recipient.warName || item.recipient.name,
+                        ]
+                          .filter(Boolean)
+                          .join(" ")
+                      : "Destinatário não localizado"}
                   </strong>
+                  {item.recipient && (
+                    <span className="font-mono text-xs text-muted-foreground">
+                      USR-{item.recipient.userCode}
+                    </span>
+                  )}
                   <Badge variant="outline">
                     {item.resolvedAt
                       ? "Resolvida"
