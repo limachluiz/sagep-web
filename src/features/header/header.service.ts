@@ -14,4 +14,8 @@ export const headerService = {
   dismissAllAlerts() {
     return api.delete<DismissAlertsResponse>("/operational-alerts")
   },
+
+  dismissAlert(notificationKey: string) {
+    return api.delete<{ dismissed: number }>(`/operational-alerts/${encodeURIComponent(notificationKey)}`)
+  },
 }

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangle, Bell, BellRing, Boxes, RefreshCw, Trash2 } from "lucide-react"
+import type { MouseEvent } from "react"
 import { useNavigate } from "react-router"
 import { toast } from "sonner"
 
@@ -34,6 +35,26 @@ export function NotificationsMenu() {
     },
     onError: (error) => toast.error(error.message),
   })
+  const dismissOneMutation = useMutation({
+    mutationFn: async ({ id, kind }: { id: string; kind: "notification" | "operational" }) => {
+      if (kind === "notification") await notificationsService.dismiss(id)
+      else await headerService.dismissAlert(id)
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["header", "operational-alerts"] }),
+        queryClient.invalidateQueries({ queryKey: ["header", "notifications"] }),
+        queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+      ])
+      toast.success("Alerta removido.")
+    },
+    onError: (error) => toast.error(error.message),
+  })
+  const dismissOne = (event: MouseEvent, id: string, kind: "notification" | "operational") => {
+    event.preventDefault()
+    event.stopPropagation()
+    dismissOneMutation.mutate({ id, kind })
+  }
   const openNotification = async (item: UserNotification) => {
     await notificationsService.markRead(item.id)
     await queryClient.invalidateQueries({ queryKey: ["header", "notifications"] })
@@ -49,8 +70,8 @@ export function NotificationsMenu() {
         {query.isError && <div className="m-2 rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{query.error.message}</div>}
         {query.isLoading && <div className="p-6 text-center text-sm text-muted-foreground">Carregando alertas...</div>}
         {!query.isLoading && !inbox.isLoading && !query.isError && !inbox.isError && total === 0 && <div className="p-8 text-center"><Bell className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 text-sm font-medium">Nenhuma pendência operacional</p></div>}
-        {(inbox.data?.items ?? []).slice(0, 5).map((item) => <DropdownMenuItem key={item.id} className="mb-1 cursor-pointer items-start rounded-lg border border-primary/30 bg-primary/5 p-3" onSelect={() => void openNotification(item)}><BellRing className="mt-0.5 size-4 text-primary" /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="truncate font-medium">{item.title}</span><Badge>Novo</Badge></span><span className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description}</span></span></DropdownMenuItem>)}
-        {alerts.slice(0, 5).map((alert) => <DropdownMenuItem key={alert.id} className="mb-1 cursor-pointer items-start rounded-lg border p-3" onSelect={() => navigate(alert.detailsPath)}><AlertTriangle className={alert.severity === "CRITICAL" ? "mt-0.5 size-4 text-destructive" : "mt-0.5 size-4 text-status-warning"} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="truncate font-medium">{alert.title}</span><Badge variant={alert.severity === "CRITICAL" ? "destructive" : "outline"}>{alert.severity === "CRITICAL" ? "Crítico" : "Atenção"}</Badge></span><span className="mt-1 line-clamp-2 text-xs text-muted-foreground">{alert.description}</span></span></DropdownMenuItem>)}
+        {(inbox.data?.items ?? []).slice(0, 5).map((item) => <DropdownMenuItem key={item.id} className="mb-1 cursor-pointer items-start rounded-lg border border-primary/30 bg-primary/5 p-3" onSelect={() => void openNotification(item)}><BellRing className="mt-0.5 size-4 text-primary" /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="truncate font-medium">{item.title}</span><Badge>Novo</Badge></span><span className="mt-1 line-clamp-2 text-xs text-muted-foreground">{item.description}</span></span><Button variant="ghost" size="icon-sm" className="-mr-1 -mt-1 shrink-0 text-muted-foreground hover:text-destructive" disabled={dismissOneMutation.isPending} aria-label={`Excluir ${item.title}`} title="Excluir este alerta" onClick={(event) => dismissOne(event, item.id, "notification")}><Trash2 className="size-3.5" /></Button></DropdownMenuItem>)}
+        {alerts.slice(0, 5).map((alert) => <DropdownMenuItem key={alert.id} className="mb-1 cursor-pointer items-start rounded-lg border p-3" onSelect={() => navigate(alert.detailsPath)}><AlertTriangle className={alert.severity === "CRITICAL" ? "mt-0.5 size-4 text-destructive" : "mt-0.5 size-4 text-status-warning"} /><span className="min-w-0 flex-1"><span className="flex items-center gap-2"><span className="truncate font-medium">{alert.title}</span><Badge variant={alert.severity === "CRITICAL" ? "destructive" : "outline"}>{alert.severity === "CRITICAL" ? "Crítico" : "Atenção"}</Badge></span><span className="mt-1 line-clamp-2 text-xs text-muted-foreground">{alert.description}</span></span><Button variant="ghost" size="icon-sm" className="-mr-1 -mt-1 shrink-0 text-muted-foreground hover:text-destructive" disabled={dismissOneMutation.isPending} aria-label={`Excluir ${alert.title}`} title="Excluir este alerta" onClick={(event) => dismissOne(event, alert.id, "operational")}><Trash2 className="size-3.5" /></Button></DropdownMenuItem>)}
         {stockCount > 0 && <DropdownMenuItem className="cursor-pointer items-start rounded-lg border p-3" onSelect={() => navigate("/atas")}><Boxes className="mt-0.5 size-4 text-status-warning" /><span><span className="block font-medium">{stockCount} item(ns) de ATA com saldo crítico</span><span className="mt-1 block text-xs text-muted-foreground">Alerta dinâmico de estoque: será removido quando o saldo for regularizado.</span></span></DropdownMenuItem>}
       </div>
       <DropdownMenuSeparator className="m-0" /><DropdownMenuItem className="cursor-pointer justify-center rounded-none py-3 text-primary" onSelect={() => navigate("/alerts")}>Abrir Central de Alertas</DropdownMenuItem>
