@@ -35,6 +35,33 @@ const preview = {
 afterEach(() => vi.unstubAllGlobals())
 
 describe("registro da Nota de Empenho", () => {
+  it("usa NE da Carteira sem consulta ao Portal e permite não consumir novamente", async () => {
+    const archivedPreview = { ...preview, snapshot: { ...preview.snapshot, source: "CARTEIRA", financialStatus: "PAGA", paidAmount: 1000, liquidatedAmount: 1000 } }
+    const entry = { externalCode: preview.snapshot.externalCode, origin: "IMPORTED", observation: null, attendedOm: null, financial: { current: 1000, liquidated: 1000, paid: 1000, issuedAt: "2026-08-13", status: "PAGA" } }
+    const fetchMock = vi.fn().mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      if (url.includes("/discovery/archive?")) return Promise.resolve(new Response(JSON.stringify({ items: [entry], total: 1 }), { status: 200, headers: { "Content-Type": "application/json" } }))
+      if (url.includes("/commitment-notes/preview")) return Promise.resolve(new Response(JSON.stringify(archivedPreview), { status: 200, headers: { "Content-Type": "application/json" } }))
+      if (url.endsWith("/commitment-notes") && init?.method === "POST") return Promise.resolve(new Response(JSON.stringify({ commitmentNote: {} }), { status: 201, headers: { "Content-Type": "application/json" } }))
+      return Promise.resolve(new Response(JSON.stringify({ implantationModeActive: false }), { status: 200, headers: { "Content-Type": "application/json" } }))
+    })
+    vi.stubGlobal("fetch", fetchMock)
+    const user = userEvent.setup()
+    render(<QueryClientProvider client={new QueryClient()}><CommitmentNoteDialog projectId="project-1" projectCode={42} open onOpenChange={() => undefined} onSaved={() => undefined} /></QueryClientProvider>)
+
+    await user.click(screen.getByRole("button", { name: "Selecionar uma NE da Carteira de Empenhos" }))
+    await user.click(await screen.findByRole("button", { name: /2026NE000534/ }))
+    await user.click(screen.getByRole("button", { name: "Usar dados da Carteira" }))
+    expect(await screen.findByText("Não consumir novamente")).toBeInTheDocument()
+    await user.type(screen.getByLabelText("Justificativa obrigatória"), "Projeto retroativo já refletido no saldo oficial")
+    await user.click(screen.getByRole("checkbox", { name: /já está contemplada/ }))
+    await user.click(screen.getByRole("button", { name: "Vincular NE e liberar OS" }))
+
+    const bodies = fetchMock.mock.calls.map((call) => String(call[1]?.body ?? ""))
+    expect(bodies.some((body) => body.includes('"source":"ARCHIVE"'))).toBe(true)
+    expect(bodies.some((body) => body.includes('"registrationMode":"ARCHIVE"') && body.includes('"balanceImpactMode":"ALREADY_INCLUDED"'))).toBe(true)
+  })
+
   it("consulta a fonte oficial e exige confirmação do impacto financeiro", async () => {
     vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify(preview), {
       status: 200,
