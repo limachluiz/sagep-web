@@ -1,16 +1,19 @@
 import { describe, expect, it } from "vitest"
 
-import { visibleProjectMilestones } from "@/features/projects/project-milestones"
+import { projectMilestonePresentation, visibleProjectMilestones } from "@/features/projects/project-milestones"
 
 describe("marcos do projeto", () => {
-  it("oculta a reprovação quando o As-Built foi aprovado sem reprovação anterior", () => {
-    const entries = visibleProjectMilestones({
+  it("mantém a reprovação no painel após aprovação sem ocorrência", () => {
+    const milestones = {
       asBuiltApprovedAt: "2026-08-31T00:00:00.000Z",
       asBuiltRejectedAt: null,
       asBuiltRejectionReason: null,
-    })
+    }
+    const entries = visibleProjectMilestones(milestones)
+    const presentation = projectMilestonePresentation("asBuiltRejectedAt", null, milestones)
 
-    expect(entries.map(([key]) => key)).toEqual(["asBuiltApprovedAt"])
+    expect(entries.map(([key]) => key)).toEqual(["asBuiltApprovedAt", "asBuiltRejectedAt"])
+    expect(presentation).toEqual({ completed: true, value: "As-Built não foi reprovado", isDate: false })
   })
 
   it("preserva a reprovação no histórico mesmo após a aprovação", () => {
