@@ -110,7 +110,7 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
 
   return <div className="space-y-5">
     <Card className="overflow-hidden border-none shadow-sm">
-      <CardHeader className="gap-4 bg-gradient-to-r from-primary/10 via-primary/5 to-transparent sm:flex-row sm:items-center sm:justify-between">
+      <CardHeader className="gap-4 border-b bg-card sm:flex-row sm:items-center sm:justify-between">
         <div><CardTitle className="flex items-center gap-2"><Images className="size-5 text-primary" />Central de evidências</CardTitle><CardDescription className="mt-1">Organize o histórico técnico antes, durante e depois da execução.</CardDescription></div>
         {canManage && <Button onClick={() => setDialogOpen(true)}><Plus className="size-4" />Adicionar evidências</Button>}
       </CardHeader>
