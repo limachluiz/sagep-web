@@ -237,7 +237,7 @@ export function NotificationsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="mb-5 grid gap-3 md:grid-cols-2">
+          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <Select
               value={status}
               onValueChange={(value) => {
