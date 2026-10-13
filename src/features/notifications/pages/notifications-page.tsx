@@ -224,7 +224,8 @@ export function NotificationsPage() {
           </CardHeader>
         </Card>
       </div>
-      <Card>
+      <div className="grid gap-6 xl:grid-cols-2">
+      <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <BellRing className="size-5" />
@@ -331,7 +332,7 @@ export function NotificationsPage() {
           </div>
         </CardContent>
       </Card>
-      <Card>
+      <Card className="h-full">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <AtSign className="size-5" />
@@ -451,6 +452,7 @@ export function NotificationsPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
       <Card>
         <CardHeader>
           <CardTitle>Pendências operacionais ativas</CardTitle>
