@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CheckCircle2, Download, FileArchive, FileImage, FileText, Files, Filter, Images, Loader2, Plus, Search, Trash2, UploadCloud, Video } from "lucide-react"
 import { toast } from "sonner"
@@ -39,6 +39,35 @@ function EvidenceIcon({ category }: { category: EvidenceCategory }) {
   if (category === "VIDEO") return <Video className="size-5 text-primary" />
   if (category === "KMZ_KML") return <FileArchive className="size-5 text-primary" />
   return <FileText className="size-5 text-primary" />
+}
+
+function EvidencePreview({ item }: { item: ProjectEvidence }) {
+  const preview = useQuery({
+    queryKey: ["evidences", item.id, "preview"],
+    queryFn: () => evidencesService.content(item.id),
+    enabled: item.category === "IMAGE",
+    staleTime: 5 * 60_000,
+  })
+  const previewUrl = useMemo(
+    () => preview.data ? URL.createObjectURL(preview.data) : null,
+    [preview.data],
+  )
+
+  useEffect(() => () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl)
+  }, [previewUrl])
+
+  if (item.category !== "IMAGE") {
+    return <div className="flex h-24 w-full shrink-0 items-center justify-center rounded-lg bg-primary/10 sm:w-32"><EvidenceIcon category={item.category} /></div>
+  }
+
+  return <div className="flex h-24 w-full shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted/30 sm:w-32">
+    {previewUrl
+      ? <img src={previewUrl} alt={item.title} className="size-full object-cover" loading="lazy" />
+      : preview.isError
+        ? <FileImage className="size-6 text-muted-foreground" />
+        : <Loader2 className="size-5 animate-spin text-muted-foreground" />}
+  </div>
 }
 
 export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: string; taskId?: string; canManage: boolean }) {
@@ -136,7 +165,7 @@ export function EvidencesPanel({ projectId, taskId, canManage }: { projectId: st
 
         {query.isLoading ? <div className="flex justify-center py-12"><Loader2 className="size-6 animate-spin" /></div> : visible.length ? <div className="grid gap-3 xl:grid-cols-2">
           {visible.map((item) => <div key={item.id} className="flex flex-col justify-between gap-4 rounded-xl border bg-background p-4 sm:flex-row sm:items-start">
-            <div className="flex min-w-0 gap-3"><div className="rounded-lg bg-primary/10 p-2"><EvidenceIcon category={item.category} /></div><div className="min-w-0"><p className="font-medium">{item.title}</p><p className="truncate text-xs text-muted-foreground">{item.originalName} · {size(item.sizeBytes)}</p>{item.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>}<div className="mt-3 flex flex-wrap gap-2"><Badge variant="outline">{categories[item.category]}</Badge><Badge variant="outline" className={phaseColors[item.phase]}>{phases[item.phase]}</Badge>{item.includeInReport && <Badge>Relatório técnico</Badge>}{item.task && <Badge variant="secondary">TSK-{item.task.taskCode}</Badge>}</div></div></div>
+            <div className="flex min-w-0 flex-1 flex-col gap-3 sm:flex-row"><EvidencePreview item={item} /><div className="min-w-0"><p className="font-medium">{item.title}</p><p className="truncate text-xs text-muted-foreground">{item.originalName} · {size(item.sizeBytes)}</p>{item.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.description}</p>}<div className="mt-3 flex flex-wrap gap-2"><Badge variant="outline">{categories[item.category]}</Badge><Badge variant="outline" className={phaseColors[item.phase]}>{phases[item.phase]}</Badge>{item.includeInReport && <Badge>Relatório técnico</Badge>}{item.task && <Badge variant="secondary">TSK-{item.task.taskCode}</Badge>}</div></div></div>
             <div className="flex shrink-0 flex-wrap gap-2"><Button size="sm" variant="outline" onClick={() => open(item)}><Download className="size-4" />Abrir</Button>{canManage && <Button size="sm" variant={item.includeInReport ? "default" : "outline"} disabled={update.isPending} onClick={() => update.mutate({ id: item.id, includeInReport: !item.includeInReport })}>{item.includeInReport ? "No relatório" : "Incluir"}</Button>}{canManage && <Button size="icon-sm" variant="ghost" className="text-destructive" disabled={remove.isPending} onClick={() => remove.mutate(item.id)} aria-label="Remover evidência"><Trash2 /></Button>}</div>
           </div>)}
         </div> : <div className="rounded-xl border border-dashed py-14 text-center"><Images className="mx-auto size-8 text-muted-foreground" /><p className="mt-3 font-medium">{scoped.length ? "Nenhuma evidência encontrada" : "Nenhuma evidência registrada"}</p><p className="mt-1 text-sm text-muted-foreground">{scoped.length ? "Altere os filtros para visualizar outros arquivos." : "Comece registrando fotos, documentos e resultados da execução."}</p></div>}
