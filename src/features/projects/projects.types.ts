@@ -346,6 +346,7 @@ export type ProjectDetailsResponse = {
   workflow: {
     status: ProjectStatus;
     stage: ProjectStage;
+    retroactiveRegistration: boolean;
     nextAction: {
       code: string;
       label: string;

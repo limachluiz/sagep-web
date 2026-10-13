@@ -21,6 +21,7 @@ type Props = {
   projectId: string
   projectCode: number
   serviceOrderIssuedAt?: string
+  retroactiveRegistration?: boolean
   open: boolean
   onOpenChange: (open: boolean) => void
   onSaved: () => void
@@ -37,6 +38,7 @@ export function RegisterSignedServiceOrderDialog({
   projectId,
   projectCode,
   serviceOrderIssuedAt,
+  retroactiveRegistration = false,
   open,
   onOpenChange,
   onSaved,
@@ -44,7 +46,7 @@ export function RegisterSignedServiceOrderDialog({
   const [link, setLink] = useState("")
   const [receivedAt, setReceivedAt] = useState(todayInputValue)
   const [notes, setNotes] = useState("")
-  const minimumDate = serviceOrderIssuedAt?.slice(0, 10)
+  const minimumDate = retroactiveRegistration ? undefined : serviceOrderIssuedAt?.slice(0, 10)
   const maximumDate = todayInputValue()
 
   const validationError = useMemo(() => {
@@ -59,7 +61,7 @@ export function RegisterSignedServiceOrderDialog({
     }
     if (link.trim().length > 2048) return "O link informado é muito longo."
     if (!receivedAt) return "Informe a data de recebimento."
-    if (minimumDate && receivedAt < minimumDate) {
+    if (!retroactiveRegistration && minimumDate && receivedAt < minimumDate) {
       return "O recebimento não pode ser anterior à emissão da OS."
     }
     if (receivedAt > maximumDate) {
@@ -67,7 +69,7 @@ export function RegisterSignedServiceOrderDialog({
     }
     if (notes.trim().length > 2000) return "A observação deve ter até 2.000 caracteres."
     return null
-  }, [link, maximumDate, minimumDate, notes, receivedAt])
+  }, [link, maximumDate, minimumDate, notes, receivedAt, retroactiveRegistration])
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -120,6 +122,12 @@ export function RegisterSignedServiceOrderDialog({
               value={receivedAt}
               onChange={(event) => setReceivedAt(event.target.value)}
             />
+            {retroactiveRegistration && (
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                Projeto retroativo: informe a data histórica real. Ela pode ser anterior
+                à emissão registrada no SAGEP.
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="signed-service-order-notes">Observação opcional</Label>

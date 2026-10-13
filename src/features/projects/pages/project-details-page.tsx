@@ -722,7 +722,7 @@ export function ProjectDetailsPage() {
 
       {createServiceOrderOpen && <CreateServiceOrderDialog details={details} open={createServiceOrderOpen} onOpenChange={setCreateServiceOrderOpen} onCreated={(order) => { invalidateProjectFlow(queryClient); navigate(`/service-orders/${order.id}`) }} />}
 
-      {registerSignedServiceOrderOpen && <RegisterSignedServiceOrderDialog projectId={details.project.id} projectCode={details.project.projectCode} serviceOrderIssuedAt={activeDocuments.serviceOrder?.issuedAt ?? undefined} open={registerSignedServiceOrderOpen} onOpenChange={setRegisterSignedServiceOrderOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
+      {registerSignedServiceOrderOpen && <RegisterSignedServiceOrderDialog projectId={details.project.id} projectCode={details.project.projectCode} serviceOrderIssuedAt={activeDocuments.serviceOrder?.issuedAt ?? undefined} retroactiveRegistration={details.workflow.retroactiveRegistration} open={registerSignedServiceOrderOpen} onOpenChange={setRegisterSignedServiceOrderOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 
       {startExecutionOpen && <StartExecutionDialog projectId={details.project.id} projectCode={details.project.projectCode} serviceOrderIssuedAt={activeDocuments.serviceOrder?.issuedAt ?? undefined} open={startExecutionOpen} onOpenChange={setStartExecutionOpen} onSaved={() => { invalidateProjectFlow(queryClient); selectTab("execution") }} />}
 

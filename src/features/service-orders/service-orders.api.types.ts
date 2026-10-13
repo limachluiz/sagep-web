@@ -52,6 +52,9 @@ export type ServiceOrder = {
     signedServiceOrderLink: string | null
     signedServiceOrderReceivedAt: string | null
     signedServiceOrderNotes: string | null
+    commitmentNotes: Array<{
+      balanceImpactMode: "CONSUME" | "ALREADY_INCLUDED"
+    }>
     signedServiceOrderRegisteredBy: {
       id: string
       userCode: number
