@@ -23,6 +23,8 @@ type StartExecutionDialogProps = {
   onOpenChange: (open: boolean) => void
   onSaved: () => void
   serviceOrderIssuedAt?: string
+  signedServiceOrderReceivedAt?: string
+  retroactiveRegistration?: boolean
 }
 
 function todayInputValue() {
@@ -39,20 +41,28 @@ export function StartExecutionDialog({
   onOpenChange,
   onSaved,
   serviceOrderIssuedAt,
+  signedServiceOrderReceivedAt,
+  retroactiveRegistration = false,
 }: StartExecutionDialogProps) {
   const [startedAt, setStartedAt] = useState(todayInputValue)
   const [maximumDate] = useState(todayInputValue)
-  const minimumDate = serviceOrderIssuedAt?.slice(0, 10)
+  const chronologicalDates = [
+    serviceOrderIssuedAt?.slice(0, 10),
+    signedServiceOrderReceivedAt?.slice(0, 10),
+  ].filter((value): value is string => Boolean(value))
+  const minimumDate = retroactiveRegistration
+    ? undefined
+    : chronologicalDates.sort().at(-1)
   const validationError = useMemo(() => {
     if (!startedAt) return "Informe a data de início."
     if (startedAt > maximumDate) {
       return "A data de início não pode estar no futuro."
     }
-    if (minimumDate && startedAt < minimumDate) {
-      return "O início não pode ser anterior à emissão da Ordem de Serviço."
+    if (!retroactiveRegistration && minimumDate && startedAt < minimumDate) {
+      return "O início não pode ser anterior à emissão e ao recebimento da OS assinada."
     }
     return null
-  }, [maximumDate, minimumDate, startedAt])
+  }, [maximumDate, minimumDate, retroactiveRegistration, startedAt])
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -94,6 +104,11 @@ export function StartExecutionDialog({
             onChange={(event) => setStartedAt(event.target.value)}
             aria-invalid={Boolean(validationError)}
           />
+          {retroactiveRegistration && (
+            <p className="text-xs text-amber-700 dark:text-amber-300">
+              Projeto retroativo: informe a data histórica real do início da execução.
+            </p>
+          )}
         </div>
         {validationError && (
           <p className="text-sm font-medium text-destructive">
