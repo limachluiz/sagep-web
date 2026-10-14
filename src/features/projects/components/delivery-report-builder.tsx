@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CheckCircle2, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, Circle, FileSignature, FileText, Plus, Save, Sparkles, Trash2 } from "lucide-react"
+import { CheckCircle2, Download, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, Circle, FileSignature, FileText, Plus, Save, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -24,6 +24,7 @@ export function DeliveryReportBuilder({ projectId, canManage, finalization, onDi
   const query = useQuery({ queryKey: ["delivery-report-draft", projectId], queryFn: () => projectsService.deliveryReportDraft(projectId) })
   const [activeModule, setActiveModule] = useState("data")
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [downloadPending, setDownloadPending] = useState<"pdf" | "doc" | null>(null)
   const [previewPending, setPreviewPending] = useState(false)
   const [editedDraft, setEditedDraft] = useState<DeliveryReportDraft | null>(null)
   const [dirty, setDirty] = useState(false)
@@ -43,6 +44,20 @@ export function DeliveryReportBuilder({ projectId, canManage, finalization, onDi
     try { setPreviewUrl(URL.createObjectURL(await projectsService.previewDeliveryReport(projectId, draft))) }
     catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível atualizar a prévia.") }
     finally { setPreviewPending(false) }
+  }
+  const downloadForApproval = async (format: "pdf" | "doc") => {
+    if (!draft) return
+    setDownloadPending(format)
+    try {
+      const blob = await projectsService.previewDeliveryReport(projectId, draft, format)
+      const url = URL.createObjectURL(blob)
+      const anchor = document.createElement("a")
+      anchor.href = url
+      anchor.download = `para-aprovacao-PRJ-${query.data?.project.projectCode}.${format}`
+      anchor.click()
+      window.setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch (error) { toast.error(error instanceof Error ? error.message : "Não foi possível baixar a versão para aprovação.") }
+    finally { setDownloadPending(null) }
   }
   const save = useMutation({
     mutationFn: () => projectsService.updateDeliveryReportDraft(projectId, draft!),
@@ -82,7 +97,10 @@ export function DeliveryReportBuilder({ projectId, canManage, finalization, onDi
   return <Card className="border-none shadow-sm">
     <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div><CardTitle className="flex items-center gap-2"><FileText className="size-5 text-primary" />Construtor da memória técnica</CardTitle><CardDescription className="mt-2 max-w-3xl">Monte e revise cada bloco antes de gerar o documento. Alterar e salvar a memória técnica invalida o PDF e a assinatura da versão anterior.</CardDescription></div>
-      <Button variant="outline" onClick={() => void preview()} disabled={previewPending}><FileText />{previewPending ? "Preparando prévia..." : "Visualizar prévia atual"}</Button>
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={() => void preview()} disabled={previewPending}><FileText />{previewPending ? "Preparando prévia..." : "Visualizar prévia atual"}</Button>
+        {(["doc", "pdf"] as const).map((format) => <Button key={format} variant="outline" disabled={downloadPending !== null} onClick={() => void downloadForApproval(format)}><Download />{downloadPending === format ? "Preparando..." : `Para aprovação (.${format})`}</Button>)}
+      </div>
     </CardHeader>
     <CardContent className="space-y-5">
       <div className="grid items-start gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">

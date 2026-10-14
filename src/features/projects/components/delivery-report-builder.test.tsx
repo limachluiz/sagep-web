@@ -36,4 +36,13 @@ describe("editor modular da entrega", () => {
     expect(await screen.findByText(/Adicione os arquivos na aba Evidências/)).toBeInTheDocument()
     expect(mocks.list).toHaveBeenCalledWith("p1")
   })
+  it("baixa a versão para aprovação em DOC e PDF sem salvar ou emitir", async () => {
+    const user = userEvent.setup(); setup()
+    await user.click(await screen.findByRole("button", { name: "Para aprovação (.doc)" }))
+    await waitFor(() => expect(mocks.preview).toHaveBeenCalledWith("p1", data.draft, "doc"))
+    await user.click(screen.getByRole("button", { name: "Para aprovação (.pdf)" }))
+    await waitFor(() => expect(mocks.preview).toHaveBeenCalledWith("p1", data.draft, "pdf"))
+    expect(mocks.save).not.toHaveBeenCalled()
+  })
+
 })

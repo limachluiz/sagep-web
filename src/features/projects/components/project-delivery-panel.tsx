@@ -55,6 +55,7 @@ export function ProjectDeliveryPanel({
 }) {
   const client = useQueryClient();
   const [editorOpen, setEditorOpen] = useState(false);
+  const [downloading, setDownloading] = useState<"pdf" | "doc" | null>(null);
   const [reviewConfirmed, setReviewConfirmed] = useState(false);
   const [viewedVersion, setViewedVersion] = useState<string | null>(null);
   const [editorDirty, setEditorDirty] = useState(false);
@@ -143,13 +144,14 @@ export function ProjectDeliveryPanel({
       );
     }
   };
-  const handleDownload = async () => {
+  const handleDownload = async (format: "pdf" | "doc") => {
+    setDownloading(format);
     try {
-      const blob = await projectsService.deliveryReportPdf(details.project.id);
+      const blob = format === "doc" ? await projectsService.deliveryReportWord(details.project.id) : await projectsService.deliveryReportPdf(details.project.id);
       const url = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `relatorio-entrega-PRJ-${details.project.projectCode}.pdf`;
+      anchor.download = `relatorio-entrega-PRJ-${details.project.projectCode}.${format}`;
       anchor.click();
       window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
     } catch (error) {
@@ -158,7 +160,7 @@ export function ProjectDeliveryPanel({
           ? error.message
           : "Não foi possível baixar o relatório técnico.",
       );
-    }
+    } finally { setDownloading(null); }
   };
   const finalization = (
     <div className="space-y-5">
@@ -221,11 +223,13 @@ export function ProjectDeliveryPanel({
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => void handleDownload()}
+                    disabled={downloading !== null}
+                    onClick={() => void handleDownload("pdf")}
                   >
                     <Download />
-                    Baixar PDF
+                    {downloading === "pdf" ? "Preparando..." : "Baixar final (.pdf)"}
                   </Button>
+                  <Button variant="outline" disabled={downloading !== null} onClick={() => void handleDownload("doc")}><Download />{downloading === "doc" ? "Preparando..." : "Baixar final (.doc)"}</Button>
                 </>
               )}
               {deliveryEditable && (
