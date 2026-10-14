@@ -295,8 +295,8 @@ export function ProjectDeliveryPanel({
       </CardContent>
     </Card>
     <Dialog open={editorOpen} onOpenChange={(open) => { if (!open && editorDirty) { toast.info("Salve a memória técnica antes de fechar o editor."); return; } setEditorOpen(open); }}>
-      <DialogContent className="h-[94dvh] max-w-[96vw] overflow-y-auto sm:max-w-[96vw]" onInteractOutside={(event) => event.preventDefault()}>
-        <DialogHeader><DialogTitle>Entrega técnica · PRJ-{details.project.projectCode}</DialogTitle><DialogDescription>Elabore por módulos, salve as alterações e confira a prévia antes da emissão final.</DialogDescription></DialogHeader>
+      <DialogContent className="flex h-[94dvh] max-w-[96vw] flex-col overflow-hidden sm:max-w-[96vw]" onInteractOutside={(event) => event.preventDefault()}>
+        <DialogHeader className="shrink-0"><DialogTitle>Entrega técnica · PRJ-{details.project.projectCode}</DialogTitle><DialogDescription>Elabore por módulos, salve as alterações e confira a prévia antes da emissão final.</DialogDescription></DialogHeader>
         <DeliveryReportBuilder projectId={details.project.id} canManage={deliveryEditable} finalization={finalization} onDirtyChange={setEditorDirty} />
       </DialogContent>
     </Dialog>

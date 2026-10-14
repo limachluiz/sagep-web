@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react"
+import { useEffect, useRef, useState, type ReactNode } from "react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { CheckCircle2, Download, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, Circle, FileSignature, FileText, Plus, Save, Sparkles, Trash2 } from "lucide-react"
 import { toast } from "sonner"
@@ -21,6 +21,7 @@ const technicalPlaceholder = "Registre aplicação, capacidade, tecnologia, loca
 
 export function DeliveryReportBuilder({ projectId, canManage, finalization, onDirtyChange }: { projectId: string; canManage: boolean; finalization?: ReactNode; onDirtyChange?: (dirty: boolean) => void }) {
   const client = useQueryClient()
+  const moduleScroll = useRef<HTMLDivElement>(null)
   const query = useQuery({ queryKey: ["delivery-report-draft", projectId], queryFn: () => projectsService.deliveryReportDraft(projectId) })
   const [activeModule, setActiveModule] = useState("data")
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
@@ -31,6 +32,7 @@ export function DeliveryReportBuilder({ projectId, canManage, finalization, onDi
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
   const draft = editedDraft ?? query.data?.draft ?? null
 
+  useEffect(() => { if (moduleScroll.current) moduleScroll.current.scrollTop = 0 }, [activeModule])
   useEffect(() => { onDirtyChange?.(dirty) }, [dirty, onDirtyChange])
   useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl) }, [previewUrl])
   useEffect(() => {
@@ -94,20 +96,21 @@ export function DeliveryReportBuilder({ projectId, canManage, finalization, onDi
   const applySuggestions = () => change({ ...draft, itemDetails: draft.itemDetails.map((detail) => ({ ...detail, technicalDescription: detail.technicalDescription.trim() || query.data.items.find((item) => item.itemId === detail.itemId)?.suggestedTechnicalDescription || "" })) })
   const toggleExpanded = (current: Set<string>, key: string, update: (next: Set<string>) => void) => { const next = new Set(current); if (next.has(key)) next.delete(key); else next.add(key); update(next) }
 
-  return <Card className="border-none shadow-sm">
-    <CardHeader className="gap-4 lg:flex-row lg:items-start lg:justify-between">
+  return <Card className="flex min-h-0 flex-1 flex-col overflow-hidden border-none shadow-sm">
+    <CardHeader className="shrink-0 gap-4 lg:flex-row lg:items-start lg:justify-between">
       <div><CardTitle className="flex items-center gap-2"><FileText className="size-5 text-primary" />Construtor da memória técnica</CardTitle><CardDescription className="mt-2 max-w-3xl">Monte e revise cada bloco antes de gerar o documento. Alterar e salvar a memória técnica invalida o PDF e a assinatura da versão anterior.</CardDescription></div>
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" onClick={() => void preview()} disabled={previewPending}><FileText />{previewPending ? "Preparando prévia..." : "Visualizar prévia atual"}</Button>
         {(["doc", "pdf"] as const).map((format) => <Button key={format} variant="outline" disabled={downloadPending !== null} onClick={() => void downloadForApproval(format)}><Download />{downloadPending === format ? "Preparando..." : `Para aprovação (.${format})`}</Button>)}
       </div>
     </CardHeader>
-    <CardContent className="space-y-5">
-      <div className="grid items-start gap-5 lg:grid-cols-[230px_minmax(0,1fr)]">
-      <nav aria-label="Módulos da entrega técnica" className="flex gap-2 overflow-x-auto rounded-xl bg-muted/30 p-3 lg:sticky lg:top-0 lg:max-h-[65vh] lg:flex-col lg:overflow-y-auto">
+    <CardContent className="flex min-h-0 flex-1 flex-col">
+      <div className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] gap-5 lg:grid-cols-[230px_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)]">
+      <nav aria-label="Módulos da entrega técnica" className="flex min-h-0 gap-2 overflow-x-auto rounded-xl bg-muted/30 p-3 lg:flex-col lg:overflow-y-auto">
         {[{ id: "data", title: "Dados do projeto" }, ...draft.sections.map((section) => ({ id: section.key, title: section.title })), { id: "items", title: "Itens executados" }, { id: "evidence", title: "Evidências e anexos" }, { id: "formalization", title: "Formalização" }, { id: "final", title: "Emissão e aprovação" }].map((module) => <Button key={module.id} variant={activeModule === module.id ? "default" : "ghost"} className="h-auto shrink-0 justify-start whitespace-normal text-left" aria-current={activeModule === module.id ? "step" : undefined} onClick={() => setActiveModule(module.id)}>{module.title}</Button>)}
       </nav>
-      <div className="min-w-0 space-y-5">
+      <div className="flex min-h-0 min-w-0 flex-col gap-3">
+      <div ref={moduleScroll} role="region" aria-label="Conteúdo do módulo de entrega" tabIndex={0} className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain pr-2">
       {activeModule === "data" && <div className="space-y-4"><h3 className="font-semibold">Dados do projeto e preparação</h3><p className="text-sm text-muted-foreground">Avance pelos módulos laterais, revise os textos e salve ao final de cada módulo. A prévia pode ser consultada a qualquer momento, inclusive antes de salvar.</p><p className="font-medium">PRJ-{query.data.project.projectCode} · {query.data.project.title}</p><div className="grid gap-3 sm:grid-cols-3">{Object.entries(query.data.documents).map(([key, document]) => <div key={key} className="rounded-lg border p-3"><p className="text-xs text-muted-foreground">{key === "estimate" ? "Estimativa" : key === "diex" ? "DIEx" : "Ordem de Serviço"}</p><p>{document?.code ?? "Em branco"}</p></div>)}</div></div>}
       {activeModule === "evidence" && <DeliveryEvidenceSelection projectId={projectId} canManage={canManage} />}
       {activeModule === "final" && <>{dirty && <Alert><AlertTitle>Alterações ainda não salvas</AlertTitle><AlertDescription>Salve a memória técnica no final deste módulo antes de emitir ou aprovar o documento.</AlertDescription></Alert>}<fieldset disabled={dirty} className={dirty ? "opacity-60" : ""}>{finalization}</fieldset></>}
@@ -127,10 +130,13 @@ export function DeliveryReportBuilder({ projectId, canManage, finalization, onDi
       </div>}
       {activeModule === "formalization" && <div className="space-y-4 rounded-xl border p-4"><div><h3 className="flex items-center gap-2 font-semibold"><FileSignature className="size-4 text-primary" />Formalização e ciência da OM</h3><p className="mt-1 text-sm text-muted-foreground">A ciência registra a disponibilização da solução, mas não substitui o recebimento provisório ou definitivo quando exigido pela legislação ou pelo contrato.</p></div><label className="flex items-start gap-3 rounded-lg border bg-muted/20 p-4 text-sm"><input className="mt-1" type="checkbox" checked={draft.formalization.requiresOmAcknowledgement} disabled={!canManage} onChange={(event) => change({ ...draft, formalization: { ...draft.formalization, requiresOmAcknowledgement: event.target.checked } })} /><span><b>Incluir ciência da Organização Militar</b><br /><span className="text-muted-foreground">Adiciona ao documento a identificação e o campo de ciência de quem receberá a solução na OM atendida.</span></span></label>{draft.formalization.requiresOmAcknowledgement && <div className="grid gap-4 md:grid-cols-2"><div className="space-y-2"><Label>Nome do recebedor</Label><Input value={draft.formalization.recipientName} disabled={!canManage} onChange={(event) => change({ ...draft, formalization: { ...draft.formalization, recipientName: event.target.value } })} /></div><div className="space-y-2"><Label>Posto ou graduação</Label><Input value={draft.formalization.recipientRank} disabled={!canManage} onChange={(event) => change({ ...draft, formalization: { ...draft.formalization, recipientRank: event.target.value } })} /></div><div className="space-y-2"><Label>Função</Label><Input value={draft.formalization.recipientRole} disabled={!canManage} placeholder="Ex.: Fiscal do contrato ou Chefe da Seção de TI" onChange={(event) => change({ ...draft, formalization: { ...draft.formalization, recipientRole: event.target.value } })} /></div><div className="space-y-2"><Label>Organização Militar</Label><Input value={draft.formalization.recipientOrganization} disabled={!canManage} onChange={(event) => change({ ...draft, formalization: { ...draft.formalization, recipientOrganization: event.target.value } })} /></div><div className="space-y-2 md:col-span-2"><Label>Observações da ciência</Label><Textarea value={draft.formalization.acknowledgementNotes} disabled={!canManage} placeholder="Ressalvas, orientações repassadas ou condições da entrega." onChange={(event) => change({ ...draft, formalization: { ...draft.formalization, acknowledgementNotes: event.target.value } })} /></div></div>}</div>
       }
+      {previewUrl && <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="font-semibold">Prévia do documento em elaboração</h3><Button variant="ghost" onClick={() => setPreviewUrl(null)}>Fechar prévia</Button></div><p className="text-xs text-muted-foreground">Prévia da última atualização. Clique em “Visualizar prévia atual” após editar para conferir as alterações.</p><iframe title="Prévia da entrega técnica" src={previewUrl} className="h-[70vh] w-full rounded-xl border" /></section>}
+      </div>
+      <div className="shrink-0 space-y-3 bg-card pt-2">
       <div className="flex flex-wrap items-center justify-between gap-3 pt-4"><p className="text-xs text-muted-foreground">{dirty ? "Há alterações não salvas." : "Documento salvo. Continue pelo próximo módulo."}</p>{canManage && <Button onClick={() => save.mutate()} disabled={save.isPending}><Save />{save.isPending ? "Salvando..." : "Salvar memória técnica"}</Button>}</div>
       <div className="flex justify-between gap-3"><Button variant="outline" disabled={moduleIndex <= 0} onClick={() => setActiveModule(moduleIds[moduleIndex - 1])}><ChevronUp />Módulo anterior</Button><Button variant="outline" disabled={moduleIndex === moduleIds.length - 1} onClick={() => setActiveModule(moduleIds[moduleIndex + 1])}>Próximo módulo<ChevronRight /></Button></div>
-      </div></div>
-      {previewUrl && <section className="space-y-3"><div className="flex items-center justify-between"><h3 className="font-semibold">Prévia do documento em elaboração</h3><Button variant="ghost" onClick={() => setPreviewUrl(null)}>Fechar prévia</Button></div><p className="text-xs text-muted-foreground">Prévia da última atualização. Clique em “Visualizar prévia atual” após editar para conferir as alterações.</p><iframe title="Prévia da entrega técnica" src={previewUrl} className="h-[70vh] w-full rounded-xl border" /></section>}
+      </div></div></div>
+
     </CardContent>
   </Card>
 }
