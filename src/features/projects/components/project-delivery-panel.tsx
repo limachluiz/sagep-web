@@ -8,7 +8,7 @@ import {
   FileSignature,
   FileText,
 } from "lucide-react";
-import { Link } from "react-router";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { EvidencesPanel } from "@/features/evidences/components/evidences-panel";
+
 import { projectsService } from "../projects.service";
 import type { ProjectDetailsResponse } from "../projects.types";
 import { DeliveryReportBuilder } from "./delivery-report-builder";
@@ -47,13 +47,17 @@ function manausDateInputValue(value = new Date()) {
 export function ProjectDeliveryPanel({
   details,
   canManage,
-  workspace = false,
+
 }: {
   details: ProjectDetailsResponse;
   canManage: boolean;
   workspace?: boolean;
 }) {
   const client = useQueryClient();
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [reviewConfirmed, setReviewConfirmed] = useState(false);
+  const [viewedVersion, setViewedVersion] = useState<string | null>(null);
+  const [editorDirty, setEditorDirty] = useState(false);
   const [signedAt, setSignedAt] = useState(
     () => manausDateInputValue(),
   );
@@ -75,6 +79,8 @@ export function ProjectDeliveryPanel({
       projectsService.generateDeliveryReport(details.project.id),
     onSuccess: async () => {
       setAwaitingNewSignature(true);
+      setReviewConfirmed(false);
+      setViewedVersion(null);
       await client.invalidateQueries({ queryKey: ["projects"] });
       toast.success(
         "Nova versão gerada. Revise o PDF aberto e confirme novamente a assinatura.",
@@ -90,7 +96,7 @@ export function ProjectDeliveryPanel({
     onSuccess: async () => {
       await client.invalidateQueries({ queryKey: ["projects"] });
       setAwaitingNewSignature(false);
-      toast.success("Revisão e assinatura registradas.");
+      toast.success("Entrega aprovada e assinatura registrada em auditoria.");
     },
     onError: (error) => toast.error(error.message),
   });
@@ -128,6 +134,7 @@ export function ProjectDeliveryPanel({
         () => projectsService.deliveryReportPdf(details.project.id),
         `Relatório técnico PRJ-${details.project.projectCode}`,
       );
+      setViewedVersion(generatedAt);
     } catch (error) {
       toast.error(
         error instanceof Error
@@ -153,62 +160,8 @@ export function ProjectDeliveryPanel({
       );
     }
   };
-  if (!workspace)
-    return (
-      <Card className="border-none shadow-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="size-5 text-primary" />
-            Relatório Técnico de Conclusão e Entrega
-          </CardTitle>
-          <CardDescription>
-            Abra o ambiente de elaboração para revisar os dados do projeto,
-            gerar textos técnicos a partir dos itens, selecionar evidências e
-            definir a ciência da OM.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="font-medium">
-              {registeredAt
-                ? "Documento assinado"
-                : generatedAt
-                  ? "Versão gerada, aguardando assinatura"
-                  : reportReady
-                    ? "Pronto para emissão"
-                    : deliveryStage
-                      ? "Preparação pendente"
-                      : "Aguardando início da Entrega Técnica"}
-            </p>
-            {readiness && (
-              <p className="mt-1 text-sm text-muted-foreground">
-                {readiness.sectionsReviewed}/{readiness.sectionsIncluded} blocos
-                revisados · {readiness.itemsDocumented}/{readiness.totalItems}{" "}
-                itens documentados
-              </p>
-            )}
-          </div>
-          {deliveryStage ? (
-            <Button asChild>
-              <Link to={`/projects/${details.project.id}/delivery-report`}>
-                Abrir Entrega Técnica
-                <ArrowRight />
-              </Link>
-            </Button>
-          ) : (
-            <Button disabled>Disponível após o atesto da NF</Button>
-          )}
-        </CardContent>
-      </Card>
-    );
-  return (
+  const finalization = (
     <div className="space-y-5">
-      {deliveryStage && (
-        <DeliveryReportBuilder
-          projectId={details.project.id}
-          canManage={deliveryEditable}
-        />
-      )}
       {deliveryStage && (
         <Card className="border-none shadow-sm">
           <CardHeader>
@@ -284,8 +237,8 @@ export function ProjectDeliveryPanel({
                   {generate.isPending
                     ? "Gerando..."
                     : generatedAt
-                      ? "Gerar e visualizar nova versão"
-                      : "Gerar e visualizar PDF"}
+                      ? "Salvar e visualizar nova versão final"
+                      : "Salvar e visualizar documento final"}
                 </Button>
               )}
             </div>
@@ -310,35 +263,38 @@ export function ProjectDeliveryPanel({
                     placeholder="https://..."
                   />
                 </div>
+                <label className="flex items-start gap-3 text-sm md:col-span-2"><input type="checkbox" className="mt-1" checked={reviewConfirmed} onChange={(event) => setReviewConfirmed(event.target.checked)} /><span>Confirmo que visualizei e revisei esta versão e que a assinatura foi realizada. A aprovação será registrada em auditoria.</span></label>
+                {viewedVersion !== generatedAt && <p className="text-sm text-muted-foreground md:col-span-2">Visualize o PDF emitido antes de confirmar a aprovação.</p>}
                 <Button
                   className="md:col-span-2 md:w-fit"
                   onClick={() => signature.mutate()}
-                  disabled={!signedAt || signature.isPending}
+                  disabled={!signedAt || !reviewConfirmed || viewedVersion !== generatedAt || signature.isPending}
                 >
                   <CheckCircle2 />
-                  Confirmar revisão e assinatura desta versão
+                  Aprovar entrega e registrar assinatura
                 </Button>
               </div>
             )}
           </CardContent>
         </Card>
       )}
-      {!deliveryStage && (
-        <Alert>
-          <FileSignature />
-          <AlertTitle>Preparação contínua</AlertTitle>
-          <AlertDescription>
-            As evidências podem ser cadastradas durante todo o projeto. A
-            geração do relatório será liberada na etapa de Entrega Técnica.
-          </AlertDescription>
-        </Alert>
-      )}
-      {workspace && (
-        <EvidencesPanel
-          projectId={details.project.id}
-          canManage={canManage && !details.project.archivedAt}
-        />
-      )}
     </div>
   );
+  return <div className="space-y-5">
+    <Card className="border-none shadow-sm">
+      <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="size-5 text-primary" />Entrega técnica</CardTitle><CardDescription>Prepare o documento de conclusão, confira a versão final e registre a aprovação e assinatura.</CardDescription></CardHeader>
+      <CardContent className="space-y-5">
+        <Alert><FileText /><AlertTitle>{registeredAt ? "Entrega aprovada e assinatura registrada" : generatedAt ? "Documento emitido: revise e aprove a versão atual" : deliveryStage ? "Próxima ação: elaborar a entrega técnica" : "Aguardando a etapa de Entrega Técnica"}</AlertTitle><AlertDescription>{deliveryStage ? "Abra o editor e avance pelos módulos laterais. As evidências já cadastradas no projeto estarão disponíveis automaticamente." : "Continue registrando as evidências durante o projeto. A elaboração será liberada após o encerramento da execução."}</AlertDescription></Alert>
+        <ol className="grid list-inside list-decimal gap-3 text-sm md:grid-cols-3"><li>Elabore e salve os módulos técnicos.</li><li>Confira a prévia, selecione evidências e emita o documento final.</li><li>Visualize, assine e registre a aprovação. A confirmação fica na auditoria.</li></ol>
+        {readiness && <p className="text-sm text-muted-foreground">{readiness.sectionsReviewed}/{readiness.sectionsIncluded} blocos revisados · {readiness.itemsDocumented}/{readiness.totalItems} itens documentados</p>}
+        <Button disabled={!deliveryStage} onClick={() => setEditorOpen(true)}><ArrowRight />{registeredAt ? "Consultar documentação da entrega" : "Abrir editor da entrega técnica"}</Button>
+      </CardContent>
+    </Card>
+    <Dialog open={editorOpen} onOpenChange={(open) => { if (!open && editorDirty) { toast.info("Salve a memória técnica antes de fechar o editor."); return; } setEditorOpen(open); }}>
+      <DialogContent className="h-[94dvh] max-w-[96vw] overflow-y-auto sm:max-w-[96vw]" onInteractOutside={(event) => event.preventDefault()}>
+        <DialogHeader><DialogTitle>Entrega técnica · PRJ-{details.project.projectCode}</DialogTitle><DialogDescription>Elabore por módulos, salve as alterações e confira a prévia antes da emissão final.</DialogDescription></DialogHeader>
+        <DeliveryReportBuilder projectId={details.project.id} canManage={deliveryEditable} finalization={finalization} onDirtyChange={setEditorDirty} />
+      </DialogContent>
+    </Dialog>
+  </div>;
 }

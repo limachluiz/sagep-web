@@ -86,6 +86,7 @@ export const projectsService = {
   },
 
   generateDeliveryReport(projectId: string) { return api.postBlob(`/reports/projects/${projectId}/delivery.pdf`) },
+  previewDeliveryReport(projectId: string, draft: DeliveryReportDraft) { return api.postBlob(`/reports/projects/${projectId}/delivery-preview.pdf`, draft) },
   deliveryReportPdf(projectId: string) { return api.getBlob(`/reports/projects/${projectId}/delivery.pdf`) },
   deliveryReportDraft(projectId: string) { return api.get<DeliveryReportDraftResponse>(`/projects/${projectId}/delivery-report/draft`) },
   updateDeliveryReportDraft(projectId: string, payload: DeliveryReportDraft) { return api.put<DeliveryReportDraftResponse>(`/projects/${projectId}/delivery-report/draft`, payload) },
