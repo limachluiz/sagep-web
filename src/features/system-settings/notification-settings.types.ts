@@ -10,7 +10,7 @@ export type EmailListInput = Omit<EmailList, "id" | "createdAt" | "updatedAt" | 
 
 export type NotificationAutomationConfiguration = {
   id: string; enabled: boolean; timeZone: string; hour: number; minute: number; weekdays: number[]
-  syncTrackedCommitments: boolean; discoverCommitments: boolean; syncAtaBalances: boolean
+  syncTrackedCommitments: boolean; discoverCommitments: boolean; syncAtaBalances?: boolean
   managementUnits: string[]; emailEnabled: boolean; telegramEnabled: boolean
   emailListIds: string[]; notifyRoles: NotificationRole[]; maxDiscoveryPages: number
   taskDueDays: number; projectStaleDays: number; ataExpiryDays: number
@@ -18,6 +18,6 @@ export type NotificationAutomationConfiguration = {
   lastScheduledKey: string | null; updatedAt: string
 }
 export type NotificationAutomationRun = { id: string; trigger: string; status: "RUNNING" | "SUCCESS" | "PARTIAL" | "FAILED" | "SKIPPED"; startedAt: string; finishedAt: string | null; summary: unknown; error: string | null }
-export type NotificationAutomationEvent = { id: string; type: string; title: string; description: string; occurredAt: string; emailSentAt: string | null; telegramSentAt: string | null; emailError: string | null; telegramError: string | null }
-export type NotificationAutomationOverview = { configuration: NotificationAutomationConfiguration; runs: NotificationAutomationRun[]; events: NotificationAutomationEvent[] }
+export type NotificationAutomationEvent = { id: string; type: string; title: string; description: string; payload?: unknown; occurredAt: string; emailSentAt: string | null; telegramSentAt: string | null; emailError: string | null; telegramError: string | null }
+export type NotificationAutomationOverview = { configuration: NotificationAutomationConfiguration; runs: NotificationAutomationRun[]; events: NotificationAutomationEvent[]; scheduler?: { serverTime: string; nextRunAt: string | null } }
 export type NotificationAutomationInput = Omit<NotificationAutomationConfiguration, "id" | "lastScheduledKey" | "updatedAt">
