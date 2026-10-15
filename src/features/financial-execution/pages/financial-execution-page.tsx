@@ -28,7 +28,7 @@ const financialLabels: Record<CommitmentFinancialStatus, string> = {
   PARCIALMENTE_PAGA: "Parcialmente paga",
   PAGA: "Paga",
   PARCIALMENTE_ANULADA: "Parcialmente anulada",
-  ANULADA: "Anulada",
+  ANULADA: "Anulada · recurso recolhido",
 }
 
 function money(value: number) {

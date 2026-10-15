@@ -52,6 +52,8 @@ type Row = NeDetailSelection & {
   current: number | null;
   liquidated: number | null;
   paid: number | null;
+  original?: number | null;
+  cancelled?: number | null;
   issuedAt?: string | null;
   liquidatedAt?: string | null;
   paidAt?: string | null;
@@ -339,6 +341,7 @@ export function UnifiedPortfolio() {
                         "Empenhado",
                         "Liquidado",
                         "Pago",
+                        "Anulado / recolhido",
                         "Situação",
                         "Atualização",
                       ].map((h) => (
@@ -471,6 +474,14 @@ export function UnifiedPortfolio() {
                             )}
                           </td>
                           <td className="p-2">
+                            {(r.cancelled ?? 0) > 0 ? money(r.cancelled ?? null) : "—"}
+                            {(r.cancelled ?? 0) > 0 && (
+                              <span className="block text-xs text-destructive">
+                                {r.status === "ANULADA" ? "Recurso integralmente recolhido" : "Recolhimento parcial"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="p-2">
                             {financialStatusLabel(r.status)}
                             {r.incomplete &&
                               (r.paymentIncomplete ||
@@ -490,7 +501,7 @@ export function UnifiedPortfolio() {
                     {!rows.length && (
                       <tr>
                         <td
-                          colSpan={10}
+                          colSpan={11}
                           className="p-6 text-center text-muted-foreground"
                         >
                           Nenhuma NE encontrada para os filtros selecionados.
