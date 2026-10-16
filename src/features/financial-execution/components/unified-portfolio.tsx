@@ -83,6 +83,7 @@ type Portfolio = {
     committed: number;
     liquidated: number;
     paid: number;
+    cancelled: number;
     pending: number;
   };
 };
@@ -214,7 +215,7 @@ export function UnifiedPortfolio() {
               ))}
             </div>
           )}
-          <div className="grid gap-3 md:grid-cols-5">
+          <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
             {[
               {
                 label: "Empenhado informado",
@@ -240,6 +241,11 @@ export function UnifiedPortfolio() {
                   query.data.coverage.paid ? query.data.totals.paid : null,
                 ),
                 helper: `${query.data.coverage.paid} de ${query.data.total} NEs com valor utilizável`,
+              },
+              {
+                label: "Anulado / recolhido",
+                value: money(query.data.totals.cancelled ?? 0),
+                helper: "Apurado no histórico oficial dos itens",
               },
               {
                 label: "NEs a conferir",

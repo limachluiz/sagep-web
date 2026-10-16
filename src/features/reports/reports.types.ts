@@ -68,6 +68,8 @@ export type CommitmentNoteReportRow = {
   observation: string | null
   supplierCnpj: string | null
   current: number | null
+  original?: number | null
+  cancelled?: number | null
   liquidated: number | null
   paid: number | null
   paidNet?: number | null
@@ -85,9 +87,11 @@ export type CommitmentNoteReport = {
   filters: CommitmentNoteReportFilters & { codes: string[] }
   summary: {
     total: number
+    original: number
     committed: number
     liquidated: number
     paid: number
+    cancelled: number
     pending: number
     coverage: { committed: number; liquidated: number; paid: number }
   }

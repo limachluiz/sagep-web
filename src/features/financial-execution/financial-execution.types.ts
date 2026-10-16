@@ -114,7 +114,7 @@ export type StandaloneCommitmentLookup = {
 
 export type FinancialSummary = {
   total: number
-  totals: { committed: number; liquidated: number; paid: number; toLiquidate: number; toPay: number }
+  totals: { original: number; committed: number; liquidated: number; paid: number; cancelled: number; toLiquidate: number; toPay: number }
   byStatus: Record<string, number>
   bySyncStatus: Record<string, number>
 }
